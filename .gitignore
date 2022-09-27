@@ -185,3 +185,5 @@ fabric.properties
 .idea
 
 documentation
+
+test.py
