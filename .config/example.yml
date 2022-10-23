@@ -1,0 +1,8 @@
+keys:
+  abuseipdb: "1111"
+  virustotal: "2222"
+arguments:
+  quit: False
+  name: "analysis name"
+  input: "file for analysis"
+

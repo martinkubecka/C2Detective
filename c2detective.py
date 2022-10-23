@@ -1,0 +1,115 @@
+import argparse
+import sys
+import os
+import platform
+import yaml
+
+from profile import Profile
+
+
+def banner():
+    print(r"""
+   ____ ____  ____       _            _   _
+  / ___|___ \|  _ \  ___| |_ ___  ___| |_(_)_   _____
+ | |     __) | | | |/ _ \ __/ _ \/ __| __| \ \ / / _ \
+ | |___ / __/| |_| |  __/ ||  __/ (__| |_| |\ V /  __/
+  \____|_____|____/ \___|\__\___|\___|\__|_| \_/ \___|
+
+                                    by Martin Kubecka
+ -----------------------------------------------------
+    """)
+
+
+def is_platfrom_supported():
+    machine_platfrom = platform.system().lower()
+    if not machine_platfrom.startswith('linux'):
+        print("\n[!] Unsupported platform.")
+        print("\nExiting program ...\n")
+        exit(1)
+
+
+def is_valid_file(file):
+    if not os.path.exists(file):
+        print(f"[!] Provided file '{file}' does not exist.")
+        print("\nExiting program ...\n")
+        exit(1)
+        # add file type checks for txt,xls,xlsx, etc.
+
+
+def load_config(filename):
+    with open(filename, "r") as ymlfile:
+        config = yaml.safe_load(ymlfile)
+    return config
+
+
+def arg_formatter():
+    """
+    source : https://stackoverflow.com/questions/52605094/python-argparse-increase-space-between-parameter-and-description
+    """
+    def formatter(prog): return argparse.HelpFormatter(
+        prog, max_help_position=52)
+    return formatter
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(formatter_class=arg_formatter(), prog='c2detective',
+                                     description='Application for detecting command and control (C2) '
+                                                 'communication through network traffic analysis.')
+
+    parser.add_argument(
+        '-q', '--quiet', help="don't print the banner and other noise", action='store_true')
+    parser.add_argument('-n', '--name', metavar="NAME",
+                        help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
+    # parser.add_argument('-i', help='input file (.cap OR .pcap)', metavar='FILE', required=True,
+    #                     type=lambda file: is_valid_file(file))
+    parser.add_argument('-i', '--input', metavar='FILE',
+                        help='input file (.cap OR .pcap)', required=True)
+    parser.add_argument('-c', '--config', metavar='FILE', default=".config/config.yml",
+                        help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
+    parser.add_argument('-a', '--action', metavar="ACTION",
+                        help='action to execute [sniffer/...]')
+    parser.add_argument('-o', '--output', metavar='FILE',
+                        help='report output file')
+
+    return parser, parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+
+def main():
+    is_platfrom_supported()
+
+    parser, args = parse_arguments()
+
+    # if len(sys.argv) == 1:
+    #     # print(f"\n[!] No arguments provided")
+    #     parser.print_help("[!] No arguments provided")
+    #     exit(1)
+
+    print("\033[H\033[J", end="")   # clean screen
+    if not args.quiet:
+        banner()
+
+    if not args.name is None:
+        analysis_name = args.name
+        # use analysis name for output/report naming etc.
+
+    input_file = args.input
+    if is_valid_file(input_file):
+        print("")
+
+    if not args.config is None:
+        if is_valid_file(args.config):
+            print()
+            config = load_config(args.config)
+            api_keys = config['keys']
+            # print(api_keys)
+            arguments = config['arguments']
+            # print(arguments)
+            profile = Profile()
+            profile.test()
+
+    action = args.action
+    output_file = args.output
+
+
+if __name__ == '__main__':
+    main()
