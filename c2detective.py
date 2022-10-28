@@ -4,8 +4,9 @@ import os
 import platform
 import yaml
 
-from analyst_profile import AnalystProfile
-from packet_parser import PacketParser
+from src.analyst_profile import AnalystProfile
+from src.packet_parser import PacketParser
+from src.data_enrichment import Enrichment
 
 
 def banner():
@@ -37,6 +38,7 @@ def is_valid_file(filename):
         # add file type checks for txt,xls,xlsx, etc.
     return True
 
+
 def is_pcap_file(filename):
     if not os.path.exists(filename):
         print(f"[!] Provided file '{filename}' does not exist.")
@@ -48,6 +50,7 @@ def is_pcap_file(filename):
             print("\nExiting program ...\n")
             exit(1)
     return True
+
 
 def load_config(filename):
     with open(filename, "r") as ymlfile:
@@ -81,10 +84,12 @@ def parse_arguments():
 
     parser.add_argument('-n', '--name', metavar="NAME",
                         help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
-    parser.add_argument('-c', '--config', metavar='FILE', default=".config/config.yml",
+    parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
+    parser.add_argument(
+        '-e', '--enrich', help="data enrichment", action='store_true')
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
 
@@ -101,7 +106,9 @@ def main():
     #     parser.print_help("[!] No arguments provided")
     #     exit(1)
 
-    print("\033[H\033[J", end="")   # clean screen
+    os.system("clear")
+    # print("\033[H\033[J", end="")   # clean screen
+
     if not args.quiet:
         banner()
 
@@ -113,11 +120,8 @@ def main():
         if is_valid_file(args.config):
             print(f"\n[*] Loading config '{args.config}' ...")
             config = load_config(args.config)
-            api_keys, arguments = [], []
-            api_keys = config['api_keys']
-            arguments = config['arguments']
-            profile = AnalystProfile(api_keys, arguments)
-            profile.test()
+            analyst_profile = AnalystProfile(config)
+            # analyst_profile.test()
 
     input_file = args.input
     if is_valid_file(input_file):
@@ -125,7 +129,13 @@ def main():
             print(f"\n[*] Loading '{input_file}' file ...")
             packet_parser = PacketParser(input_file)
 
+    if args.enrich:
+        print(f"\n[*] Data enrichment ...")
+        # data enrichment
+        enrichment = Enrichment(analyst_profile, packet_parser)
+        enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
 
+    # TODO
     action = args.action
     output_file = args.output
 

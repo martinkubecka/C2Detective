@@ -2,6 +2,8 @@ from scapy.all import *
 import pandas as pd
 import numpy as np
 import binascii  # binary to ASCII
+from time import perf_counter
+from ipaddress import ip_address
 
 
 class PacketParser:
@@ -12,13 +14,15 @@ class PacketParser:
         # self.packets = PcapReader(self.filepath)
 
         self.df_packets = self.packets_to_df()
-        self.get_capture_statistcs()
+        self.packets_count, self.top_src_address, self.top_dst_address, self.external_src_addresses, self.external_dst_addresses = self.get_capture_statistcs()
         # self.extract_connections()
         # self.get_domains()
+        self.confident_level = 0
 
     # source : https://github.com/secdevopsai/Packet-Analytics/blob/master/Packet-Analytics.ipynb
     def packets_to_df(self):
-        print(f"\n>> Transforming packet capture to DataFrame object")
+        t_start = perf_counter()
+        print(f"\n[*] Transforming packet capture to DataFrame object")
         # save field names from IP/TCP/UDP to be used as columns in DataFrame
         ip_fields = [field.name for field in IP().fields_desc]
         tcp_fields = [field.name for field in TCP().fields_desc]
@@ -75,26 +79,55 @@ class PacketParser:
         df = df.reset_index()
         # drop old index column
         df = df.drop(columns="index")
-        
+
+        t_stop = perf_counter()
+        print("Elapsed time: {:.2f}s".format(t_stop - t_start))
+
         return df
 
     def get_capture_statistcs(self):
         print("\n>> Statistics")
+
+        packets_count = len(self.df_packets)
+        print(f">>> Loaded {packets_count} packets")
+
         top_src_address = self.df_packets['src'].describe()['top']
-        top_dst_address = self.df_packets['dst'].describe()['top']
         print(f">>> Top source address: {top_src_address} ")
         # print(df['src'].describe(),'\n\n')
+
+        # print(f">>> Top external source address: {None} ")
+
+        top_dst_address = self.df_packets['dst'].describe()['top']
         print(f">>> Top destination address: {top_dst_address}")
         # print(df['dst'].describe(),"\n\n")
-        print(f">>> List of IPs communicating with the top source address:")
-        print(self.df_packets[self.df_packets['src']
-              == top_src_address]['dst'].unique())
+
+        # print(f">>> Top external destination address: {None} ")
+
+        unique_src_addresses = self.df_packets['src'].unique()
+        unique_src_addresses = unique_src_addresses.tolist()
+        external_src_addresses = []
+        for adr in unique_src_addresses:
+            if not ip_address(adr).is_private:
+                external_src_addresses.append(adr)
+
+        unique_dst_addresses = self.df_packets['dst'].unique()
+        unique_dst_addresses = unique_dst_addresses.tolist()
+        external_dest_addresses = []
+        for adr in unique_dst_addresses:
+            if not ip_address(adr).is_private:
+                external_dest_addresses.append(adr)
+
+        # print(f">>> List of IPs communicating with the top source address:")
+        # print(self.df_packets[self.df_packets['src']
+        #       == top_src_address]['dst'].unique())
         # print(f">>> List of the unique destination ports for communication with the top source address:")
         # print(self.df_packets[self.df_packets['src']
         #       == top_src_address]['dport'].unique())
         # print(f">>> List of the unique source ports for communication with the top source address:")
         # print(self.df_packets[self.df_packets['src']
         #       == top_src_address]['sport'].unique())
+
+        return packets_count, top_src_address, top_dst_address, external_src_addresses, external_dest_addresses
 
     def extract_connections(self):
         self.connetions = set()

@@ -2,3 +2,5 @@ PyYAML
 scapy[basic]
 numpy
 pandas
+requests
+ipaddress
