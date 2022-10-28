@@ -1,4 +1,4 @@
-keys:
+api_keys:
   abuseipdb: "1111"
   virustotal: "2222"
 arguments:

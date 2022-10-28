@@ -4,7 +4,8 @@ import os
 import platform
 import yaml
 
-from profile import Profile
+from profile import AnalystProfile
+from packet_parser import PacketParser
 
 
 def banner():
@@ -28,13 +29,25 @@ def is_platfrom_supported():
         exit(1)
 
 
-def is_valid_file(file):
-    if not os.path.exists(file):
-        print(f"[!] Provided file '{file}' does not exist.")
+def is_valid_file(filename):
+    if not os.path.exists(filename):
+        print(f"[!] Provided file '{filename}' does not exist.")
         print("\nExiting program ...\n")
         exit(1)
         # add file type checks for txt,xls,xlsx, etc.
+    return True
 
+def is_pcap_file(filename):
+    if not os.path.exists(filename):
+        print(f"[!] Provided file '{filename}' does not exist.")
+        print("\nExiting program ...\n")
+        exit(1)
+    else:
+        if not filename.endswith(".pcap") or filename.endswith(".cap"):
+            print(f"[!] Provided file '{filename}' is not a pcap/cap file.")
+            print("\nExiting program ...\n")
+            exit(1)
+    return True
 
 def load_config(filename):
     with open(filename, "r") as ymlfile:
@@ -58,12 +71,16 @@ def parse_arguments():
 
     parser.add_argument(
         '-q', '--quiet', help="don't print the banner and other noise", action='store_true')
-    parser.add_argument('-n', '--name', metavar="NAME",
-                        help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
+
     # parser.add_argument('-i', help='input file (.cap OR .pcap)', metavar='FILE', required=True,
     #                     type=lambda file: is_valid_file(file))
-    parser.add_argument('-i', '--input', metavar='FILE',
-                        help='input file (.cap OR .pcap)', required=True)
+    # parser.add_argument('-i', '--input', metavar='FILE',
+    #                     help='input file (.cap OR .pcap)', required=True)
+    parser.add_argument('input', metavar='FILENAME',
+                        help='input file (.cap OR .pcap)')
+
+    parser.add_argument('-n', '--name', metavar="NAME",
+                        help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default=".config/config.yml",
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
     parser.add_argument('-a', '--action', metavar="ACTION",
@@ -92,20 +109,22 @@ def main():
         analysis_name = args.name
         # use analysis name for output/report naming etc.
 
-    input_file = args.input
-    if is_valid_file(input_file):
-        print("")
-
     if not args.config is None:
         if is_valid_file(args.config):
-            print()
+            print(f"\n[*] Loading config '{args.config}' ...")
             config = load_config(args.config)
-            api_keys = config['keys']
-            # print(api_keys)
+            api_keys, arguments = [], []
+            api_keys = config['api_keys']
             arguments = config['arguments']
-            # print(arguments)
-            profile = Profile()
+            profile = AnalystProfile(api_keys, arguments)
             profile.test()
+
+    input_file = args.input
+    if is_valid_file(input_file):
+        if is_pcap_file(input_file):
+            print(f"\n[*] Loading '{input_file}' file ...")
+            packet_parser = PacketParser(input_file)
+
 
     action = args.action
     output_file = args.output
