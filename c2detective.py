@@ -4,7 +4,7 @@ import os
 import platform
 import yaml
 
-from profile import AnalystProfile
+from analyst_profile import AnalystProfile
 from packet_parser import PacketParser
 
 
