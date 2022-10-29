@@ -123,13 +123,6 @@ def main():
             analyst_profile = AnalystProfile(config)
             # analyst_profile.print_config()
 
-
-    # testing 
-    enrichment = Enrichment(analyst_profile, None)
-    enrichment.query_shodan()
-
-    exit()
-
     input_file = args.input
     if is_valid_file(input_file):
         if is_pcap_file(input_file):
@@ -142,8 +135,8 @@ def main():
         enrichment = Enrichment(analyst_profile, packet_parser)
         # enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
         # enrichment.query_securitytrails()
-        enrichment.query_virustotal()
-
+        # enrichment.query_virustotal()
+        # enrichment.query_shodan()
 
     # TODO
     action = args.action
