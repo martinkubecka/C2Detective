@@ -8,6 +8,8 @@ class Enrichment:
         self.packet_parser = packet_parser
         self.abuseipdb_api_url = 'https://api.abuseipdb.com/api/v2/check'
         self.securitytrails_api_url = "https://api.securitytrails.com/v1/"
+        self.virustotal_api_url = "https://www.virustotal.com/vtapi/v2/"
+
         self.shodan_api_key = self.analysis_profile.shodan_api_key
         self.censys_api_key = self.analysis_profile.censys_api_key
         self.censys_secret = self.analysis_profile.censys_secret
@@ -36,6 +38,7 @@ class Enrichment:
 
     # API Reference : https://docs.securitytrails.com/reference/ping
     # https://docs.securitytrails.com/docs
+    # CHECK IF KEYWORD IS IP OR DOMAIN
     def query_securitytrails(self, keyword="securitytrails.com"):
 
         headers = {"accept": "application/json",
@@ -77,10 +80,29 @@ class Enrichment:
             decoded_response = json.loads(response.text)
             print(json.dumps(decoded_response, indent=4))
 
-    # https://github.com/VirusTotal/vt-py
+    # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
+    def query_virustotal(self, keyword="027.ru"):   # CHECK IF KEYWORD IS IP OR DOMAIN
+        # retrieve URL scan reports
+        # https://developers.virustotal.com/v2.0/reference/url-report
+        url = f"{self.virustotal_api_url}url/report?apikey={self.analysis_profile.virustotal_api_key}&resource={keyword}"
+        response = requests.get(url)
+        decoded_response = json.loads(response.text)
+        print(json.dumps(decoded_response, indent=4))
 
-    def query_virustotal(self):
-        print()
+        # retrieves a domain report
+        # https://developers.virustotal.com/v2.0/reference/domain-report
+        url = f"{self.virustotal_api_url}domain/report?apikey={self.analysis_profile.virustotal_api_key}&domain={keyword}"
+        response = requests.get(url)
+        decoded_response = json.loads(response.text)
+        print(json.dumps(decoded_response, indent=4))
+
+        # retrieve an IP address report
+        # https://developers.virustotal.com/v2.0/reference/ip-address-report
+        keyword = "90.156.201.97"
+        url = f"{self.virustotal_api_url}ip-address/report?apikey={self.analysis_profile.virustotal_api_key}&ip={keyword}"
+        response = requests.get(url)
+        decoded_response = json.loads(response.text)
+        print(json.dumps(decoded_response, indent=4))
 
     def query_shodan(self):
         print()

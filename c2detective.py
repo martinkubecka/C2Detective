@@ -134,6 +134,9 @@ def main():
         # data enrichment
         enrichment = Enrichment(analyst_profile, packet_parser)
         # enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
+        # enrichment.query_securitytrails()
+        # enrichment.query_virustotal()
+
 
     # TODO
     action = args.action
