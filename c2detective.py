@@ -88,13 +88,14 @@ def parse_arguments():
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
+
     parser.add_argument(
-        '-e', '--enrich', help="data enrichment", action='store_true')
+        '-e', '--enrich', metavar="SERVICE", nargs='?', const="all", help="data enrichment, use comma delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/all] (default if selected: all)")
+
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
 
     return parser, parser.parse_args(args=None if sys.argv[1:] else ['--help'])
-
 
 def main():
     is_platfrom_supported()
@@ -129,14 +130,29 @@ def main():
             print(f"\n[*] Loading '{input_file}' file ...")
             packet_parser = PacketParser(input_file)
 
-    if args.enrich:
+    if not args.enrich is None:
         print(f"\n[*] Data enrichment ...")
-        # data enrichment
+        enrichment_options = args.enrich.split(',')
+        # print(enrichment_options)
         enrichment = Enrichment(analyst_profile, packet_parser)
-        # enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
-        # enrichment.query_securitytrails()
-        # enrichment.query_virustotal()
-        # enrichment.query_shodan()
+        for service in enrichment_options:
+            # TODO: change calling query functions to only enabling the options
+            if service == "all":
+                enrichment.query_abuseipdb(
+                    packet_parser.external_dst_addresses)
+                enrichment.query_securitytrails()
+                enrichment.query_virustotal()
+                enrichment.query_shodan()
+                break
+            elif service == "abuseipdb":
+                enrichment.query_abuseipdb(
+                    packet_parser.external_dst_addresses)
+            elif service == "securitytrails":
+                enrichment.query_securitytrails()
+            elif service == "virustotal":
+                enrichment.query_virustotal()
+            elif service == "shodan":
+                enrichment.query_shodan()
 
     # TODO
     action = args.action

@@ -42,7 +42,18 @@ $ deactivate
 $ pip install -r requirements.txt
 ```
 
-> Note: Learn more about different Scapy v2.x bundles [here](https://scapy.readthedocs.io/en/latest/installation.html)
+> Note: To learn more about different Scapy v2.x bundles visit https://scapy.readthedocs.io/en/latest/installation.html
+
+### API Keys
+
+- enrichment engine uses the following APIs:
+  - [AbuseIPDB](https://www.abuseipdb.com/)
+  - [VirusTotal](https://www.virustotal.com/gui/home/upload)
+  - [SecurityTrails](https://securitytrails.com/)
+  - [Shodan](https://www.shodan.io/)
+
+- add your API keys for the services listed above to the `config/config.yml` file as shown in the `config/example.yml` 
+
 
 ---
 ## Usage

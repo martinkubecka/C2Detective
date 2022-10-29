@@ -1,8 +1,13 @@
-keys:
-  abuseipdb: "1111"
-  virustotal: "2222"
+name:
+  "analyst"
+api_keys:
+  abuseipdb: "11111"
+  virustotal: "22222"
+  securitytrails: "33333"
+  shodan: "44444"
+  censys:
+    api_id: "55555"
+    secret: "66666"
 arguments:
   quit: False
   name: "analysis name"
-  input: "file for analysis"
-

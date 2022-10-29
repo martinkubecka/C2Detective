@@ -3,6 +3,7 @@ import json
 import shodan
 import os
 import sys
+import ipaddress
 # from censys.search import CensysHosts
 
 
@@ -19,32 +20,43 @@ class Enrichment:
         self.shodan_api_url = "https://api.shodan.io/"
 
     # CHECK Endpoint : https://docs.abuseipdb.com/#check-endpoint
-    def query_abuseipdb(self, ip_list):
+    def query_abuseipdb(self, ip_list=["147.175.111.17", "193.87.2.14", "147.175.150.235", "127.0.0.1", "example.com"]):
         print(f"\n~~~~~~~~~~~~~~~ ABUSEIPDB ~~~~~~~~~~~~~~~")
-        for ip in ip_list:
-            querystring = {
-                'ipAddress': ip,
-                'maxAgeInDays': '90'
-            }
+        try:
+            dict_response = []
+            # NOTE : it is possible to query domains also, think about how to manage IP/domain checks
+            for entry in ip_list:   # query only if entry is a valid public IP address
+                if is_ip_address(entry):
+                    if not ipaddress.ip_address(entry).is_private:
+                        querystring = {
+                            'ipAddress': entry,
+                            'maxAgeInDays': '90'
+                        }
+                        headers = {
+                            'Accept': 'application/json',
+                            'Key': self.analyst_profile.abuseipdb_api_key,
+                            'verbose': ''
+                        }
 
-            headers = {
-                'Accept': 'application/json',
-                'Key': self.analyst_profile.abuseipdb_api_key,
-                'verbose': ''
-            }
+                        response = requests.request(
+                            method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
 
-            response = requests.request(
-                method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
+                        # maybe throw away those with abuseConfidenceScore == 0
+                        dict_response.append(response.json())
 
-            # maybe throw away those with abuseConfidenceScore == 0
-            decoded_response = json.loads(response.text)
-            print(json.dumps(decoded_response, sort_keys=True, indent=4))
+            json_object = json.dumps(dict_response, indent=4)
+            self.output_report("abuseipdb", json_object)
+
+        except Exception as e:
+            print(f"[!] Error ocurred while quering the AbuseIPDB's API")
+            print(e)
 
     # API Reference : https://docs.securitytrails.com/reference/ping
     # https://docs.securitytrails.com/docs
     # CHECK IF KEYWORD IS IP OR DOMAIN
     def query_securitytrails(self, keyword="securitytrails.com"):
         print(f"\n~~~~~~~~~~~~~~~ SECURITYTRAILS ~~~~~~~~~~~~~~~")
+        return
         headers = {"accept": "application/json",
                    'APIKEY': self.analyst_profile.securitytrails_api_key}
         try:
@@ -88,31 +100,39 @@ class Enrichment:
             print(e)
 
     # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
-
-    def query_virustotal(self, keyword="027.ru"):   # CHECK IF KEYWORD IS IP OR DOMAIN
+    def query_virustotal(self, keyword="027.ru"):
+        # def query_virustotal(self, keyword="90.156.201.97"):
         print(f"\n~~~~~~~~~~~~~~~ VIRUSTOTAL ~~~~~~~~~~~~~~~")
         try:
+            dict_response = []
+            if not is_ip_address(keyword):   # input is a domain
+                # retrieves a domain report
+                # https://developers.virustotal.com/v2.0/reference/domain-report
+                print(f"[*] Retrieving domain report")
+                url = f"{self.virustotal_api_url}domain/report?apikey={self.analyst_profile.virustotal_api_key}&domain={keyword}"
+                response = requests.get(url)
+                dict_response.append(response.json())
+                # json_object = json.dumps(dict_response, indent=4)
+            else:
+                # retrieve an IP address report
+                # https://developers.virustotal.com/v2.0/reference/ip-address-report
+                print(f"[*] Retrieving IP address report")
+                url = f"{self.virustotal_api_url}ip-address/report?apikey={self.analyst_profile.virustotal_api_key}&ip={keyword}"
+                response = requests.get(url)
+                dict_response.append(response.json())
+                # json_object = json.dumps(dict_response, indent=4)
+
             # retrieve URL scan reports
             # https://developers.virustotal.com/v2.0/reference/url-report
-            url = f"{self.virustotal_api_url}url/report?apikey={self.analyst_profile.virustotal_api_key}&resource={keyword}"
+            print(f"[*] Retrieving URL scan reports")
+            url = f"{self.virustotal_api_url}url/report?apikey={self.analyst_profile.virustotal_api_key}&resource={keyword}&scan=1"
             response = requests.get(url)
-            decoded_response = json.loads(response.text)
-            print(json.dumps(decoded_response, indent=4))
+            dict_response.append(response.json())
+            # json_object = json.dumps(dict_response, indent=4)
 
-            # retrieves a domain report
-            # https://developers.virustotal.com/v2.0/reference/domain-report
-            url = f"{self.virustotal_api_url}domain/report?apikey={self.analyst_profile.virustotal_api_key}&domain={keyword}"
-            response = requests.get(url)
-            decoded_response = json.loads(response.text)
-            print(json.dumps(decoded_response, indent=4))
+            json_object = json.dumps(dict_response, indent=4)
+            self.output_report("virustotal", json_object)
 
-            # retrieve an IP address report
-            # https://developers.virustotal.com/v2.0/reference/ip-address-report
-            keyword = "90.156.201.97"
-            url = f"{self.virustotal_api_url}ip-address/report?apikey={self.analyst_profile.virustotal_api_key}&ip={keyword}"
-            response = requests.get(url)
-            decoded_response = json.loads(response.text)
-            print(json.dumps(decoded_response, indent=4))
         except Exception as e:
             print(f"[!] Error ocurred while quering the VirusTotal's API")
             print(e)
@@ -120,23 +140,23 @@ class Enrichment:
     # API Reference: https://shodan.readthedocs.io/en/latest/examples/basic-search.html
     # used package: https://github.com/achillean/shodan-python
     # code source : https://subscription.packtpub.com/book/networking-&-servers/9781784392932/1/ch01lvl1sec11/gathering-information-using-the-shodan-api
-    def query_shodan(self, keyword="mail.elf.stuba.sk"):  # CHECK IF KEYWORD IS IP OR DOMAIN
+    def query_shodan(self, keyword="mail.elf.stuba.sk"):
         print(f"\n~~~~~~~~~~~~~~~ SHODAN ~~~~~~~~~~~~~~~")
         api = shodan.Shodan(self.analyst_profile.shodan_api_key)
         target = keyword
-        url = f"{self.shodan_api_url}dns/resolve?hostnames={target}&key={self.analyst_profile.shodan_api_key}"
         try:
-            # resolve target domain to an IP address
-            response = requests.get(url)
-            decoded_response = json.loads(response.text)
-            # print(json.dumps(decoded_response, indent=4))
-            host_ip = decoded_response[target]
-            # print(f"[*] Resolved '{target}' to '{host_ip}'")
+            if not is_ip_address(target):   # input is a domain
+                url = f"{self.shodan_api_url}dns/resolve?hostnames={target}&key={self.analyst_profile.shodan_api_key}"
+                # resolve target domain to an IP address
+                response = requests.get(url)
+                decoded_response = json.loads(response.text)
+                # print(json.dumps(decoded_response, indent=4))
+                target = decoded_response[keyword]
+                print(f"[*] Resolved '{keyword}' to '{target}'")
 
             # execute a Shodan search on the resolved IP
-            result = api.host(host_ip)
+            result = api.host(target)
             decoded_response = json.dumps(result, indent=4)
-            self.output_report("shodan", decoded_response)
 
             print("[*] General Information")
             print(f"IP: {result['ip_str']}")
@@ -159,7 +179,7 @@ class Enrichment:
             # print vuln information
             if "vulns" in result:   # there may not be any vulns
                 print("[*] Vulnerabilities")
-                print(result['vulns'])
+                print(result['vulns'])  # prints only list of CVEs
                 # slow approach
                 # for item in result['vulns']:
                 # CVE = item.replace('!', '')
@@ -168,6 +188,8 @@ class Enrichment:
                 # for item in exploits['matches']:
                 #     if item.get('cve')[0] == CVE:
                 #         print(f"{item.get('description')}")
+
+            self.output_report("shodan", decoded_response)
 
         except Exception as e:
             print(f"[!] Error ocurred while quering the Shodan's API")
@@ -190,7 +212,21 @@ class Enrichment:
                 f"[~] Creating '{self.report_dir}' for storing analysis reports")
             os.mkdir(self.report_dir)
 
-        with open(f"{self.report_dir}/{service_name}.json", "w") as output:
+        report_output_path = f"{self.report_dir}/{service_name}.json"
+        print(f"[*] Writing report to '{report_output_path}'")
+        with open(report_output_path, "w") as output:
             output.write(json_object)
 
 
+def is_ip_address(string):
+    flag = False
+    if ("." in string):
+        elements_array = string.strip().split(".")
+        if (len(elements_array) == 4):
+            for i in elements_array:
+                if (i.isnumeric() and int(i) >= 0 and int(i) <= 255):
+                    flag = True
+                else:
+                    flag = False
+                    break
+    return flag
