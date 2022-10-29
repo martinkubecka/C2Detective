@@ -48,7 +48,7 @@ $ pip install -r requirements.txt
 ## Usage
 
 ```
-usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-o FILE] FILENAME
+usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e] [-o FILE] FILENAME
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
@@ -61,6 +61,7 @@ options:
   -n NAME, --name NAME        analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
   -c FILE, --config FILE      config file (default: ".config/config.yml")
   -a ACTION, --action ACTION  action to execute [sniffer/...]
+  -e, --enrich                data enrichment
   -o FILE, --output FILE      report output file
 ```
 

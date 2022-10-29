@@ -121,7 +121,7 @@ def main():
             print(f"\n[*] Loading config '{args.config}' ...")
             config = load_config(args.config)
             analyst_profile = AnalystProfile(config)
-            # analyst_profile.test()
+            # analyst_profile.print_config()
 
     input_file = args.input
     if is_valid_file(input_file):
@@ -133,7 +133,7 @@ def main():
         print(f"\n[*] Data enrichment ...")
         # data enrichment
         enrichment = Enrichment(analyst_profile, packet_parser)
-        enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
+        # enrichment.query_abuseipdb(packet_parser.external_dst_addresses)
 
     # TODO
     action = args.action
