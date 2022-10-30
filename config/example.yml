@@ -1,5 +1,5 @@
 name:
-  "analyst"
+  "analysis name"
 api_keys:
   abuseipdb: "11111"
   virustotal: "22222"
@@ -9,5 +9,5 @@ api_keys:
     api_id: "55555"
     secret: "66666"
 arguments:
-  quit: False
+  quiet: False
   name: "analysis name"

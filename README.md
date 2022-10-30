@@ -7,7 +7,9 @@
 
 - [Pre-requisites](#pre-requisites)
     - [Virtual environment](#virtual-environment)
-
+    - [Installing required packages](#installing-required-packages)
+    - [API Keys](#api-keys) 
+- [Usage](#usage)
 
 ---
 ## Pre-requisites
@@ -15,7 +17,7 @@
 - clone this project with the following command
 
 ```
-$ git clone <URL>
+$ git clone https://github.com/martinkubecka/C2Detective.git
 ```
 
 ### Virtual environment
@@ -23,7 +25,7 @@ $ git clone <URL>
 1. use your package manager to install `python-pip` if it is not present on your system
 2. install `virtualenv`
 3. verify installation by checking the `virtualenv` version
-4. inside the project directory create a virtual environment called `venv`
+4. inside the project directory (`C2Detective`) create a virtual environment called `venv`
 5. activate it by using the `source` command
 6. you can deactivate the virtual environment from the parent folder of `venv` directory with the `deactivate` command
 
@@ -31,9 +33,10 @@ $ git clone <URL>
 $ sudo apt-get install python-pip
 $ pip install virtualenv
 $ virtualenv --version
-$ virtualenv --python=python3 venv
-$ source venv/bin/activate
-$ deactivate
+$ cd C2Detective/
+[C2Detective]$ virtualenv --python=python3 venv
+[C2Detective]$ source venv/bin/activate
+[C2Detective]$ deactivate
 ```
 
 ### Installing required packages
@@ -59,21 +62,22 @@ $ pip install -r requirements.txt
 ## Usage
 
 ```
-usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e] [-o FILE] FILENAME
+usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e [SERVICE]] [-o FILE] FILENAME
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
 positional arguments:
-  FILENAME                    input file (.cap OR .pcap)
+  FILENAME                          input file (.cap OR .pcap)
 
 options:
-  -h, --help                  show this help message and exit
-  -q, --quiet                 don't print the banner and other noise
-  -n NAME, --name NAME        analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
-  -c FILE, --config FILE      config file (default: ".config/config.yml")
-  -a ACTION, --action ACTION  action to execute [sniffer/...]
-  -e, --enrich                data enrichment
-  -o FILE, --output FILE      report output file
+  -h, --help                        show this help message and exit
+  -q, --quiet                       don't print the banner and other noise
+  -n NAME, --name NAME              analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
+  -c FILE, --config FILE            config file (default: ".config/config.yml")
+  -a ACTION, --action ACTION        action to execute [sniffer/...]
+  -e [SERVICE], --enrich [SERVICE]  data enrichment, use comma delimeter and double quotes when selecting more
+                                    [abuseipdb/securitytrails/virustotal/shodan/all] (default if selected: all)
+  -o FILE, --output FILE            report output file
 ```
 
 ---

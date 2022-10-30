@@ -27,28 +27,26 @@ def is_platfrom_supported():
     if not machine_platfrom.startswith('linux'):
         print("\n[!] Unsupported platform.")
         print("\nExiting program ...\n")
-        exit(1)
+        sys.exit(1)
 
 
-def is_valid_file(filename):
+def is_valid_file(filename, filetype):
     if not os.path.exists(filename):
         print(f"[!] Provided file '{filename}' does not exist.")
         print("\nExiting program ...\n")
-        exit(1)
-        # add file type checks for txt,xls,xlsx, etc.
-    return True
-
-
-def is_pcap_file(filename):
-    if not os.path.exists(filename):
-        print(f"[!] Provided file '{filename}' does not exist.")
-        print("\nExiting program ...\n")
-        exit(1)
+        sys.exit(1)
     else:
-        if not filename.endswith(".pcap") or filename.endswith(".cap"):
-            print(f"[!] Provided file '{filename}' is not a pcap/cap file.")
-            print("\nExiting program ...\n")
-            exit(1)
+        if filetype == "pcap":  # check if the filetype is .pcap or .cap
+            if not filename.endswith(".pcap") or filename.endswith(".cap"):
+                print(
+                    f"[!] Provided file '{filename}' is not a pcap/cap file.")
+                print("\nExiting program ...\n")
+                sys.exit(1)
+        if filetype == "yml":
+            if not filename.endswith(".yml") or filename.endswith(".yaml"):
+                print(f"[!] Provided file '{filename}' is not a yaml file.")
+                print("\nExiting program ...\n")
+                sys.exit(1)
     return True
 
 
@@ -97,6 +95,7 @@ def parse_arguments():
 
     return parser, parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
+
 def main():
     is_platfrom_supported()
 
@@ -105,7 +104,7 @@ def main():
     # if len(sys.argv) == 1:
     #     # print(f"\n[!] No arguments provided")
     #     parser.print_help("[!] No arguments provided")
-    #     exit(1)
+    #     sys.exit(1)
 
     os.system("clear")
     # print("\033[H\033[J", end="")   # clean screen
@@ -118,17 +117,16 @@ def main():
         # use analysis name for output/report naming etc.
 
     if not args.config is None:
-        if is_valid_file(args.config):
+        if is_valid_file(args.config, "yml"):
             print(f"\n[*] Loading config '{args.config}' ...")
             config = load_config(args.config)
             analyst_profile = AnalystProfile(config)
             # analyst_profile.print_config()
 
     input_file = args.input
-    if is_valid_file(input_file):
-        if is_pcap_file(input_file):
-            print(f"\n[*] Loading '{input_file}' file ...")
-            packet_parser = PacketParser(input_file)
+    if is_valid_file(input_file, "pcap"):
+        print(f"\n[*] Loading '{input_file}' file ...")
+        packet_parser = PacketParser(input_file)
 
     if not args.enrich is None:
         print(f"\n[*] Data enrichment ...")
@@ -138,15 +136,13 @@ def main():
         for service in enrichment_options:
             # TODO: change calling query functions to only enabling the options
             if service == "all":
-                enrichment.query_abuseipdb(
-                    packet_parser.external_dst_addresses)
+                enrichment.query_abuseipdb()
                 enrichment.query_securitytrails()
                 enrichment.query_virustotal()
                 enrichment.query_shodan()
                 break
             elif service == "abuseipdb":
-                enrichment.query_abuseipdb(
-                    packet_parser.external_dst_addresses)
+                enrichment.query_abuseipdb()
             elif service == "securitytrails":
                 enrichment.query_securitytrails()
             elif service == "virustotal":
