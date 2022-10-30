@@ -1,18 +1,22 @@
-# C2Detective
+<p align="center">
+<img src="https://github.com/martinkubecka/C2Detective/tree/main/docs/banner.png" alt="Logo">
+<p align="center"><b>Application for detecting command and control (C2) communication through network traffic analysis.</b></p><br>
 
+---
 > :construction:   *project in development*    :construction:
 
 ---
-**Table of Contents**
+<h2 id="table-of-contents">Table of Contents</h2>
 
-- [Pre-requisites](#pre-requisites)
-    - [Virtual environment](#virtual-environment)
-    - [Installing required packages](#installing-required-packages)
-    - [API Keys](#api-keys) 
-- [Usage](#usage)
+- [Pre-requisites](#memo-pre-requisites)
+    - [Installing Required Packages](#package-installing-required-packages)
+    - [API Keys](#old_key-api-keys) 
+- [Usage](#keyboard-usage)
+- [Development](#toolbox-development)
+    - [Virtual Environment](#office-virtual-environment)
 
 ---
-## Pre-requisites
+## :memo: Pre-requisites
 
 - clone this project with the following command
 
@@ -20,26 +24,7 @@
 $ git clone https://github.com/martinkubecka/C2Detective.git
 ```
 
-### Virtual environment
-
-1. use your package manager to install `python-pip` if it is not present on your system
-2. install `virtualenv`
-3. verify installation by checking the `virtualenv` version
-4. inside the project directory (`C2Detective`) create a virtual environment called `venv`
-5. activate it by using the `source` command
-6. you can deactivate the virtual environment from the parent folder of `venv` directory with the `deactivate` command
-
-```
-$ sudo apt-get install python-pip
-$ pip install virtualenv
-$ virtualenv --version
-$ cd C2Detective/
-[C2Detective]$ virtualenv --python=python3 venv
-[C2Detective]$ source venv/bin/activate
-[C2Detective]$ deactivate
-```
-
-### Installing required packages
+### :package: Installing Required Packages
 
 ```
 $ pip install -r requirements.txt
@@ -47,7 +32,7 @@ $ pip install -r requirements.txt
 
 > Note: To learn more about different Scapy v2.x bundles visit https://scapy.readthedocs.io/en/latest/installation.html
 
-### API Keys
+### :old_key: API Keys
 
 - enrichment engine uses the following APIs:
   - [AbuseIPDB](https://www.abuseipdb.com/)
@@ -59,7 +44,7 @@ $ pip install -r requirements.txt
 
 
 ---
-## Usage
+## :keyboard: Usage
 
 ```
 usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e [SERVICE]] [-o FILE] FILENAME
@@ -81,3 +66,31 @@ options:
 ```
 
 ---
+## :toolbox: Development
+
+- contributions to this project are currently not allowed
+
+### :office: Virtual Environment
+
+1. use your package manager to install `python-pip` if it is not present on your system
+2. install `virtualenv`
+3. verify installation by checking the `virtualenv` version
+4. inside the project directory (`C2Detective`) create a virtual environment called `venv`
+5. activate it by using the `source` command
+6. you can deactivate the virtual environment from the parent folder of `venv` directory with the `deactivate` command
+
+```
+$ sudo apt-get install python-pip
+$ pip install virtualenv
+$ virtualenv --version
+$ cd C2Detective/
+[C2Detective]$ virtualenv --python=python3 venv
+[C2Detective]$ source venv/bin/activate
+[C2Detective]$ deactivate
+```
+
+---
+
+<div align="right">
+<a href="#table-of-contents">[ Table of Contents ]</a>
+</div>

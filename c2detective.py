@@ -17,8 +17,6 @@ def banner():
  | |___ / __/| |_| |  __/ ||  __/ (__| |_| |\ V /  __/
   \____|_____|____/ \___|\__\___|\___|\__|_| \_/ \___|
 
-                                    by Martin Kubecka
- -----------------------------------------------------
     """)
 
 
@@ -37,16 +35,15 @@ def is_valid_file(filename, filetype):
         sys.exit(1)
     else:
         if filetype == "pcap":  # check if the filetype is .pcap or .cap
-            if not filename.endswith(".pcap") or filename.endswith(".cap"):
-                print(
-                    f"[!] Provided file '{filename}' is not a pcap/cap file.")
+              if not filename.endswith(".pcap") or filename.endswith(".cap"):
+                print(f"[!] Provided file '{filename}' is not a pcap/cap file.")
                 print("\nExiting program ...\n")
                 sys.exit(1)
         if filetype == "yml":
             if not filename.endswith(".yml") or filename.endswith(".yaml"):
-                print(f"[!] Provided file '{filename}' is not a yaml file.")
-                print("\nExiting program ...\n")
-                sys.exit(1)
+                            print(f"[!] Provided file '{filename}' is not a yaml file.")
+                            print("\nExiting program ...\n")
+                            sys.exit(1)
     return True
 
 
@@ -94,7 +91,6 @@ def parse_arguments():
                         help='report output file')
 
     return parser, parser.parse_args(args=None if sys.argv[1:] else ['--help'])
-
 
 def main():
     is_platfrom_supported()
