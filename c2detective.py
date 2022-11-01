@@ -9,7 +9,7 @@ import time
 
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
-from src.data_enrichment import Enrichment
+from src.enrichment_engine import EnrichmentEngine
 
 #######################################################################################################################################################################
 # TODO
@@ -119,8 +119,8 @@ def parse_arguments():
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
 
-    parser.add_argument(
-        '-e', '--enrich', metavar="SERVICE", nargs='?', const="all", help="data enrichment, use comma delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/all] (default if selected: all)")
+    parser.add_argument('-e', '--enrich', metavar="SERVICE", nargs='?', const="all", 
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/bgp_ranking/all] (default if selected: all)")
 
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
@@ -169,11 +169,11 @@ def main():
         packet_parser = PacketParser(input_file)
 
     if not args.enrich is None:
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Data enrichment ...")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Initiating data enrichment engine ...")
         logging.info("Initiating data enrichment engine")
         enrichment_options = args.enrich.split(',')
         # print(enrichment_options)
-        enrichment = Enrichment(analyst_profile, packet_parser)
+        enrichment = EnrichmentEngine(analyst_profile, packet_parser)
         for service in enrichment_options:
             # TODO: change calling query functions to only enabling the options
             if service == "all":
@@ -181,6 +181,7 @@ def main():
                 enrichment.query_securitytrails()
                 enrichment.query_virustotal()
                 enrichment.query_shodan()
+                enrichment.query_bgp_ranking()
                 break
             elif service == "abuseipdb":
                 enrichment.query_abuseipdb()
@@ -190,6 +191,8 @@ def main():
                 enrichment.query_virustotal()
             elif service == "shodan":
                 enrichment.query_shodan()
+            elif service == "bgp_ranking":
+                enrichment.query_bgp_ranking()
 
     # TODO
     action = args.action

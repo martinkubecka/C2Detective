@@ -9,7 +9,7 @@ import logging
 import time
 
 
-class Enrichment:
+class EnrichmentEngine:
     def __init__(self, analyst_profile, packet_parser):
         self.logger = logging.getLogger(__name__)
         self.analyst_profile = analyst_profile
@@ -21,47 +21,52 @@ class Enrichment:
         self.securitytrails_api_url = "https://api.securitytrails.com/v1/"
         self.virustotal_api_url = "https://www.virustotal.com/vtapi/v2/"
         self.shodan_api_url = "https://api.shodan.io/"
+        self.bgp_ranking_api_url = "https://bgpranking-ng.circl.lu/"
 
     # CHECK Endpoint : https://docs.abuseipdb.com/#check-endpoint
-    def query_abuseipdb(self, ip_list=["147.175.111.17", "193.87.2.14", "147.175.150.235", "127.0.0.1", "example.com"]):
+    # e.g : ["147.175.111.17", "193.87.2.14", "147.175.150.235", "127.0.0.1", "example.com"]
+    def query_abuseipdb(self, ip="147.175.111.17"):  # testing
+        # def query_abuseipdb(self, ip: str=None):
         print(f"\n~~~~~~~~~~~~~~~ ABUSEIPDB ~~~~~~~~~~~~~~~")
         try:
-            dict_response = []
-            # NOTE : it is possible to query domains also, think about how to manage IP/domain checks
-            for entry in ip_list:   # query only if entry is a valid public IP address
-                if is_ip_address(entry):
-                    if not ipaddress.ip_address(entry).is_private:
-                        querystring = {
-                            'ipAddress': entry,
-                            'maxAgeInDays': '90'
-                        }
-                        headers = {
-                            'Accept': 'application/json',
-                            'Key': self.analyst_profile.abuseipdb_api_key,
-                            'verbose': ''
-                        }
+            if is_ip_address(ip):
+                if not ipaddress.ip_address(ip).is_private:
+                    querystring = {
+                        'ipAddress': ip,
+                        'maxAgeInDays': '90'
+                    }
+                    headers = {
+                        'Accept': 'application/json',
+                        'Key': self.analyst_profile.abuseipdb_api_key,
+                        'verbose': ''
+                    }
 
-                        response = requests.request(
-                            method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
+                    response = requests.request(
+                        method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
 
-                        # TODO : BREAK if status_code == 401 --> Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.
-
-                        # maybe throw away those with abuseConfidenceScore == 0
-                        dict_response.append(response.json())
-
-            json_object = json.dumps(dict_response, indent=4)
-            self.output_report("abuseipdb", json_object)
+                    if response.status_code == 401:
+                        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.")
+                        self.logger.error(
+                            "Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.")
+                        return
+                    else:
+                        dict_response = json.loads(response.text)
+                        json_object = json.dumps(dict_response, indent=4)
 
         except Exception as e:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the AbuseIPDB's API")
             self.logger.error(
                 "Error ocurred while quering the AbuseIPDB's API", exc_info=True)
+            return
+
+        self.output_report("abuseipdb", json_object)
 
     # API Reference : https://docs.securitytrails.com/reference/ping
     # https://docs.securitytrails.com/docs
     # CHECK IF KEYWORD IS IP OR DOMAIN
-    def query_securitytrails(self, keyword="securitytrails.com"):
+    def query_securitytrails(self, keyword="securitytrails.com"):   # testing
+        # def query_securitytrails(self, keyword: str:None):
         print(f"\n~~~~~~~~~~~~~~~ SECURITYTRAILS ~~~~~~~~~~~~~~~")
         return
         headers = {"accept": "application/json",
@@ -111,7 +116,8 @@ class Enrichment:
                 "Error ocurred while quering the SecurityTrail's API", exc_info=True)
 
     # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
-    def query_virustotal(self, keyword="027.ru"):
+    def query_virustotal(self, keyword="027.ru"):   # testing
+        # def query_virustotal(self, keyword: str=None):
         # def query_virustotal(self, keyword="90.156.201.97"):
         print(f"\n~~~~~~~~~~~~~~~ VIRUSTOTAL ~~~~~~~~~~~~~~~")
         try:
@@ -142,18 +148,21 @@ class Enrichment:
             # json_object = json.dumps(dict_response, indent=4)
 
             json_object = json.dumps(dict_response, indent=4)
-            self.output_report("virustotal", json_object)
 
         except Exception as e:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the VirusTotal's API")
             self.logger.error(
                 "Error ocurred while quering the VirusTotal's API", exc_info=True)
+            return
+
+        self.output_report("virustotal", json_object)
 
     # API Reference: https://shodan.readthedocs.io/en/latest/examples/basic-search.html
     # used package: https://github.com/achillean/shodan-python
     # code source : https://subscription.packtpub.com/book/networking-&-servers/9781784392932/1/ch01lvl1sec11/gathering-information-using-the-shodan-api
-    def query_shodan(self, keyword="mail.elf.stuba.sk"):
+    def query_shodan(self, keyword="mail.elf.stuba.sk"):    # testing
+        # def query_shodan(self, keyword: str=None):
         print(f"\n~~~~~~~~~~~~~~~ SHODAN ~~~~~~~~~~~~~~~")
         api = shodan.Shodan(self.analyst_profile.shodan_api_key)
         target = keyword
@@ -202,13 +211,41 @@ class Enrichment:
                 #     if item.get('cve')[0] == CVE:
                 #         print(f"{item.get('description')}")
 
-            self.output_report("shodan", decoded_response)
-
         except Exception as e:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the Shodan's API")
             self.logger.error(
                 "Error ocurred while quering the Shodan's API", exc_info=True)
+            return
+
+        self.output_report("shodan", decoded_response)
+
+    # source : https://www.circl.lu/projects/bgpranking/
+    def query_bgp_ranking(self, asn="5577", date="2019-05-19"):     # testing
+        # def query_bgp_ranking(self, asn: str=None, date: str=None):
+        '''Launch a query.
+            :param asn: ASN to lookup
+            :param date: Exact date to lookup. Fallback to most recent available.
+        '''
+        print(f"\n~~~~~~~~~~~~~~~ BGP RANKING ~~~~~~~~~~~~~~~")
+        # ranking the ASN from the most malicious to the less malicious ASN
+        try:
+            to_query = {'asn': asn}
+            if date:
+                to_query['date'] = date
+            response = requests.post(
+                f"{self.bgp_ranking_api_url}/json/asn", data=json.dumps(to_query))
+            dict_response = json.loads(response.text)
+            json_object = json.dumps(dict_response, indent=4)
+
+        except Exception as e:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the CIRCL's API")
+            self.logger.error(
+                "Error ocurred while quering the CIRCL's API", exc_info=True)
+            return
+
+        self.output_report("bgp_ranking", json_object)
 
     # API Reference: https://censys-python.readthedocs.io/en/stable/quick-start.html
     # https://github.com/censys/censys-python
