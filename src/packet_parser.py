@@ -12,7 +12,7 @@ class PacketParser:
     def __init__(self, filepath):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
-        self.packets = rdpcap(self.filepath)    # creates a list in memory
+        self.packets = rdpcap(self.filepath)  # creates a list in memory
         # creates a generator, packets are not not stored in memory
         # self.packets = PcapReader(self.filepath)
 
@@ -34,7 +34,7 @@ class PacketParser:
 
         # ['version', 'ihl', 'tos', 'len', 'id', 'flags', 'frag', 'ttl', 'proto', 'chksum', 'src', 'dst', 'options', 'time', 'sport', 'dport', 'seq', 'ack', 'dataofs', 'reserved', 'flags', 'window', 'chksum', 'urgptr', 'options', 'payload', 'payload_raw', 'payload_hex']
         dataframe_fields = ip_fields + \
-            ['time'] + tcp_fields + ['payload', 'payload_raw', 'payload_hex']
+                           ['time'] + tcp_fields + ['payload', 'payload_raw', 'payload_hex']
 
         # create empty dataframe with defined column names
         df = pd.DataFrame(columns=dataframe_fields)
@@ -69,11 +69,11 @@ class PacketParser:
                     field_values.append(None)
 
             # append different variations of the payload field from ###[ Raw ]### segment
-            field_values.append(len(packet[layer_type].payload))    # payload
+            field_values.append(len(packet[layer_type].payload))  # payload
             field_values.append(
-                packet[layer_type].payload.original)     # payload_raw
+                packet[layer_type].payload.original)  # payload_raw
             field_values.append(binascii.hexlify(
-                packet[layer_type].payload.original))   # payload_hex
+                packet[layer_type].payload.original))  # payload_hex
 
             # add row to the DF
             df_append = pd.DataFrame([field_values], columns=dataframe_fields)

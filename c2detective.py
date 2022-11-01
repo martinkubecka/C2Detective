@@ -6,10 +6,10 @@ import yaml
 import logging
 import time
 
-
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
+
 
 #######################################################################################################################################################################
 # TODO
@@ -91,8 +91,10 @@ def arg_formatter():
     """
     source : https://stackoverflow.com/questions/52605094/python-argparse-increase-space-between-parameter-and-description
     """
+
     def formatter(prog): return argparse.HelpFormatter(
         prog, max_help_position=52)
+
     return formatter
 
 
@@ -118,8 +120,8 @@ def parse_arguments():
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
 
-    parser.add_argument('-e', '--enrich', metavar="SERVICE", nargs='?', const="all", 
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/bgpranking/all] (default if selected: all)")
+    parser.add_argument('-e', '--enrich', metavar="SERVICE", nargs='?', const="all",
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alientvault/bgpranking/all] (default if selected: all)")
 
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
@@ -132,7 +134,8 @@ def init_logger():
     if not os.path.isdir(logging_path):
         os.mkdir(logging_path)
     logging.basicConfig(format='%(created)f; %(asctime)s; %(levelname)s; %(name)s; %(message)s',
-                            filename=f"{logging_path}/c2detective.log", level=logging.DEBUG)  # consider json/yml format for log file
+                        filename=f"{logging_path}/c2detective.log",
+                        level=logging.DEBUG)  # consider json/yml format for log file
     logger = logging.getLogger('__name__')
 
 
@@ -176,16 +179,19 @@ def main():
         for service in enrichment_options:
             # TODO: change calling query functions to only enabling the options
             if service == "all":
-                enrichment.query_abuseipdb()
-                enrichment.query_securitytrails()
-                enrichment.query_virustotal()
-                enrichment.query_shodan()
-                enrichment.query_bgp_ranking()
+                # enrichment.query_abuseipdb()
+                # enrichment.query_securitytrails()
+                # enrichment.query_virustotal()
+                # enrichment.query_shodan()
+                # enrichment.query_bgp_ranking()
                 # ----------------- TESTING ----------------- 
                 # enrichment.query_abuseipdb("147.175.111.17")
                 # enrichment.query_securitytrails("securitytrails.com")
                 # enrichment.query_virustotal("027.ru")
                 # enrichment.query_shodan("mail.elf.stuba.sk")
+                # enrichment.query_alientvault("13.107.21.200")
+                # enrichment.query_alientvault("2620:7:6001:0:0:ffff:c759:e653")
+                enrichment.query_alientvault("027.ru")
                 # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
             elif service == "abuseipdb":
@@ -196,6 +202,8 @@ def main():
                 enrichment.query_virustotal()
             elif service == "shodan":
                 enrichment.query_shodan()
+            elif service == "alientvault":
+                enrichment.query_alientvault()
             elif service == "bgpranking":
                 enrichment.query_bgp_ranking()
 

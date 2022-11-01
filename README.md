@@ -39,9 +39,10 @@ $ pip install -r requirements.txt
   - [VirusTotal](https://www.virustotal.com/gui/home/upload)
   - [SecurityTrails](https://securitytrails.com/)
   - [Shodan](https://www.shodan.io/)
+  - [AlientVault](https://otx.alienvault.com/)
+  - [CIRCL's BGP Ranking](https://www.circl.lu/projects/bgpranking/)
 
-- add your API keys for the services listed above to the `config/config.yml` file as shown in the `config/example.yml` 
-
+- add your API keys for the services listed above (except for `AlientVault` and `CIRCL's BGP Ranking`) to the `config/config.yml` file as shown in the `config/example.yml` 
 
 ---
 ## :keyboard: Usage
