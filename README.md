@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/martinkubecka/C2Detective/tree/main/docs/banner.png" alt="Logo">
+<img src="https://github.com/martinkubecka/C2Detective/blob/main/docs/banner.png" alt="Logo">
 <p align="center"><b>Application for detecting command and control (C2) communication through network traffic analysis.</b></p><br>
 
 ---

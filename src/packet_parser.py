@@ -4,10 +4,13 @@ import numpy as np
 import binascii  # binary to ASCII
 from time import perf_counter
 from ipaddress import ip_address
+import logging
+import time
 
 
 class PacketParser:
     def __init__(self, filepath):
+        self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.packets = rdpcap(self.filepath)    # creates a list in memory
         # creates a generator, packets are not not stored in memory
@@ -22,7 +25,8 @@ class PacketParser:
     # source : https://github.com/secdevopsai/Packet-Analytics/blob/master/Packet-Analytics.ipynb
     def packets_to_df(self):
         t_start = perf_counter()
-        print(f"\n[*] Transforming packet capture to DataFrame object")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Transforming packet capture to DataFrame object ...")
+        self.logger.info("Transforming packet capture to DataFrame object")
         # save field names from IP/TCP/UDP to be used as columns in DataFrame
         ip_fields = [field.name for field in IP().fields_desc]
         tcp_fields = [field.name for field in TCP().fields_desc]
@@ -81,12 +85,13 @@ class PacketParser:
         df = df.drop(columns="index")
 
         t_stop = perf_counter()
-        print("Elapsed time: {:.2f}s".format(t_stop - t_start))
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Elapsed time: " + "{:.2f}s".format(t_stop - t_start))
 
         return df
 
     def get_capture_statistcs(self):
-        print("\n>> Statistics")
+        print("\n------------------------------------------------------------")
+        print(">> Statistics")
 
         packets_count = len(self.df_packets)
         print(f">>> Loaded {packets_count} packets")
@@ -127,6 +132,7 @@ class PacketParser:
         # print(self.df_packets[self.df_packets['src']
         #       == top_src_address]['sport'].unique())
 
+        print("------------------------------------------------------------\n")
         return packets_count, top_src_address, top_dst_address, external_src_addresses, external_dest_addresses
 
     def extract_connections(self):

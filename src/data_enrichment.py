@@ -5,10 +5,13 @@ import os
 import sys
 import ipaddress
 # from censys.search import CensysHosts
+import logging
+import time
 
 
 class Enrichment:
     def __init__(self, analyst_profile, packet_parser):
+        self.logger = logging.getLogger(__name__)
         self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
 
@@ -41,6 +44,8 @@ class Enrichment:
                         response = requests.request(
                             method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
 
+                        # TODO : BREAK if status_code == 401 --> Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.
+
                         # maybe throw away those with abuseConfidenceScore == 0
                         dict_response.append(response.json())
 
@@ -48,8 +53,10 @@ class Enrichment:
             self.output_report("abuseipdb", json_object)
 
         except Exception as e:
-            print(f"[!] Error ocurred while quering the AbuseIPDB's API")
-            print(e)
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the AbuseIPDB's API")
+            self.logger.error(
+                "Error ocurred while quering the AbuseIPDB's API", exc_info=True)
 
     # API Reference : https://docs.securitytrails.com/reference/ping
     # https://docs.securitytrails.com/docs
@@ -67,6 +74,8 @@ class Enrichment:
 
             if "message" in decoded_response:
                 print(f"[!] {decoded_response['message']}")
+                self.logger.error(
+                    f"{decoded_response['message']}", exc_info=True)
                 return
 
             # get details for current_dns (a, aaaa, mx, ns, soa, txt)
@@ -96,8 +105,10 @@ class Enrichment:
                 decoded_response = json.loads(response.text)
                 print(json.dumps(decoded_response, indent=4))
         except Exception as e:
-            print(f"[!] Error ocurred while quering the SecurityTrail's API")
-            print(e)
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the SecurityTrail's API")
+            self.logger.error(
+                "Error ocurred while quering the SecurityTrail's API", exc_info=True)
 
     # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
     def query_virustotal(self, keyword="027.ru"):
@@ -134,8 +145,10 @@ class Enrichment:
             self.output_report("virustotal", json_object)
 
         except Exception as e:
-            print(f"[!] Error ocurred while quering the VirusTotal's API")
-            print(e)
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the VirusTotal's API")
+            self.logger.error(
+                "Error ocurred while quering the VirusTotal's API", exc_info=True)
 
     # API Reference: https://shodan.readthedocs.io/en/latest/examples/basic-search.html
     # used package: https://github.com/achillean/shodan-python
@@ -192,8 +205,10 @@ class Enrichment:
             self.output_report("shodan", decoded_response)
 
         except Exception as e:
-            print(f"[!] Error ocurred while quering the Shodan's API")
-            print(e)
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the Shodan's API")
+            self.logger.error(
+                "Error ocurred while quering the Shodan's API", exc_info=True)
 
     # API Reference: https://censys-python.readthedocs.io/en/stable/quick-start.html
     # https://github.com/censys/censys-python
@@ -209,11 +224,15 @@ class Enrichment:
     def output_report(self, service_name, json_object):
         if not os.path.isdir(self.report_dir):
             print(
-                f"[~] Creating '{self.report_dir}' for storing analysis reports")
+                f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{self.report_dir}' for storing analysis reports")
+            self.logger.info(
+                f"Creating '{self.report_dir}' for storing analysis reports")
             os.mkdir(self.report_dir)
 
         report_output_path = f"{self.report_dir}/{service_name}.json"
-        print(f"[*] Writing report to '{report_output_path}'")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Writing report to '{report_output_path}'")
+        self.logger.info(f"Writing report to '{report_output_path}'")
         with open(report_output_path, "w") as output:
             output.write(json_object)
 

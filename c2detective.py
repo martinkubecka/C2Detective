@@ -3,10 +3,37 @@ import sys
 import os
 import platform
 import yaml
+import logging
+import time
+
 
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.data_enrichment import Enrichment
+
+#######################################################################################################################################################################
+# TODO
+# [1] General
+# -- 
+#
+# [2] Enrichment
+# -- BGP Ranking : detect any malicious activities of a specific AS number (https://www.circl.lu/projects/bgpranking/)
+# -- AlientVault DirectConnect API
+# ---- https://otx.alienvault.com/api ; https://otx.alienvault.com/assets/static/external_api.html ; https://rapidapi.com/raygorodskij/api/AlienVault/details
+# -- ThreatFox : sharing IOCs associated with malware (https://threatfox.abuse.ch/
+#
+# # [3] Analysis
+# --
+#
+# [4] Detection
+# -- implement detection confidence scoring system
+# -- Feodo Tracker : sharing botnet C&C servers - lists generated every 5 minutes (https://feodotracker.abuse.ch/blocklist/)
+# -- SSL Blacklist (SSLBL) : identifying and blacklisting SSL certificates used by botnet C&C servers (https://sslbl.abuse.ch/)
+# -- URLhaus : sharing malicious URLs that are being used for malware distribution (https://urlhaus.abuse.ch/)
+# -- C&C Tracker : active and non-sinkholed C&C IP addresses (https://osint.bambenekconsulting.com/feeds/c2-ipmasterlist.txt)
+# -- Botvrij.eu provides different sets of open source IOCs (https://www.botvrij.eu/ ; https://www.botvrij.eu/data/)
+# -- Binary Defense Systems Artillery Threat Intelligence Feed and Banlist Feed (https://www.binarydefense.com/banlist.txt)
+#######################################################################################################################################################################
 
 
 def banner():
@@ -23,27 +50,35 @@ def banner():
 def is_platfrom_supported():
     machine_platfrom = platform.system().lower()
     if not machine_platfrom.startswith('linux'):
-        print("\n[!] Unsupported platform.")
+        print("\n[{time.strftime('%H:%M:%S')}] [CRITICAL] Unsupported platform.")
+        logging.critical(f"Unsupported platform")
         print("\nExiting program ...\n")
         sys.exit(1)
 
 
 def is_valid_file(filename, filetype):
     if not os.path.exists(filename):
-        print(f"[!] Provided file '{filename}' does not exist.")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [ERROR] Provided file '{filename}' does not exist.")
+        logging.error(f"Provided file '{filename}' does not exist")
         print("\nExiting program ...\n")
         sys.exit(1)
     else:
         if filetype == "pcap":  # check if the filetype is .pcap or .cap
-              if not filename.endswith(".pcap") or filename.endswith(".cap"):
-                print(f"[!] Provided file '{filename}' is not a pcap/cap file.")
+            if not filename.endswith(".pcap") or filename.endswith(".cap"):
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [ERROR] Provided file '{filename}' is not a pcap/cap file.")
+                logging.error(
+                    f"Provided file '{filename}' is not a pcap/cap file")
                 print("\nExiting program ...\n")
                 sys.exit(1)
         if filetype == "yml":
             if not filename.endswith(".yml") or filename.endswith(".yaml"):
-                            print(f"[!] Provided file '{filename}' is not a yaml file.")
-                            print("\nExiting program ...\n")
-                            sys.exit(1)
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [ERROR] Provided file '{filename}' is not a yaml file.")
+                logging.error(f"Provided file '{filename}' is not a yaml file")
+                print("\nExiting program ...\n")
+                sys.exit(1)
     return True
 
 
@@ -90,20 +125,26 @@ def parse_arguments():
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
 
-    return parser, parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+    return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+
+def init_logger():
+    logging_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/logs"
+    if not os.path.isdir(logging_path):
+        os.mkdir(logging_path)
+    logging.basicConfig(format='%(created)f; %(asctime)s; %(levelname)s; %(name)s; %(message)s',
+                            filename=f"{logging_path}/c2detective.log", level=logging.DEBUG)  # consider json/yml format for log file
+    logger = logging.getLogger('__name__')
+
 
 def main():
-    is_platfrom_supported()
-
-    parser, args = parse_arguments()
-
-    # if len(sys.argv) == 1:
-    #     # print(f"\n[!] No arguments provided")
-    #     parser.print_help("[!] No arguments provided")
-    #     sys.exit(1)
-
     os.system("clear")
     # print("\033[H\033[J", end="")   # clean screen
+
+    init_logger()
+    is_platfrom_supported()
+
+    args = parse_arguments()
 
     if not args.quiet:
         banner()
@@ -114,18 +155,22 @@ def main():
 
     if not args.config is None:
         if is_valid_file(args.config, "yml"):
-            print(f"\n[*] Loading config '{args.config}' ...")
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
+            logging.info(f"Loading config '{args.config}'")
             config = load_config(args.config)
             analyst_profile = AnalystProfile(config)
             # analyst_profile.print_config()
 
     input_file = args.input
     if is_valid_file(input_file, "pcap"):
-        print(f"\n[*] Loading '{input_file}' file ...")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
+        logging.info(f"Loading '{input_file}' file")
         packet_parser = PacketParser(input_file)
 
     if not args.enrich is None:
-        print(f"\n[*] Data enrichment ...")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Data enrichment ...")
+        logging.info("Initiating data enrichment engine")
         enrichment_options = args.enrich.split(',')
         # print(enrichment_options)
         enrichment = Enrichment(analyst_profile, packet_parser)
@@ -149,6 +194,8 @@ def main():
     # TODO
     action = args.action
     output_file = args.output
+
+    print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")
 
 
 if __name__ == '__main__':
