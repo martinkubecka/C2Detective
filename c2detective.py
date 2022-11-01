@@ -17,7 +17,6 @@ from src.enrichment_engine import EnrichmentEngine
 # -- 
 #
 # [2] Enrichment
-# -- BGP Ranking : detect any malicious activities of a specific AS number (https://www.circl.lu/projects/bgpranking/)
 # -- AlientVault DirectConnect API
 # ---- https://otx.alienvault.com/api ; https://otx.alienvault.com/assets/static/external_api.html ; https://rapidapi.com/raygorodskij/api/AlienVault/details
 # -- ThreatFox : sharing IOCs associated with malware (https://threatfox.abuse.ch/
@@ -120,7 +119,7 @@ def parse_arguments():
                         help='action to execute [sniffer/...]')
 
     parser.add_argument('-e', '--enrich', metavar="SERVICE", nargs='?', const="all", 
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/bgp_ranking/all] (default if selected: all)")
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/bgpranking/all] (default if selected: all)")
 
     parser.add_argument('-o', '--output', metavar='FILE',
                         help='report output file')
@@ -182,6 +181,12 @@ def main():
                 enrichment.query_virustotal()
                 enrichment.query_shodan()
                 enrichment.query_bgp_ranking()
+                # ----------------- TESTING ----------------- 
+                # enrichment.query_abuseipdb("147.175.111.17")
+                # enrichment.query_securitytrails("securitytrails.com")
+                # enrichment.query_virustotal("027.ru")
+                # enrichment.query_shodan("mail.elf.stuba.sk")
+                # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
             elif service == "abuseipdb":
                 enrichment.query_abuseipdb()
@@ -191,7 +196,7 @@ def main():
                 enrichment.query_virustotal()
             elif service == "shodan":
                 enrichment.query_shodan()
-            elif service == "bgp_ranking":
+            elif service == "bgpranking":
                 enrichment.query_bgp_ranking()
 
     # TODO
