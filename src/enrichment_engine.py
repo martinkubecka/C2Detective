@@ -10,10 +10,11 @@ import time
 
 
 class EnrichmentEngine:
-    def __init__(self, analyst_profile, packet_parser):
+    def __init__(self, analyst_profile, packet_parser, ):
         self.logger = logging.getLogger(__name__)
         self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
+        self.enrichment_services = enrichment_services
 
         self.report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
 

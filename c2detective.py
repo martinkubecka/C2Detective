@@ -14,7 +14,7 @@ from src.enrichment_engine import EnrichmentEngine
 #######################################################################################################################################################################
 # TODO
 # [1] General
-# -- 
+# --
 #
 # [2] Enrichment
 # -- AlientVault DirectConnect API
@@ -171,41 +171,54 @@ def main():
         packet_parser = PacketParser(input_file)
 
     if not args.enrich is None:
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Initiating data enrichment engine ...")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Initiating data enrichment engine ...")
         logging.info("Initiating data enrichment engine")
         enrichment_options = args.enrich.split(',')
-        # print(enrichment_options)
-        enrichment = EnrichmentEngine(analyst_profile, packet_parser)
+
+        enrichment_services = {
+            "abuseipdb": False,
+            "securitytrails": False,
+            "virustotal": False,
+            "shodan": False,
+            "alienvault": False,
+            "bgp_ranking": False
+        }
+
         for service in enrichment_options:
-            # TODO: change calling query functions to only enabling the options
             if service == "all":
+                enrichment_services.update((key, True)
+                                           for key in enrichment_services)
                 # enrichment.query_abuseipdb()
                 # enrichment.query_securitytrails()
                 # enrichment.query_virustotal()
                 # enrichment.query_shodan()
+                # enrichment.query_alientvault()
                 # enrichment.query_bgp_ranking()
-                # ----------------- TESTING ----------------- 
+                # ----------------- TESTING -----------------
                 # enrichment.query_abuseipdb("147.175.111.17")
                 # enrichment.query_securitytrails("securitytrails.com")
                 # enrichment.query_virustotal("027.ru")
                 # enrichment.query_shodan("mail.elf.stuba.sk")
                 # enrichment.query_alientvault("13.107.21.200")
                 # enrichment.query_alientvault("2620:7:6001:0:0:ffff:c759:e653")
-                enrichment.query_alientvault("027.ru")
+                # enrichment.query_alientvault("027.ru")
                 # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
-            elif service == "abuseipdb":
-                enrichment.query_abuseipdb()
-            elif service == "securitytrails":
-                enrichment.query_securitytrails()
-            elif service == "virustotal":
-                enrichment.query_virustotal()
-            elif service == "shodan":
-                enrichment.query_shodan()
-            elif service == "alientvault":
-                enrichment.query_alientvault()
-            elif service == "bgpranking":
-                enrichment.query_bgp_ranking()
+            if service == "abuseipdb":
+                enrichment_services.update({"abuseipdb": True})
+            if service == "securitytrails":
+                enrichment_services.update({"securitytrails": True})
+            if service == "virustotal":
+                enrichment_services.update({"virustotal": True})
+            if service == "shodan":
+                enrichment_services.update({"shodan": True})
+            if service == "alientvault":
+                enrichment_services.update({"alientvault": True})
+            if service == "bgpranking":
+                enrichment_services.update({"bgp_ranking": True})
+
+        enrichment = EnrichmentEngine(analyst_profile, packet_parser, enrichment_services)
 
     # TODO
     action = args.action

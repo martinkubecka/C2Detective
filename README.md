@@ -3,7 +3,10 @@
 <p align="center"><b>Application for detecting command and control (C2) communication through network traffic analysis.</b></p><br>
 
 ---
-> :construction:   *project in development*    :construction:
+
+<div align="center">
+:construction:   <i>project in development</i>    :construction:
+</div>
 
 ---
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -61,8 +64,7 @@ options:
   -n NAME, --name NAME              analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
   -c FILE, --config FILE            config file (default: ".config/config.yml")
   -a ACTION, --action ACTION        action to execute [sniffer/...]
-  -e [SERVICE], --enrich [SERVICE]  data enrichment, use comma as a delimeter and double quotes when selecting more
-                                    [abuseipdb/securitytrails/virustotal/shodan/bgpranking/all] (default if selected: all)
+  -e [SERVICE], --enrich [SERVICE]  data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alientvault/bgpranking/all] (default if selected: all)
   -o FILE, --output FILE            report output file
 ```
 
