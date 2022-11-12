@@ -10,7 +10,7 @@ import time
 
 
 class EnrichmentEngine:
-    def __init__(self, analyst_profile, packet_parser, ):
+    def __init__(self, analyst_profile, packet_parser, enrichment_services):
         self.logger = logging.getLogger(__name__)
         self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
@@ -25,13 +25,186 @@ class EnrichmentEngine:
         self.alientvault_api_url = "https://otx.alienvault.com/api/v1/indicators/"
         self.bgp_ranking_api_url = "https://bgpranking-ng.circl.lu/"
 
+
+    def enrich_data(self, target):
+
+        # for key, value in self.enrichment_services.items():
+        #     print(f"{key} : {value}")
+
+        abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking = None, None, None, None, None, None
+
+        if self.enrichment_services['abuseipdb']:
+            abuseipdb = self.query_abuseipdb(target)
+        
+        if self.enrichment_services['securitytrails']:
+            securitytrails = self.query_securitytrails(target)
+        
+        if self.enrichment_services['virustotal']:
+            virustotal = self.query_virustotal(target)
+        
+        if self.enrichment_services['shodan']:
+            shodan = self.query_shodan(target)
+        
+        if self.enrichment_services['alienvault']:
+            alienvault = self.query_alientvault(target)
+        
+        if self.enrichment_services['bgp_ranking']:
+            bgp_ranking = self.query_bgp_ranking(target)
+
+        self.enrichment_correlation(target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
+
+
+    def enrichment_correlation(self, target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking):
+        
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating enriched data ...")
+        self.logger.info(f"Correlating enriched data ...")
+
+        extracted_data = {}
+        extracted_data['target'] = target
+
+        if abuseipdb:
+            country_code = abuseipdb['data']['countryCode'] # e.g. SK
+            usage_type = abuseipdb['data']['usageType'] # e.g. University/College/School
+            isp = abuseipdb['data']['isp']  # e.g. Slovak Technical University
+            total_reports = abuseipdb['data']['totalReports']   # e.g. 0
+            last_reported = abuseipdb['data']['lastReportedAt'] # e.g. None
+            # print(abuseipdb['data']['countryCode'])
+            # print(abuseipdb['data']['usageType'])
+            # print(abuseipdb['data']['isp'])
+            # print(abuseipdb['data']['totalReports'])
+            # print(abuseipdb['data']['lastReportedAt'])  # may be 'null' then returns None
+
+            abuseipdb = {}
+            abuseipdb['total_reports'] = total_reports
+            abuseipdb['last_reported'] = last_reported
+            extracted_data['abuseipdb'] = abuseipdb
+
+        if securitytrails:
+            print()
+        if virustotal:
+            print()
+            
+        if shodan:
+            try:
+                country_name = shodan['country_name']
+            except KeyError as e:
+                country_name = "N/A"
+            try:
+                country_code = shodan['country_code']
+            except KeyError as e:
+                country_code = "N/A"
+            try:
+                city = shodan['city']
+            except KeyError as e:
+                city = "N/A"
+            try:
+                region_code = shodan['region_code']
+            except KeyError as e:
+                region_code = "N/A"
+            try:
+                isp = shodan['isp']
+            except KeyError as e:
+                isp = "N/A"
+            try:
+                asn = shodan['asn']
+            except KeyError as e:
+                asn = "N/A"
+            try:
+                ports = shodan['ports']
+            except KeyError as e:
+                ports = "N/A"
+            try:
+                hostnames = shodan['hostnames']
+            except KeyError as e:
+                hostnames = "N/A"
+            try:
+                domains = shodan['domains']
+            except KeyError as e:
+                domains = "N/A"
+
+            data = shodan['data'] # extract {port : {product, version}}
+            ports_info = {}
+            metadata = {}
+            for entry in data:
+                try:
+                    port = entry['port']
+                except KeyError as e:
+                    port = "N/A"
+                try:
+                    product = entry['product']
+                except KeyError as e:
+                    product = "N/A"                
+                try:
+                    version = entry['version']
+                except KeyError as e:
+                    version = "N/A"
+                
+                metadata = dict(
+                    product=product,
+                    version=version
+                )
+                ports_info[port] = metadata    
+
+            try:
+                vulns = shodan['vulns']
+            except KeyError as e:
+                vulns = "N/A"
+
+            # print(shodan['country_name'])
+            # print(shodan['country_code'])
+            # print(shodan['city'])
+            # print(shodan['region_code'])
+            # print(shodan['isp'])
+            # print(shodan['asn'])
+            # print(shodan['ports'])
+            # print(shodan['hostnames'])
+            # print(shodan['domains'])
+            # print(shodan['data']) # extract port, product, version
+            # print(shodan['vulns'])
+
+            shodan = {}
+            shodan['country_name'] = country_name
+            shodan['country_code'] = country_code
+            shodan['city'] = city
+            shodan['region_code'] = region_code
+            shodan['isp'] = isp
+            shodan['asn'] = asn
+            shodan['ports'] = ports
+            shodan['ports_info'] = ports_info
+            shodan['hostnames'] = hostnames
+            shodan['domains'] = domains
+            shodan['vulns'] = vulns
+            extracted_data['shodan'] = shodan
+            # extracted_data['country_name'] = country_name
+            # extracted_data['country_code'] = country_code
+            # extracted_data['city'] = city
+            # extracted_data['region_code'] = region_code
+            # extracted_data['isp'] = isp
+            # extracted_data['asn'] = asn
+            # extracted_data['ports'] = ports
+            # extracted_data['ports_info'] = ports_info
+            # extracted_data['hostnames'] = hostnames
+            # extracted_data['domains'] = domains
+            # extracted_data['vulns'] = vulns
+
+        if alienvault:
+            print()
+        if bgp_ranking:
+            print()
+
+        json_object = json.dumps(extracted_data, indent=4)
+        self.output_report("correlated_data", json_object)
+
+        return
+
+
     # CHECK Endpoint : https://docs.abuseipdb.com/#check-endpoint
     def query_abuseipdb(self, ip: str = None):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] ABUSEIPDB")
         self.logger.info(f"ABUSEIPDB")
         try:
             if is_ip_address(ip):
-                if not ipaddress.ip_address(ip).is_private:
+                if not ip_address(ip).is_private:
                     querystring = {
                         'ipAddress': ip,
                         'maxAgeInDays': '90'
@@ -56,6 +229,9 @@ class EnrichmentEngine:
                     else:
                         dict_response = json.loads(response.text)
                         json_object = json.dumps(dict_response, indent=4)
+                        self.output_report("abuseipdb", json_object)
+
+                        return dict_response
 
         except Exception as e:
             print(
@@ -64,7 +240,6 @@ class EnrichmentEngine:
                 "Error ocurred while quering the AbuseIPDB's API", exc_info=True)
             return
 
-        self.output_report("abuseipdb", json_object)
 
     # API Reference : https://docs.securitytrails.com/reference/ping
     # https://docs.securitytrails.com/docs
@@ -236,6 +411,10 @@ class EnrichmentEngine:
             #     if item.get('cve')[0] == CVE:
             #         print(f"{item.get('description')}")
 
+            self.output_report("shodan", decoded_response)
+
+            return result
+
         except Exception as e:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the Shodan's API")
@@ -243,7 +422,6 @@ class EnrichmentEngine:
                 "Error ocurred while quering the Shodan's API", exc_info=True)
             return
 
-        self.output_report("shodan", decoded_response)
 
     # source : https://www.circl.lu/projects/bgpranking/
     def query_bgp_ranking(self, asn: str = None, date: str = None):

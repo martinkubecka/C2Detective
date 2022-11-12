@@ -219,6 +219,7 @@ def main():
                 enrichment_services.update({"bgp_ranking": True})
 
         enrichment = EnrichmentEngine(analyst_profile, packet_parser, enrichment_services)
+        # enrichment.enrich_data("147.175.111.17")
 
     # TODO
     action = args.action
