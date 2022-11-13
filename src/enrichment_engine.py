@@ -81,8 +81,21 @@ class EnrichmentEngine:
 
         if securitytrails:
             print()
+
         if virustotal:
-            print()
+            virustotal_report = virustotal[0]
+            virustotal_scans_report = virustotal[1]
+            scan_date = virustotal_scans_report['scan_date']
+            permalink = virustotal_scans_report['permalink']
+            positives = virustotal_scans_report['positives']
+            total = virustotal_scans_report['total']
+
+            virustotal = {}
+            virustotal['scan_date'] = scan_date
+            virustotal['permalink'] = permalink
+            virustotal['positives'] = positives
+            virustotal['total'] = total
+            extracted_data['virustotal'] = virustotal
             
         if shodan:
             try:
@@ -343,6 +356,9 @@ class EnrichmentEngine:
             # json_object = json.dumps(dict_response, indent=4)
 
             json_object = json.dumps(dict_response, indent=4)
+            self.output_report("virustotal", json_object)
+
+            return dict_response
 
         except Exception as e:
             print(
@@ -351,7 +367,6 @@ class EnrichmentEngine:
                 "Error ocurred while quering the VirusTotal's API", exc_info=True)
             return
 
-        self.output_report("virustotal", json_object)
 
     # API Reference: https://shodan.readthedocs.io/en/latest/examples/basic-search.html
     # used package: https://github.com/achillean/shodan-python
