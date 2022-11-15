@@ -85,7 +85,8 @@ class PacketParser:
         df = df.drop(columns="index")
 
         t_stop = perf_counter()
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Elapsed time: " + "{:.2f}s".format(t_stop - t_start))
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Packet capture transformed in " + "{:.2f}s".format(t_stop - t_start))
+        self.logger.info("Packet capture transformed in " + "{:.2f}s".format(t_stop - t_start))
 
         return df
 

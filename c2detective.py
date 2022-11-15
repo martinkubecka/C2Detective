@@ -119,12 +119,10 @@ def parse_arguments():
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
-
-    parser.add_argument('-e', '--enrich', metavar="SERVICE", nargs='?', const="all",
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alientvault/bgpranking/all] (default if selected: all)")
-
-    parser.add_argument('-o', '--output', metavar='FILE',
-                        help='report output file')
+    parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)")
+    parser.add_argument('-o', '--output', metavar='PATH', default="reports",
+                        help='output directory file path for report files (default: reports/)')
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -168,7 +166,10 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        packet_parser = PacketParser(input_file)
+        # packet_parser = PacketParser(input_file)
+        packet_parser = None    # TESTING ENRICHMENT
+
+    output_dir = args.output
 
     if not args.enrich is None:
         print(
@@ -193,16 +194,16 @@ def main():
                 # enrichment.query_securitytrails()
                 # enrichment.query_virustotal()
                 # enrichment.query_shodan()
-                # enrichment.query_alientvault()
+                # enrichment.query_alienvault()
                 # enrichment.query_bgp_ranking()
                 # ----------------- TESTING -----------------
                 # enrichment.query_abuseipdb("147.175.111.17")
                 # enrichment.query_securitytrails("securitytrails.com")
                 # enrichment.query_virustotal("027.ru")
                 # enrichment.query_shodan("mail.elf.stuba.sk")
-                # enrichment.query_alientvault("13.107.21.200")
-                # enrichment.query_alientvault("2620:7:6001:0:0:ffff:c759:e653")
-                # enrichment.query_alientvault("027.ru")
+                # enrichment.query_alienvault("13.107.21.200")
+                # enrichment.query_alienvault("2620:7:6001:0:0:ffff:c759:e653")
+                # enrichment.query_alienvault("027.ru")
                 # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
             if service == "abuseipdb":
@@ -213,17 +214,17 @@ def main():
                 enrichment_services.update({"virustotal": True})
             if service == "shodan":
                 enrichment_services.update({"shodan": True})
-            if service == "alientvault":
-                enrichment_services.update({"alientvault": True})
+            if service == "alienvault":
+                enrichment_services.update({"alienvault": True})
             if service == "bgpranking":
                 enrichment_services.update({"bgp_ranking": True})
 
-        enrichment = EnrichmentEngine(analyst_profile, packet_parser, enrichment_services)
+        enrichment = EnrichmentEngine(analyst_profile, output_dir, packet_parser, enrichment_services)
         # enrichment.enrich_data("147.175.111.17")
+        enrichment.enrich_data("027.ru")
 
     # TODO
     action = args.action
-    output_file = args.output
 
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")
 
