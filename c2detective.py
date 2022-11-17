@@ -223,10 +223,12 @@ def main():
         enrichment = EnrichmentEngine(analyst_profile, output_dir, packet_parser, enrichment_services)
         
         # ----------------- TESTING -----------------
-        enrichment.enrich_data("139.180.203.104")   # Cobalt Strike
+        # enrichment.enrich_data("139.180.203.104")   # Cobalt Strike
         # enrichment.enrich_data("147.175.111.17")  # STU - open ports and a lot of vulns
-        # enrichment.enrich_data("23.105.223.5")  # lot of abuse
+        enrichment.enrich_data("23.105.223.5")  # lot of abuse
         # enrichment.enrich_data("027.ru")
+        # enrichment.enrich_data("5577")    # ASN for bgp ranking
+
 
     # TODO
     action = args.action

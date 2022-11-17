@@ -352,6 +352,20 @@ class EnrichmentCorrelation:
             extracted_data['alienvault'] = alienvault_entry
 
         if self.bgp_ranking:
-            print()
-        
+            bgp_ranking_entry = {}
+            response = self.bgp_ranking.get('response')
+            if response:
+                asn_description = response.get('asn_description')
+                ranking = response.get('ranking')
+                rank = ranking.get('rank')
+                position = ranking.get('position')
+                total_known_asns = ranking.get('total_known_asns')
+
+                bgp_ranking_entry['asn_description'] = asn_description
+                bgp_ranking_entry['rank'] = rank
+                bgp_ranking_entry['position'] = position
+                bgp_ranking_entry['total_known_asns'] = total_known_asns
+
+                extracted_data['bgp_ranking'] = bgp_ranking_entry
+
         return extracted_data

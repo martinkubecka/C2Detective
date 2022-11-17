@@ -414,7 +414,7 @@ class EnrichmentEngine:
         self.logger.info(f"BGP RANKING")
         # ranking the ASN from the most malicious to the less malicious ASN
         try:
-            if asn:
+            if asn.isnumeric():
                 to_query = {'asn': asn}
                 if date:
                     to_query['date'] = date
@@ -423,13 +423,16 @@ class EnrichmentEngine:
                 self.logger.info(f"Retrieving ASN ranking for '{asn}'")
                 response = requests.post(
                     f"{self.bgp_ranking_api_url}/json/asn", data=json.dumps(to_query))
+        
                 dict_response = json.loads(response.text)
                 json_object = json.dumps(dict_response, indent=4)
+                self.output_report("bgp_ranking", json_object)
+
+                return dict_response
             else:
                 print(
-                    f"[{time.strftime('%H:%M:%S')}] [WARNING] No ASN was provided. Skipping BGP ranking ...")
-                self.logger.warning(msg)(
-                    f"No ASN was provided. Skipping BGP ranking ...")
+                    f"[{time.strftime('%H:%M:%S')}] [WARNING] Incorrect ASN format")
+                self.logger.warning(f"Incorrect ASN format")
                 return
 
         except Exception as e:
@@ -439,7 +442,6 @@ class EnrichmentEngine:
                 "Error ocurred while quering the CIRCL's API", exc_info=True)
             return
 
-        self.output_report("bgp_ranking", json_object)
 
     # API Reference: https://censys-python.readthedocs.io/en/stable/quick-start.html
     # https://github.com/censys/censys-python
