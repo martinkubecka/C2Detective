@@ -83,12 +83,14 @@ class EnrichmentEngine:
         if self.enrichment_services['bgp_ranking']:
             bgp_ranking = self.query_bgp_ranking(target)
 
-        enrichment_correlation = EnrichmentCorrelation(
+        correlation_engine = EnrichmentCorrelation(
             target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
-        # self.enrichment_correlation(target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
+        correlated_data = correlation_engine.enrichment_correlation()
 
-        json_object = json.dumps(enrichment_correlation, indent=4)
+        json_object = json.dumps(correlated_data, indent=4)
         self.output_report("correlated_data", json_object)
+
+        return correlated_data
 
     # CHECK Endpoint : https://docs.abuseipdb.com/#check-endpoint
 
@@ -150,7 +152,7 @@ class EnrichmentEngine:
 
             if "message" in decoded_response:
                 print(
-                    f"[{time.strftime('%H:%M:%S')}] [ERROR] {decoded_response['message']}")
+                    f"[{time.strftime('%H:%M:%S')}] [ERROR] {decoded_response['message']}".replace(".", ""))
                 self.logger.error(
                     f"{decoded_response['message']}", exc_info=True)
                 return
@@ -183,20 +185,21 @@ class EnrichmentEngine:
                 response = requests.get(url, headers=headers)
                 dict_response.append(response.json())
 
+                # FREE API KEY ... getting 'You've exceeded the usage limits for your account.' too quickly
                 # historical information about the given hostname parameter
-                record_types = ['a', 'aaaa', 'mx', 'ns', 'soa', 'txt']
-                record_types_response = []
-                for record_type in record_types:
-                    print(
-                        f"[{time.strftime('%H:%M:%S')}] [INFO] Fetching historical '{record_type}' record from DNS details for '{keyword}'")
-                    self.logger.info(
-                        f"Fetching historical '{record_type}' record from DNS details for '{keyword}'")
-                    url = f"{self.securitytrails_api_url}history/{keyword}/dns/{record_type}"
-                    # url = f"{self.securitytrails_api_url}history/{keyword}/dns/{record_type}?page=1"    # there may be more pages ...
-                    response = requests.get(url, headers=headers)
-                    record_types_response.append(response.json())
+                # record_types = ['a', 'aaaa', 'mx', 'ns', 'soa', 'txt']
+                # record_types_response = []
+                # for record_type in record_types:
+                #     print(
+                #         f"[{time.strftime('%H:%M:%S')}] [INFO] Fetching historical '{record_type}' record from DNS details for '{keyword}'")
+                #     self.logger.info(
+                #         f"Fetching historical '{record_type}' record from DNS details for '{keyword}'")
+                #     url = f"{self.securitytrails_api_url}history/{keyword}/dns/{record_type}"
+                #     # url = f"{self.securitytrails_api_url}history/{keyword}/dns/{record_type}?page=1"    # there may be more pages ...
+                #     response = requests.get(url, headers=headers)
+                #     record_types_response.append(response.json())
+                # dict_response.append(record_types_response)
 
-                dict_response.append(record_types_response)
                 json_object = json.dumps(dict_response, indent=4)
                 self.output_report("securitytrails", json_object)
 
@@ -264,68 +267,74 @@ class EnrichmentEngine:
     # used package: https://github.com/achillean/shodan-python
     # code source : https://subscription.packtpub.com/book/networking-&-servers/9781784392932/1/ch01lvl1sec11/gathering-information-using-the-shodan-api
 
-    def query_shodan(self, keyword: str = None):
+    def query_shodan(self, target: str = None):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] SHODAN")
         self.logger.info(f"SHODAN")
         api = shodan.Shodan(self.analyst_profile.shodan_api_key)
-        target = keyword
+        domain = target
         try:
-            if not is_ip_address(target):  # input is a domain
+            if not is_ip_address(domain):  # input is a domain
                 print(
-                    f"[{time.strftime('%H:%M:%S')}] [INFO] Resolving '{keyword}' to an IP address")
-                self.logger.info(f"Resolving '{keyword}' to an IP address")
-                url = f"{self.shodan_api_url}dns/resolve?hostnames={target}&key={self.analyst_profile.shodan_api_key}"
+                    f"[{time.strftime('%H:%M:%S')}] [INFO] Resolving '{target}' to an IP address")
+                self.logger.info(f"Resolving '{target}' to an IP address")
+                url = f"{self.shodan_api_url}dns/resolve?hostnames={domain}&key={self.analyst_profile.shodan_api_key}"
                 # resolve target domain to an IP address
                 response = requests.get(url)
                 decoded_response = json.loads(response.text)
                 # print(json.dumps(decoded_response, indent=4))
-                target = decoded_response[keyword]
-                print(
-                    f"[{time.strftime('%H:%M:%S')}] [INFO] Resolved '{keyword}' to '{target}'")
-                self.logger.info(f"Resolved '{keyword}' to '{target}'")
+                ip_addr = decoded_response[target]
+                if ip_addr:
+                    print(
+                        f"[{time.strftime('%H:%M:%S')}] [INFO] Resolved '{target}' to '{ip_addr}'")
+                    self.logger.info(f"Resolved '{target}' to '{ip_addr}'")
 
-            # execute a Shodan search on the resolved IP
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] Executing search query and retrieving API's response")
-            self.logger.info(
-                f"Executing search query and retrieving API's response")
-            result = api.host(target)
-            decoded_response = json.dumps(result, indent=4)
+                    # execute a Shodan search on the resolved IP
+                    print(
+                        f"[{time.strftime('%H:%M:%S')}] [INFO] Executing search query and retrieving API's response")
+                    self.logger.info(
+                        f"Executing search query and retrieving API's response")
+                    result = api.host(ip_addr)
+                    decoded_response = json.dumps(result, indent=4)
 
-            # print("[*] General Information")
-            # print(f"IP: {result['ip_str']}")
-            # print(f"Hostnames: {result['hostnames']}")
-            # print(f"Domains: {result['domains']}")
-            # print(f"Country: {result['country_name']}")
-            # print(f"City: {result['city']}")
-            # print(f"Organization: {result['org']}")
-            # print(f"ISP: {result['isp']}")
-            # print(f"ASN: {result['asn']}\n")
-            # print(f"Operating System: {result['os']}")
+                    # print("[*] General Information")
+                    # print(f"IP: {result['ip_str']}")
+                    # print(f"Hostnames: {result['hostnames']}")
+                    # print(f"Domains: {result['domains']}")
+                    # print(f"Country: {result['country_name']}")
+                    # print(f"City: {result['city']}")
+                    # print(f"Organization: {result['org']}")
+                    # print(f"ISP: {result['isp']}")
+                    # print(f"ASN: {result['asn']}\n")
+                    # print(f"Operating System: {result['os']}")
 
-            # print all banners
-            # print("[*] Open ports")
-            # print(f"{result['ports']}\n")
-            # for item in result['data']:
-            #     print(f"Port: {item['port']}")
-            #     print(f"Banner: {item['data']}")
+                    # print all banners
+                    # print("[*] Open ports")
+                    # print(f"{result['ports']}\n")
+                    # for item in result['data']:
+                    #     print(f"Port: {item['port']}")
+                    #     print(f"Banner: {item['data']}")
 
-            # print vuln information
-            # if "vulns" in result:   # there may not be any vulns
-            #     print("[*] Vulnerabilities")
-            #     print(result['vulns'])  # prints only list of CVEs
-            # slow approach
-            # for item in result['vulns']:
-            # CVE = item.replace('!', '')
-            # print(f"Vulns: {item}")
-            # exploits = api.exploits.search(CVE)
-            # for item in exploits['matches']:
-            #     if item.get('cve')[0] == CVE:
-            #         print(f"{item.get('description')}")
+                    # print vuln information
+                    # if "vulns" in result:   # there may not be any vulns
+                    #     print("[*] Vulnerabilities")
+                    #     print(result['vulns'])  # prints only list of CVEs
+                    # slow approach
+                    # for item in result['vulns']:
+                    # CVE = item.replace('!', '')
+                    # print(f"Vulns: {item}")
+                    # exploits = api.exploits.search(CVE)
+                    # for item in exploits['matches']:
+                    #     if item.get('cve')[0] == CVE:
+                    #         print(f"{item.get('description')}")
 
-            self.output_report("shodan", decoded_response)
+                    self.output_report("shodan", decoded_response)
 
-            return result
+                    return result
+
+                else:
+                    print(f"[{time.strftime('%H:%M:%S')}] [WARNING] Failed to resolved '{keyword}' to an IP address")
+                    self.logger.warning(msg)(f"Failed to resolved '{keyword}' to an IP address")
+                    return
 
         except Exception as e:
             print(
@@ -334,46 +343,10 @@ class EnrichmentEngine:
                 "Error ocurred while quering the Shodan's API", exc_info=True)
             return
 
-    # source : https://www.circl.lu/projects/bgpranking/
-
-    def query_bgp_ranking(self, asn: str = None, date: str = None):
-        '''Launch a query.
-            :param asn: ASN to lookup
-            :param date: Exact date to lookup. Fallback to most recent available.
-        '''
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] BGP RANKING")
-        self.logger.info(f"BGP RANKING")
-        # ranking the ASN from the most malicious to the less malicious ASN
-        try:
-            if asn:
-                to_query = {'asn': asn}
-                if date:
-                    to_query['date'] = date
-                print(
-                    f"[{time.strftime('%H:%M:%S')}] [INFO] Retrieving ASN ranking for '{asn}'")
-                self.logger.info(f"Retrieving ASN ranking for '{asn}'")
-                response = requests.post(
-                    f"{self.bgp_ranking_api_url}/json/asn", data=json.dumps(to_query))
-                dict_response = json.loads(response.text)
-                json_object = json.dumps(dict_response, indent=4)
-            else:
-                print(
-                    f"[{time.strftime('%H:%M:%S')}] [WARNING] No ASN was provided. Skipping BGP ranking ...")
-                self.logger.warning(msg)(
-                    f"No ASN was provided. Skipping BGP ranking ...")
-                return
-
-        except Exception as e:
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the CIRCL's API")
-            self.logger.error(
-                "Error ocurred while quering the CIRCL's API", exc_info=True)
-            return
-
-        self.output_report("bgp_ranking", json_object)
-
     # AlienVault External API documentation : https://otx.alienvault.com/assets/static/external_api.html
     def query_alienvault(self, target: str = None):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] ALIENVAULT")
+        self.logger.info(f"ALIENVAULT")
 
         ip_type = get_ip_type(target)
         sections = ["general", "geo", "reputation",
@@ -409,7 +382,7 @@ class EnrichmentEngine:
                     dict_response.append(response.json())
 
                 json_object = json.dumps(dict_response, indent=4)
-                self.output_report("alientvault", json_object)
+                self.output_report("alienvault", json_object)
 
                 return dict_response
 
@@ -419,6 +392,43 @@ class EnrichmentEngine:
             self.logger.error(
                 "Error ocurred while quering the AlienVault's API", exc_info=True)
             return
+
+    # source : https://www.circl.lu/projects/bgpranking/
+    def query_bgp_ranking(self, asn: str = None, date: str = None):
+        '''Launch a query.
+            :param asn: ASN to lookup
+            :param date: Exact date to lookup. Fallback to most recent available.
+        '''
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] BGP RANKING")
+        self.logger.info(f"BGP RANKING")
+        # ranking the ASN from the most malicious to the less malicious ASN
+        try:
+            if asn:
+                to_query = {'asn': asn}
+                if date:
+                    to_query['date'] = date
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [INFO] Retrieving ASN ranking for '{asn}'")
+                self.logger.info(f"Retrieving ASN ranking for '{asn}'")
+                response = requests.post(
+                    f"{self.bgp_ranking_api_url}/json/asn", data=json.dumps(to_query))
+                dict_response = json.loads(response.text)
+                json_object = json.dumps(dict_response, indent=4)
+            else:
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [WARNING] No ASN was provided. Skipping BGP ranking ...")
+                self.logger.warning(msg)(
+                    f"No ASN was provided. Skipping BGP ranking ...")
+                return
+
+        except Exception as e:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the CIRCL's API")
+            self.logger.error(
+                "Error ocurred while quering the CIRCL's API", exc_info=True)
+            return
+
+        self.output_report("bgp_ranking", json_object)
 
     # API Reference: https://censys-python.readthedocs.io/en/stable/quick-start.html
     # https://github.com/censys/censys-python

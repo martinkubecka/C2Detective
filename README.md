@@ -51,21 +51,21 @@ $ pip install -r requirements.txt
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e [SERVICE]] [-o FILE] FILENAME
+usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e [SERVICES]] [-o PATH] FILENAME
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
 positional arguments:
-  FILENAME                          input file (.cap OR .pcap)
+  FILENAME                            input file (.cap OR .pcap)
 
 options:
-  -h, --help                        show this help message and exit
-  -q, --quiet                       don't print the banner and other noise
-  -n NAME, --name NAME              analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
-  -c FILE, --config FILE            config file (default: ".config/config.yml")
-  -a ACTION, --action ACTION        action to execute [sniffer/...]
-  -e [SERVICE], --enrich [SERVICE]  data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alientvault/bgpranking/all] (default if selected: all)
-  -o FILE, --output FILE            report output file
+  -h, --help                          show this help message and exit
+  -q, --quiet                         don't print the banner and other noise
+  -n NAME, --name NAME                analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
+  -c FILE, --config FILE              config file (default: ".config/config.yml")
+  -a ACTION, --action ACTION          action to execute [sniffer/...]
+  -e [SERVICES], --enrich [SERVICES]  data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)
+  -o PATH, --output PATH              output directory file path for report files (default: reports/)
 ```
 
 ---

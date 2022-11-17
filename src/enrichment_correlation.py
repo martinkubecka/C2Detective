@@ -37,119 +37,126 @@ class EnrichmentCorrelation:
             abuseipdb['last_reported'] = last_reported
             extracted_data['abuseipdb'] = abuseipdb
 
-        if securitytrails:
-            current_dns = securitytrails[0]['current_dns']
-            current_dns_a_record = current_dns['a']
-            current_dns_aaaa_record = current_dns['aaaa']
-            current_dns_mx_record = current_dns['mx']
-            current_dns_ns_record = current_dns['ns']
-            current_dns_soa_record = current_dns['soa']
-            current_dns_txt_record = current_dns['txt']
+        if self.securitytrails:
+            securitytrails_entry = {}
+            # current_dns
+            try:
+                current_dns = self.securitytrails[0]['current_dns']
+                current_dns_a_record = current_dns['a']
+                current_dns_aaaa_record = current_dns['aaaa']
+                current_dns_mx_record = current_dns['mx']
+                current_dns_ns_record = current_dns['ns']
+                current_dns_soa_record = current_dns['soa']
+                current_dns_txt_record = current_dns['txt']
 
-            if current_dns_a_record:
-                first_seen = dict(
-                    first_seen=current_dns_a_record['first_seen'])
-                values = current_dns_a_record['values']
-                entries = []
-                data = {}
-                for entry in values:
-                    ip = entry['ip']
-                    ip_organization = entry['ip_organization']
-                    data = dict(
-                        ip=ip,
-                        ip_organization=ip_organization)
-                    entries.append(data)
+                if current_dns_a_record:
+                    first_seen = current_dns_a_record['first_seen']
+                    # first_seen = dict(
+                    #     first_seen=current_dns_a_record['first_seen'])
+                    values = current_dns_a_record['values']
+                    entries = []
+                    data = {}
+                    for entry in values:
+                        ip = entry['ip']
+                        ip_organization = entry['ip_organization']
+                        data = dict(
+                            ip=ip,
+                            ip_organization=ip_organization)
+                        entries.append(data)
+                    current_dns_a_record = {}
+                    current_dns_a_record['first_seen'] = first_seen
+                    current_dns_a_record['values'] = entries
 
-            current_dns_a_record = []
-            current_dns_a_record.append(first_seen)
-            current_dns_a_record.append(entries)
+                if current_dns_aaaa_record:
+                    first_seen = current_dns_aaaa_record['first_seen']
+                    values = current_dns_aaaa_record['values']
+                    entries = []
+                    data = {}
+                    for entry in values:
+                        ip = entry['ipv6']
+                        ip_organization = entry['ipv6_organization']
+                        data = dict(
+                            ipv6=ip,
+                            ipv6_organization=ip_organization)
+                        entries.append(data)
+                    current_dns_aaaa_record = {}
+                    current_dns_aaaa_record['first_seen'] = first_seen
+                    current_dns_aaaa_record['values'] = entries
 
-            if current_dns_aaaa_record:
-                first_seen = dict(
-                    first_seen=current_dns_aaaa_record['first_seen'])
-                values = current_dns_aaaa_record['values']
-                entries = []
-                data = {}
-                for entry in values:
-                    ip = entry['ipv6']
-                    ip_organization = entry['ipv6_organization']
-                    data = dict(
-                        ipv6=ip,
-                        ipv6_organization=ip_organization)
-                    entries.append(data)
+                if current_dns_mx_record:   # FIND TARGET WITH MX RECORD !
+                    print()
+                    current_dns_mx_record = []
+                    # current_dns_mx_record.append(first_seen)
+                    # current_dns_mx_record.append(entries)
 
-            current_dns_aaaa_record = []
-            current_dns_aaaa_record.append(first_seen)
-            current_dns_aaaa_record.append(entries)
+                if current_dns_ns_record:
+                    first_seen = current_dns_ns_record['first_seen']
+                    values = current_dns_ns_record['values']
+                    entries = []
+                    data = {}
+                    for entry in values:
+                        nameserver = entry['nameserver']
+                        nameserver_organization = entry['nameserver_organization']
+                        data = dict(
+                            nameserver=nameserver,
+                            nameserver_organization=nameserver_organization)
+                        entries.append(data)
+                    current_dns_ns_record = {}
+                    current_dns_ns_record['first_seen'] = first_seen
+                    current_dns_ns_record['values'] = entries
 
-            if current_dns_mx_record:   # FIND TARGET WITH MX RECORD !
-                print()
+                if current_dns_soa_record:
+                    first_seen = current_dns_soa_record['first_seen']
+                    values = current_dns_soa_record['values']
+                    entries = []
+                    data = {}
+                    for entry in values:
+                        email = entry['email']
+                        data = dict(
+                            email=email)
+                        entries.append(data)
+                    current_dns_soa_record = {}
+                    current_dns_soa_record['first_seen'] = first_seen
+                    current_dns_soa_record['values'] = entries
 
-            current_dns_mx_record = []
-            # current_dns_mx_record.append(first_seen)
-            # current_dns_mx_record.append(entries)
-            
-            if current_dns_ns_record:
-                first_seen = dict(
-                    first_seen=current_dns_ns_record['first_seen'])
-                values = current_dns_ns_record['values']
-                entries = []
-                data = {}
-                for entry in values:
-                    nameserver = entry['nameserver']
-                    nameserver_organization = entry['nameserver_organization']
-                    data = dict(
-                        nameserver=nameserver,
-                        nameserver_organization=nameserver_organization)
-                    entries.append(data)
+                if current_dns_txt_record:
+                    first_seen = current_dns_txt_record['first_seen']
+                    values = current_dns_txt_record['values']
+                    entries = []
+                    data = {}
+                    for entry in values:
+                        value = entry['value']
+                        data = dict(
+                            value=value)
+                        entries.append(data)
+                    current_dns_txt_record = {}
+                    current_dns_txt_record['first_seen'] = first_seen
+                    current_dns_txt_record['values'] = entries
 
-            current_dns_ns_record = []
-            current_dns_ns_record.append(first_seen)
-            current_dns_ns_record.append(entries)
+                current_dns = {}
+                current_dns['a'] = current_dns_a_record
+                current_dns['aaaa'] = current_dns_aaaa_record
+                current_dns['mx'] = current_dns_mx_record
+                current_dns['ns'] = current_dns_ns_record
+                current_dns['soa'] = current_dns_soa_record
+                current_dns['txt'] = current_dns_txt_record
+                securitytrails_entry['current_dns'] = current_dns
+            except KeyError as e:
+                securitytrails_entry['current_dns'] = "N/A"
+            # subdomains
+            try:
+                subdomains = self.securitytrails[1]['subdomains']
+                securitytrails_entry['subdomains'] = subdomains
+            except KeyError as e:
+                securitytrails_entry['subdomains'] = "N/A"    
+            # tags
+            try:
+                tags = self.securitytrails[2]['tags']
+                securitytrails_entry['tags'] = tags
+            except KeyError as e:
+                securitytrails_entry['tags'] = "N/A" 
 
-            if current_dns_soa_record:
-                first_seen = dict(
-                    first_seen=current_dns_soa_record['first_seen'])
-                values = current_dns_soa_record['values']
-                entries = []
-                data = {}
-                for entry in values:
-                    email = entry['email']
-                    data = dict(
-                        email=email)
-                    entries.append(data)
-
-            current_dns_soa_record = []
-            current_dns_soa_record.append(first_seen)
-            current_dns_soa_record.append(entries)
-
-            if current_dns_txt_record:
-                first_seen = dict(
-                    first_seen=current_dns_txt_record['first_seen'])
-                values = current_dns_txt_record['values']
-                entries = []
-                data = {}
-                for entry in values:
-                    value = entry['value']
-                    data = dict(
-                        value=value)
-                    entries.append(data)
-
-            current_dns_txt_record = []
-            current_dns_txt_record.append(first_seen)
-            current_dns_txt_record.append(entries)
-
-
-            securitytrails = {}
-            # securitytrails['current_dns'] = current_dns
-            securitytrails['current_dns_a_record'] = current_dns_a_record
-            securitytrails['current_dns_aaaa_record'] = current_dns_aaaa_record
-            securitytrails['current_dns_mx_record'] = current_dns_mx_record
-            securitytrails['current_dns_ns_record'] = current_dns_ns_record
-            securitytrails['current_dns_soa_record'] = current_dns_soa_record
-            securitytrails['current_dns_txt_record'] = current_dns_txt_record
-
-            extracted_data['securitytrails'] = securitytrails
+            extracted_data['securitytrails'] = securitytrails_entry
 
         if self.virustotal:
             virustotal_report = self.virustotal[0]
@@ -228,7 +235,7 @@ class EnrichmentCorrelation:
                 ports_info[port] = metadata    
 
             try:
-                vulns = shodan['vulns']
+                vulns = self.shodan['vulns']
             except KeyError as e:
                 vulns = "N/A"
 
@@ -270,7 +277,75 @@ class EnrichmentCorrelation:
             # extracted_data['vulns'] = vulns
 
         if self.alienvault:
-            print()
+            
+            alienvault_entry = {}
+
+            # pulse_info
+            pulse_info = self.alienvault[0]['pulse_info']
+            references = pulse_info['references']
+            related = pulse_info['related']
+
+            alienvault_entry['references'] = references
+            alienvault_entry['related'] = related
+
+            # url_list
+            url_list = self.alienvault[3]['url_list']    # shows only one page...
+            url_list_entry = []
+            entry_data = [] 
+            for entry in url_list:
+                date = entry['date']
+                url = entry['url']
+                hostname = entry['hostname']
+                result = entry['result']
+                try:
+                    http_code = result['urlworker']['http_code']
+                except KeyError as e:
+                    http_code = 0
+
+                if not http_code == 0:
+                    ip = result['urlworker']['ip']
+                else:
+                    ip = "N/A"
+                entry_data = dict(
+                    date=date,
+                    url=url,
+                    hostname=hostname,
+                    ip=ip,
+                    http_code=http_code
+                )
+                url_list_entry.append(entry_data)
+
+            alienvault_entry['associated_urls'] = url_list_entry
+
+            # passive_dns
+            passive_dns = self.alienvault[4]['passive_dns'] # shows all entries
+            # count = self.alienvault[4]['count']
+            passive_dns_entry = []
+            # passive_dns_entry['count'] = count
+            entry_data = [] 
+            for entry in passive_dns:
+                hostname = entry['hostname']
+                record_type = entry['record_type']
+                address = entry['address']
+                first_seen = entry['first']
+                last_seen = entry['last']
+                asn = entry['asn']
+                country = entry['flag_title']
+                entry_data = dict(
+                    hostname=hostname,
+                    record_type=record_type,
+                    address=address,
+                    first_seen=first_seen,
+                    last_seen=last_seen,
+                    asn=asn,
+                    country=country
+                )
+                passive_dns_entry.append(entry_data)
+            alienvault_entry['passive_dns'] = passive_dns_entry
+
+            extracted_data['alienvault'] = alienvault_entry
+
         if self.bgp_ranking:
             print()
-        return
+        
+        return extracted_data
