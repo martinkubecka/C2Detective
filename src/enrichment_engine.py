@@ -106,12 +106,12 @@ class EnrichmentEngine:
                 if not ip_address(ip).is_private:
                     querystring = {
                         'ipAddress': ip,
-                        'maxAgeInDays': '90'
+                        'maxAgeInDays': '90',
+                        'verbose': ''
                     }
                     headers = {
                         'Accept': 'application/json',
                         'Key': self.analyst_profile.abuseipdb_api_key,
-                        'verbose': ''
                     }
 
                     print(

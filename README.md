@@ -48,6 +48,8 @@ $ pip install -r requirements.txt
 
 - add your API keys for the services listed above (except for `AlientVault`, `ThreatFox` and `CIRCL's BGP Ranking`) to the `config/config.yml` file as shown in the `config/example.yml` 
 
+> *Warning: Do not use SecurityTrails's enrichment on FREE subscription plan.*
+
 ---
 ## :keyboard: Usage
 

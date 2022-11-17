@@ -14,7 +14,7 @@ class EnrichmentCorrelation:
         self.bgp_ranking = bgp_ranking
 
     def enrichment_correlation(self):
-
+        
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating enriched data ...")
         self.logger.info(f"Correlating enriched data ...")
 
@@ -22,78 +22,94 @@ class EnrichmentCorrelation:
         extracted_data['target'] = self.target
 
         if self.abuseipdb:
-            country_code = self.abuseipdb['data']['countryCode'] # e.g. SK
-            usage_type = self.abuseipdb['data']['usageType'] # e.g. University/College/School
-            isp = self.abuseipdb['data']['isp']  # e.g. Slovak Technical University
-            total_reports = self.abuseipdb['data']['totalReports']   # e.g. 0
-            last_reported = self.abuseipdb['data']['lastReportedAt'] # e.g. None
-            # print(self.abuseipdb['data']['countryCode'])
-            # print(self.abuseipdb['data']['usageType'])
-            # print(self.abuseipdb['data']['isp'])
-            # print(self.abuseipdb['data']['totalReports'])
-            # print(self.abuseipdb['data']['lastReportedAt'])  # may be 'null' then returns None
+            data = self.abuseipdb.get('data')
+            if data:
+                country_code = data.get('countryCode') # e.g. SK
+                usage_type = data.get('usageType') # e.g. University/College/School
+                isp = data.get('isp')  # e.g. Slovak Technical University
+                total_reports = data.get('totalReports')   # e.g. 0
+                last_reported = data.get('lastReportedAt') # may be 'null' then returns None
+                reports = data.get('reports')
+                report_entries = []
+                if reports:
+                    data = {}
+                    for entry in reports:
+                        reported_at = entry.get('reportedAt')
+                        comment = entry.get('comment')
+                        categories = entry.get('categories')
+                        data = dict(
+                            reported_at=reported_at,
+                            comment=comment,
+                            categories=categories
+                        )
+                        report_entries.append(data)
 
-            abuseipdb = {}
-            abuseipdb['total_reports'] = total_reports
-            abuseipdb['last_reported'] = last_reported
-            extracted_data['abuseipdb'] = abuseipdb
+                abuseipdb = {}
+                abuseipdb['total_reports'] = total_reports
+                abuseipdb['last_reported'] = last_reported
+                abuseipdb['reports'] = report_entries
+                extracted_data['abuseipdb'] = abuseipdb
 
         if self.threatfox:
             threatfox_entry = {}
-
             data = self.threatfox.get('data')   
             if data:
-                data = data[0] # data": [ { "id": "1337", "ioc": "139.180.203.104:443", ... } ]
-                ioc = data.get('ioc')
-                ioc_type = data.get('ioc_type')
-                ioc_type_desc = data.get('ioc_type_desc')
-                threat_type = data.get('threat_type')
-                threat_type_desc = data.get('threat_type_desc')
-                malware = data.get('malware_printable')
-                malware_malpedia = data.get('malware_malpedia')
-                confidence_level = data.get('confidence_level')
-                first_seen = data.get('first_seen')
-                last_seen = data.get('last_seen')
-                tags = data.get('tags')
-                malware_samples = data.get('malware_samples')
+                try:
+                    data = data[0] # data": [ { "id": "1337", "ioc": "139.180.203.104:443", ... } ]
+                    ioc = data.get('ioc')
+                    ioc_type = data.get('ioc_type')
+                    ioc_type_desc = data.get('ioc_type_desc')
+                    threat_type = data.get('threat_type')
+                    threat_type_desc = data.get('threat_type_desc')
+                    malware = data.get('malware_printable')
+                    malware_malpedia = data.get('malware_malpedia')
+                    confidence_level = data.get('confidence_level')
+                    first_seen = data.get('first_seen')
+                    last_seen = data.get('last_seen')
+                    tags = data.get('tags')
+                    malware_samples = data.get('malware_samples')
 
-                threatfox_entry['ioc'] = ioc
-                threatfox_entry['ioc_type'] = ioc_type
-                threatfox_entry['ioc_type_desc'] = ioc_type_desc
-                threatfox_entry['threat_type'] = threat_type
-                threatfox_entry['threat_type_desc'] = threat_type_desc
-                threatfox_entry['malware'] = malware
-                threatfox_entry['malware_malpedia'] = malware_malpedia
-                threatfox_entry['confidence_level'] = confidence_level
-                threatfox_entry['first_seen'] = first_seen
-                threatfox_entry['last_seen'] = last_seen
-                threatfox_entry['tags'] = tags
-                threatfox_entry['malware_samples'] = malware_samples
+                    threatfox_entry['ioc'] = ioc
+                    threatfox_entry['ioc_type'] = ioc_type
+                    threatfox_entry['ioc_type_desc'] = ioc_type_desc
+                    threatfox_entry['threat_type'] = threat_type
+                    threatfox_entry['threat_type_desc'] = threat_type_desc
+                    threatfox_entry['malware'] = malware
+                    threatfox_entry['malware_malpedia'] = malware_malpedia
+                    threatfox_entry['confidence_level'] = confidence_level
+                    threatfox_entry['first_seen'] = first_seen
+                    threatfox_entry['last_seen'] = last_seen
+                    threatfox_entry['tags'] = tags
+                    threatfox_entry['malware_samples'] = malware_samples
 
-                extracted_data['threatfox'] = threatfox_entry
+                    extracted_data['threatfox'] = threatfox_entry
+                except IndexError as e:
+                                self.logger.error("Threatfox correlation data error", exc_info=True)
+
 
         if self.securitytrails:
             securitytrails_entry = {}
             # current_dns
             try:
-                current_dns = self.securitytrails[0]['current_dns']
-                current_dns_a_record = current_dns['a']
-                current_dns_aaaa_record = current_dns['aaaa']
-                current_dns_mx_record = current_dns['mx']
-                current_dns_ns_record = current_dns['ns']
-                current_dns_soa_record = current_dns['soa']
-                current_dns_txt_record = current_dns['txt']
+                current_dns = self.securitytrails[0].get('current_dns')
+                
+                current_dns_a_record = current_dns.get('a')
+                current_dns_aaaa_record = current_dns.get('aaaa')
+                current_dns_mx_record = current_dns.get('mx')
+                current_dns_ns_record = current_dns.get('ns')
+                current_dns_soa_record = current_dns.get('soa')
+                current_dns_txt_record = current_dns.get('txt')
 
                 if current_dns_a_record:
-                    first_seen = current_dns_a_record['first_seen']
+                    first_seen = current_dns_a_record.get('first_seen')
                     # first_seen = dict(
                     #     first_seen=current_dns_a_record['first_seen'])
-                    values = current_dns_a_record['values']
+                    values = current_dns_a_record.get('values')
                     entries = []
                     data = {}
                     for entry in values:
-                        ip = entry['ip']
-                        ip_organization = entry['ip_organization']
+                        ip = entry.get('ip')
+                        ip_organization = entry.get('ip_organization')
                         data = dict(
                             ip=ip,
                             ip_organization=ip_organization)
@@ -103,13 +119,13 @@ class EnrichmentCorrelation:
                     current_dns_a_record['values'] = entries
 
                 if current_dns_aaaa_record:
-                    first_seen = current_dns_aaaa_record['first_seen']
-                    values = current_dns_aaaa_record['values']
+                    first_seen = current_dns_aaaa_record.get('first_seen')
+                    values = current_dns_aaaa_record.get('values')
                     entries = []
                     data = {}
                     for entry in values:
-                        ip = entry['ipv6']
-                        ip_organization = entry['ipv6_organization']
+                        ip = entry.get('ipv6')
+                        ip_organization = entry.get('ipv6_organization')
                         data = dict(
                             ipv6=ip,
                             ipv6_organization=ip_organization)
@@ -125,13 +141,13 @@ class EnrichmentCorrelation:
                     # current_dns_mx_record.append(entries)
 
                 if current_dns_ns_record:
-                    first_seen = current_dns_ns_record['first_seen']
-                    values = current_dns_ns_record['values']
+                    first_seen = current_dns_ns_record.get('first_seen')
+                    values = current_dns_ns_record.get('values')
                     entries = []
                     data = {}
                     for entry in values:
-                        nameserver = entry['nameserver']
-                        nameserver_organization = entry['nameserver_organization']
+                        nameserver = entry.get('nameserver')
+                        nameserver_organization = entry.get('nameserver_organization')
                         data = dict(
                             nameserver=nameserver,
                             nameserver_organization=nameserver_organization)
@@ -141,12 +157,12 @@ class EnrichmentCorrelation:
                     current_dns_ns_record['values'] = entries
 
                 if current_dns_soa_record:
-                    first_seen = current_dns_soa_record['first_seen']
-                    values = current_dns_soa_record['values']
+                    first_seen = current_dns_soa_record.get('first_seen')
+                    values = current_dns_soa_record.get('values')
                     entries = []
                     data = {}
                     for entry in values:
-                        email = entry['email']
+                        email = entry.get('email')
                         data = dict(
                             email=email)
                         entries.append(data)
@@ -155,12 +171,12 @@ class EnrichmentCorrelation:
                     current_dns_soa_record['values'] = entries
 
                 if current_dns_txt_record:
-                    first_seen = current_dns_txt_record['first_seen']
-                    values = current_dns_txt_record['values']
+                    first_seen = current_dns_txt_record.get('first_seen')
+                    values = current_dns_txt_record.get('values')
                     entries = []
                     data = {}
                     for entry in values:
-                        value = entry['value']
+                        value = entry.get('value')
                         data = dict(
                             value=value)
                         entries.append(data)
@@ -176,115 +192,72 @@ class EnrichmentCorrelation:
                 current_dns['soa'] = current_dns_soa_record
                 current_dns['txt'] = current_dns_txt_record
                 securitytrails_entry['current_dns'] = current_dns
-            except KeyError as e:
-                securitytrails_entry['current_dns'] = "N/A"
+            
+            except IndexError as e:
+                self.logger.error("SecurityTrails correlation data error", exc_info=True)
+            
             # subdomains
             try:
-                subdomains = self.securitytrails[1]['subdomains']
+                subdomains = self.securitytrails[1].get('subdomains')
                 securitytrails_entry['subdomains'] = subdomains
-            except KeyError as e:
-                securitytrails_entry['subdomains'] = "N/A"    
+            except IndexError as e:
+                self.logger.error("SecurityTrails correlation data error", exc_info=True) 
+            
             # tags
             try:
-                tags = self.securitytrails[2]['tags']
+                tags = self.securitytrails[2].get('tags')
                 securitytrails_entry['tags'] = tags
-            except KeyError as e:
-                securitytrails_entry['tags'] = "N/A" 
+            except IndexError as e:
+                self.logger.error("SecurityTrails correlation data error", exc_info=True) 
 
             extracted_data['securitytrails'] = securitytrails_entry
 
         if self.virustotal:
-            virustotal_report = self.virustotal[0]
-            virustotal_scans_report = self.virustotal[1]
-            scan_date = virustotal_scans_report['scan_date']
-            permalink = virustotal_scans_report['permalink']
-            positives = virustotal_scans_report['positives']
-            total = virustotal_scans_report['total']
+            try:
+                virustotal_report = self.virustotal[0]
+                virustotal_scans_report = self.virustotal[1]
+                if virustotal_scans_report:
+                    scan_date = virustotal_scans_report.get('scan_date')
+                    permalink = virustotal_scans_report.get('permalink')
+                    positives = virustotal_scans_report.get('positives')
+                    total = virustotal_scans_report.get('total')
 
-            virustotal = {}
-            virustotal['scan_date'] = scan_date
-            virustotal['permalink'] = permalink
-            virustotal['positives'] = positives
-            virustotal['total'] = total
-            extracted_data['virustotal'] = virustotal
-            
+                    virustotal = {}
+                    virustotal['scan_date'] = scan_date
+                    virustotal['permalink'] = permalink
+                    virustotal['positives'] = positives
+                    virustotal['total'] = total
+                    extracted_data['virustotal'] = virustotal
+            except IndexError as e:
+                self.logger.error("Virustotal data correlation error", exc_info=True)
+
+
         if self.shodan:
-            try:
-                country_name = self.shodan['country_name']
-            except KeyError as e:
-                country_name = "N/A"
-            try:
-                country_code = self.shodan['country_code']
-            except KeyError as e:
-                country_code = "N/A"
-            try:
-                city = self.shodan['city']
-            except KeyError as e:
-                city = "N/A"
-            try:
-                region_code = self.shodan['region_code']
-            except KeyError as e:
-                region_code = "N/A"
-            try:
-                isp = self.shodan['isp']
-            except KeyError as e:
-                isp = "N/A"
-            try:
-                asn = self.shodan['asn']
-            except KeyError as e:
-                asn = "N/A"
-            try:
-                ports = self.shodan['ports']
-            except KeyError as e:
-                ports = "N/A"
-            try:
-                hostnames = self.shodan['hostnames']
-            except KeyError as e:
-                hostnames = "N/A"
-            try:
-                domains = self.shodan['domains']
-            except KeyError as e:
-                domains = "N/A"
+            country_name = self.shodan.get('country_name')
+            country_code = self.shodan.get('country_code')
+            city = self.shodan.get('city')
+            region_code = self.shodan.get('region_code')
+            isp = self.shodan.get('isp')
+            asn = self.shodan.get('asn')
+            ports = self.shodan.get('ports')
+            hostnames = self.shodan.get('hostnames')
+            domains = self.shodan.get('domains')
 
-            data = self.shodan['data'] # extract {port : {product, version}}
+            data = self.shodan.get('data') # extract {port : {product, version}}
             ports_info = {}
-            metadata = {}
-            for entry in data:
-                try:
-                    port = entry['port']
-                except KeyError as e:
-                    port = "N/A"
-                try:
-                    product = entry['product']
-                except KeyError as e:
-                    product = "N/A"                
-                try:
-                    version = entry['version']
-                except KeyError as e:
-                    version = "N/A"
-                
-                metadata = dict(
-                    product=product,
-                    version=version
-                )
-                ports_info[port] = metadata    
+            if data:
+                metadata = {}
+                for entry in data:
+                    port = entry.get('port')
+                    product = entry.get('product')
+                    version = entry.get('version')
+                    metadata = dict(
+                        product=product,
+                        version=version
+                    )
+                    ports_info[port] = metadata    
 
-            try:
-                vulns = self.shodan['vulns']
-            except KeyError as e:
-                vulns = "N/A"
-
-            # print(self.shodan['country_name'])
-            # print(self.shodan['country_code'])
-            # print(self.shodan['city'])
-            # print(self.shodan['region_code'])
-            # print(self.shodan['isp'])
-            # print(self.shodan['asn'])
-            # print(self.shodan['ports'])
-            # print(self.shodan['hostnames'])
-            # print(self.shodan['domains'])
-            # print(self.shodan['data']) # extract port, product, version
-            # print(self.shodan['vulns'])
+            vulns = self.shodan.get('vulns')
 
             shodan = {}
             shodan['country_name'] = country_name
@@ -299,84 +272,82 @@ class EnrichmentCorrelation:
             shodan['domains'] = domains
             shodan['vulns'] = vulns
             extracted_data['shodan'] = shodan
-            # extracted_data['country_name'] = country_name
-            # extracted_data['country_code'] = country_code
-            # extracted_data['city'] = city
-            # extracted_data['region_code'] = region_code
-            # extracted_data['isp'] = isp
-            # extracted_data['asn'] = asn
-            # extracted_data['ports'] = ports
-            # extracted_data['ports_info'] = ports_info
-            # extracted_data['hostnames'] = hostnames
-            # extracted_data['domains'] = domains
-            # extracted_data['vulns'] = vulns
 
         if self.alienvault:
-            
             alienvault_entry = {}
 
             # pulse_info
-            pulse_info = self.alienvault[0]['pulse_info']
-            references = pulse_info['references']
-            related = pulse_info['related']
-
-            alienvault_entry['references'] = references
-            alienvault_entry['related'] = related
+            try:
+                pulse_info = self.alienvault[0].get('pulse_info')
+                if pulse_info:
+                    references = pulse_info['references']
+                    related = pulse_info['related']
+                    alienvault_entry['references'] = references
+                    alienvault_entry['related'] = related
+            except IndexError as e:
+                self.logger.error("Alienvault correlation data error", exc_info=True)
 
             # url_list
-            url_list = self.alienvault[3]['url_list']    # shows only one page...
-            url_list_entry = []
-            entry_data = [] 
-            for entry in url_list:
-                date = entry['date']
-                url = entry['url']
-                hostname = entry['hostname']
-                result = entry['result']
-                try:
-                    http_code = result['urlworker']['http_code']
-                except KeyError as e:
-                    http_code = 0
+            try:
+                url_list = self.alienvault[3].get('url_list')    # shows only one page...
+                if url_list:
+                    url_list_entry = []
+                    entry_data = [] 
+                    for entry in url_list:
+                        date = entry.get('date')
+                        url = entry.get('url')
+                        hostname = entry.get('hostname')
+                        result = entry.get('result')
+                        http_code = result.get('urlworker').get('http_code')
+                        if not http_code:
+                            http_code = 0
 
-                if not http_code == 0:
-                    ip = result['urlworker']['ip']
-                else:
-                    ip = "N/A"
-                entry_data = dict(
-                    date=date,
-                    url=url,
-                    hostname=hostname,
-                    ip=ip,
-                    http_code=http_code
-                )
-                url_list_entry.append(entry_data)
+                        if not http_code == 0:
+                            ip = result.get('urlworker').get('ip')
+                        else:
+                            ip = None
+                        entry_data = dict(
+                            date=date,
+                            url=url,
+                            hostname=hostname,
+                            ip=ip,
+                            http_code=http_code
+                        )
+                        url_list_entry.append(entry_data)
 
-            alienvault_entry['associated_urls'] = url_list_entry
+                    alienvault_entry['associated_urls'] = url_list_entry
+            except IndexError as e:
+                self.logger.error("Alenvault correlation data error", exc_info=True)
 
             # passive_dns
-            passive_dns = self.alienvault[4]['passive_dns'] # shows all entries
-            # count = self.alienvault[4]['count']
-            passive_dns_entry = []
-            # passive_dns_entry['count'] = count
-            entry_data = [] 
-            for entry in passive_dns:
-                hostname = entry['hostname']
-                record_type = entry['record_type']
-                address = entry['address']
-                first_seen = entry['first']
-                last_seen = entry['last']
-                asn = entry['asn']
-                country = entry['flag_title']
-                entry_data = dict(
-                    hostname=hostname,
-                    record_type=record_type,
-                    address=address,
-                    first_seen=first_seen,
-                    last_seen=last_seen,
-                    asn=asn,
-                    country=country
-                )
-                passive_dns_entry.append(entry_data)
-            alienvault_entry['passive_dns'] = passive_dns_entry
+            try:
+                passive_dns = self.alienvault[4].get('passive_dns') # shows all entries
+                # count = self.alienvault[4]['count']
+                if passive_dns:
+                    passive_dns_entry = []
+                    # passive_dns_entry['count'] = count
+                    entry_data = [] 
+                    for entry in passive_dns:
+                        hostname = entry.get('hostname')
+                        record_type = entry.get('record_type')
+                        address = entry.get('address')
+                        first_seen = entry.get('first')
+                        last_seen = entry.get('last')
+                        asn = entry.get('asn')
+                        country = entry.get('flag_title')
+                        entry_data = dict(
+                            hostname=hostname,
+                            record_type=record_type,
+                            address=address,
+                            first_seen=first_seen,
+                            last_seen=last_seen,
+                            asn=asn,
+                            country=country
+                        )
+                        passive_dns_entry.append(entry_data)
+                    alienvault_entry['passive_dns'] = passive_dns_entry
+            except IndexError as e:
+                self.logger.error("Alenvault correlation data error", exc_info=True)
 
             extracted_data['alienvault'] = alienvault_entry
 
