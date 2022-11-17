@@ -52,6 +52,7 @@ class EnrichmentEngine:
             exit()
 
         self.abuseipdb_api_url = 'https://api.abuseipdb.com/api/v2/check'
+        self.threatfox_api_url = "https://threatfox-api.abuse.ch/api/v1/"
         self.securitytrails_api_url = "https://api.securitytrails.com/v1/"
         self.virustotal_api_url = "https://www.virustotal.com/vtapi/v2/"
         self.shodan_api_url = "https://api.shodan.io/"
@@ -63,10 +64,13 @@ class EnrichmentEngine:
         # for key, value in self.enrichment_services.items():
         #     print(f"{key} : {value}")
 
-        abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking = None, None, None, None, None, None
+        abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking = None, None, None, None, None, None, None
 
         if self.enrichment_services['abuseipdb']:
             abuseipdb = self.query_abuseipdb(target)
+
+        if self.enrichment_services['threatfox']:
+            threatfox = self.query_threatfox(target)
 
         if self.enrichment_services['securitytrails']:
             securitytrails = self.query_securitytrails(target)
@@ -134,6 +138,32 @@ class EnrichmentEngine:
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the AbuseIPDB's API")
             self.logger.error(
                 "Error ocurred while quering the AbuseIPDB's API", exc_info=True)
+            return
+
+    # API Reference : https://threatfox.abuse.ch/api/
+    def query_threatfox(self, target):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] THREATFOX")
+        self.logger.info(f"THREATFOX")
+        
+        try:
+            # IP/domain format check not necessary, respone contains "query_status": "ok"
+            
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Querying ThreatFox's IOC database ...")
+            self.logger.info(f"Querying ThreatFox's IOC database ...")
+
+            data = {"query": "search_ioc",
+                    "search_term": target}
+
+            response = requests.post(self.threatfox_api_url, data=json.dumps(data))
+            dict_response = json.loads(response.text)
+            json_object = json.dumps(dict_response, indent=4)
+            self.output_report("threatfox", json_object)
+            
+            return dict_response
+
+        except Exception as e:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the ThreatFox's API")
+            self.logger.error("Error ocurred while quering the ThreatFox's API", exc_info=True)
             return
 
     # API Reference : https://docs.securitytrails.com/reference/ping

@@ -17,8 +17,6 @@ from src.enrichment_engine import EnrichmentEngine
 # --
 #
 # [2] Enrichment
-# -- AlientVault DirectConnect API
-# ---- https://otx.alienvault.com/api ; https://otx.alienvault.com/assets/static/external_api.html ; https://rapidapi.com/raygorodskij/api/AlienVault/details
 # -- ThreatFox : sharing IOCs associated with malware (https://threatfox.abuse.ch/
 #
 # # [3] Analysis
@@ -120,7 +118,7 @@ def parse_arguments():
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
     parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)")
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/threatfox/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)")
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help='output directory file path for report files (default: reports/)')
 
@@ -179,6 +177,7 @@ def main():
 
         enrichment_services = {
             "abuseipdb": False,
+            "threatfox": False,
             "securitytrails": False,
             "virustotal": False,
             "shodan": False,
@@ -206,6 +205,8 @@ def main():
                 # enrichment.query_alienvault("027.ru")
                 # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
+            if service == "threatfox":
+                enrichment_services.update({"threatfox": True})
             if service == "abuseipdb":
                 enrichment_services.update({"abuseipdb": True})
             if service == "securitytrails":
@@ -220,8 +221,10 @@ def main():
                 enrichment_services.update({"bgp_ranking": True})
 
         enrichment = EnrichmentEngine(analyst_profile, output_dir, packet_parser, enrichment_services)
-        # enrichment.enrich_data("147.175.111.17")
-        enrichment.enrich_data("027.ru")
+        
+        # ----------------- TESTING -----------------
+        enrichment.enrich_data("139.180.203.104")
+        # enrichment.enrich_data("027.ru")
 
     # TODO
     action = args.action
