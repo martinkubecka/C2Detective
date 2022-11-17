@@ -2,10 +2,11 @@ import time
 import logging
 
 class EnrichmentCorrelation:
-    def __init__(self, target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking):
+    def __init__(self, target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking):
         self.logger = logging.getLogger(__name__)
         self.target = target
         self.abuseipdb = abuseipdb
+        self.threatfox = threatfox
         self.securitytrails = securitytrails
         self.virustotal = virustotal
         self.shodan = shodan
@@ -36,6 +37,40 @@ class EnrichmentCorrelation:
             abuseipdb['total_reports'] = total_reports
             abuseipdb['last_reported'] = last_reported
             extracted_data['abuseipdb'] = abuseipdb
+
+        if self.threatfox:
+            threatfox_entry = {}
+
+            data = self.threatfox.get('data')   
+            if data:
+                data = data[0] # data": [ { "id": "1337", "ioc": "139.180.203.104:443", ... } ]
+                ioc = data.get('ioc')
+                ioc_type = data.get('ioc_type')
+                ioc_type_desc = data.get('ioc_type_desc')
+                threat_type = data.get('threat_type')
+                threat_type_desc = data.get('threat_type_desc')
+                malware = data.get('malware_printable')
+                malware_malpedia = data.get('malware_malpedia')
+                confidence_level = data.get('confidence_level')
+                first_seen = data.get('first_seen')
+                last_seen = data.get('last_seen')
+                tags = data.get('tags')
+                malware_samples = data.get('malware_samples')
+
+                threatfox_entry['ioc'] = ioc
+                threatfox_entry['ioc_type'] = ioc_type
+                threatfox_entry['ioc_type_desc'] = ioc_type_desc
+                threatfox_entry['threat_type'] = threat_type
+                threatfox_entry['threat_type_desc'] = threat_type_desc
+                threatfox_entry['malware'] = malware
+                threatfox_entry['malware_malpedia'] = malware_malpedia
+                threatfox_entry['confidence_level'] = confidence_level
+                threatfox_entry['first_seen'] = first_seen
+                threatfox_entry['last_seen'] = last_seen
+                threatfox_entry['tags'] = tags
+                threatfox_entry['malware_samples'] = malware_samples
+
+                extracted_data['threatfox'] = threatfox_entry
 
         if self.securitytrails:
             securitytrails_entry = {}

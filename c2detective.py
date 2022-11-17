@@ -205,10 +205,10 @@ def main():
                 # enrichment.query_alienvault("027.ru")
                 # enrichment.query_bgp_ranking("5577", "2019-05-19")
                 break
-            if service == "threatfox":
-                enrichment_services.update({"threatfox": True})
             if service == "abuseipdb":
                 enrichment_services.update({"abuseipdb": True})
+            if service == "threatfox":
+                enrichment_services.update({"threatfox": True})
             if service == "securitytrails":
                 enrichment_services.update({"securitytrails": True})
             if service == "virustotal":
@@ -223,7 +223,8 @@ def main():
         enrichment = EnrichmentEngine(analyst_profile, output_dir, packet_parser, enrichment_services)
         
         # ----------------- TESTING -----------------
-        enrichment.enrich_data("139.180.203.104")
+        enrichment.enrich_data("139.180.203.104")   # Cobalt Strike
+        # enrichment.enrich_data("147.175.111.17")  # STU
         # enrichment.enrich_data("027.ru")
 
     # TODO

@@ -88,7 +88,7 @@ class EnrichmentEngine:
             bgp_ranking = self.query_bgp_ranking(target)
 
         correlation_engine = EnrichmentCorrelation(
-            target, abuseipdb, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
+            target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
         correlated_data = correlation_engine.enrichment_correlation()
 
         json_object = json.dumps(correlated_data, indent=4)
@@ -152,14 +152,20 @@ class EnrichmentEngine:
             self.logger.info(f"Querying ThreatFox's IOC database ...")
 
             data = {"query": "search_ioc",
-                    "search_term": target}
-
+                    "search_term": target
+                    }
             response = requests.post(self.threatfox_api_url, data=json.dumps(data))
             dict_response = json.loads(response.text)
-            json_object = json.dumps(dict_response, indent=4)
-            self.output_report("threatfox", json_object)
-            
-            return dict_response
+
+            if dict_response['query_status'] == "ok":
+                json_object = json.dumps(dict_response, indent=4)
+                self.output_report("threatfox", json_object)    
+
+                return dict_response
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No result or illegal search term")
+                self.logger.warning(f"No result or illegal search term ")
+                return
 
         except Exception as e:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the ThreatFox's API")
