@@ -307,13 +307,12 @@ class EnrichmentEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] SHODAN")
         self.logger.info(f"SHODAN")
         api = shodan.Shodan(self.analyst_profile.shodan_api_key)
-        domain = target
         try:
-            if not is_ip_address(domain):  # input is a domain
+            if not is_ip_address(target):  # input is a domain
                 print(
                     f"[{time.strftime('%H:%M:%S')}] [INFO] Resolving '{target}' to an IP address")
                 self.logger.info(f"Resolving '{target}' to an IP address")
-                url = f"{self.shodan_api_url}dns/resolve?hostnames={domain}&key={self.analyst_profile.shodan_api_key}"
+                url = f"{self.shodan_api_url}dns/resolve?hostnames={target}&key={self.analyst_profile.shodan_api_key}"
                 # resolve target domain to an IP address
                 response = requests.get(url)
                 decoded_response = json.loads(response.text)
@@ -323,54 +322,30 @@ class EnrichmentEngine:
                     print(
                         f"[{time.strftime('%H:%M:%S')}] [INFO] Resolved '{target}' to '{ip_addr}'")
                     self.logger.info(f"Resolved '{target}' to '{ip_addr}'")
-
-                    # execute a Shodan search on the resolved IP
-                    print(
-                        f"[{time.strftime('%H:%M:%S')}] [INFO] Executing search query and retrieving API's response")
-                    self.logger.info(
-                        f"Executing search query and retrieving API's response")
-                    result = api.host(ip_addr)
-                    decoded_response = json.dumps(result, indent=4)
-
-                    # print("[*] General Information")
-                    # print(f"IP: {result['ip_str']}")
-                    # print(f"Hostnames: {result['hostnames']}")
-                    # print(f"Domains: {result['domains']}")
-                    # print(f"Country: {result['country_name']}")
-                    # print(f"City: {result['city']}")
-                    # print(f"Organization: {result['org']}")
-                    # print(f"ISP: {result['isp']}")
-                    # print(f"ASN: {result['asn']}\n")
-                    # print(f"Operating System: {result['os']}")
-
-                    # print all banners
-                    # print("[*] Open ports")
-                    # print(f"{result['ports']}\n")
-                    # for item in result['data']:
-                    #     print(f"Port: {item['port']}")
-                    #     print(f"Banner: {item['data']}")
-
-                    # print vuln information
-                    # if "vulns" in result:   # there may not be any vulns
-                    #     print("[*] Vulnerabilities")
-                    #     print(result['vulns'])  # prints only list of CVEs
-                    # slow approach
-                    # for item in result['vulns']:
-                    # CVE = item.replace('!', '')
-                    # print(f"Vulns: {item}")
-                    # exploits = api.exploits.search(CVE)
-                    # for item in exploits['matches']:
-                    #     if item.get('cve')[0] == CVE:
-                    #         print(f"{item.get('description')}")
-
-                    self.output_report("shodan", decoded_response)
-
-                    return result
-
+                    target = ip_addr
                 else:
                     print(f"[{time.strftime('%H:%M:%S')}] [WARNING] Failed to resolved '{keyword}' to an IP address")
                     self.logger.warning(msg)(f"Failed to resolved '{keyword}' to an IP address")
                     return
+            
+            # execute a Shodan search query for IP
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] Executing search query for '{target}' and retrieving API's response")
+            self.logger.info(
+                f"Executing search query for '{target}' and retrieving API's response")
+            
+            try:
+                result = api.host(target)
+            except shodan.APIError as error:
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [INFO] No results found for '{target}'")
+                self.logger.info(f"No results found for '{target}'")
+                return
+        
+            decoded_response = json.dumps(result, indent=4)
+            self.output_report("shodan", decoded_response)
+
+            return result
 
         except Exception as e:
             print(
