@@ -1,0 +1,61 @@
+packet[1][0] = Ether
+packet[1][1] = IP
+packet[1][2] = UDP
+packet[1][3] = DNS
+packet[1][4] = DNSQR
+packet[1][5-9] = DNSRR
+
+###[ Ethernet ]### 
+  dst       = 00:0e:53:07:f5:22
+  src       = 00:0b:db:a6:5f:13
+  type      = IPv4
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 80
+     id        = 33736
+     flags     = 
+     frag      = 0
+     ttl       = 128
+     proto     = udp
+     chksum    = 0x7447
+     src       = 10.9.23.23
+     dst       = 10.9.23.101
+     \options   \
+###[ UDP ]### 
+        sport     = domain
+        dport     = 56868
+        len       = 60
+        chksum    = 0x380a
+###[ DNS ]### 
+           id        = 40087
+           qr        = 1
+           opcode    = QUERY
+           aa        = 0
+           tc        = 0
+           rd        = 1
+           ra        = 1
+           z         = 0
+           ad        = 0
+           cd        = 0
+           rcode     = ok
+           qdcount   = 1
+           ancount   = 1
+           nscount   = 0
+           arcount   = 0
+           \qd        \
+            |###[ DNS Question Record ]### 
+            |  qname     = 'trallfasterinf.com.'
+            |  qtype     = A
+            |  qclass    = IN
+           \an        \
+            |###[ DNS Resource Record ]### 
+            |  rrname    = 'trallfasterinf.com.'
+            |  type      = A
+            |  rclass    = IN
+            |  ttl       = 29
+            |  rdlen     = None
+            |  rdata     = 137.184.114.20
+           ns        = None
+           ar        = None

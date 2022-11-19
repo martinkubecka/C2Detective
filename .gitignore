@@ -2,8 +2,6 @@ config/config.yml
 samples/
 reports/
 logs/
-test.ipynb
-test.py
 testing.py
 
 ##########################################################################

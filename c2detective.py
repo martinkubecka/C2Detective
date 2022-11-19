@@ -118,7 +118,7 @@ def parse_arguments():
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
     parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/threatfox/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)")
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/alienvault/bgpranking/securitytrails/shodan/threatfox/virustotal/all] (default if selected: all)")
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help='output directory file path for report files (default: reports/)')
 
@@ -164,8 +164,8 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        # packet_parser = PacketParser(input_file)
-        packet_parser = None    # TESTING ENRICHMENT
+        packet_parser = PacketParser(input_file)
+        # packet_parser = None    # TESTING ENRICHMENT
 
     output_dir = args.output
 

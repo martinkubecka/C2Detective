@@ -39,14 +39,14 @@ $ pip install -r requirements.txt
 
 - enrichment engine uses the following APIs:
   - [AbuseIPDB](https://www.abuseipdb.com/)
-  - [VirusTotal](https://www.virustotal.com/gui/home/upload)
+  - [AlienVault](https://otx.alienvault.com/)
+  - [CIRCL's BGP Ranking](https://www.circl.lu/projects/bgpranking/)
   - [SecurityTrails](https://securitytrails.com/)
   - [Shodan](https://www.shodan.io/)
-  - [AlientVault](https://otx.alienvault.com/)
   - [ThreatFox](https://threatfox.abuse.ch/)
-  - [CIRCL's BGP Ranking](https://www.circl.lu/projects/bgpranking/)
+  - [VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-- add your API keys for the services listed above (except for `AlientVault`, `ThreatFox` and `CIRCL's BGP Ranking`) to the `config/config.yml` file as shown in the `config/example.yml` 
+- add your API keys for the services listed above (except for `AlienVault`, `ThreatFox` and `CIRCL's BGP Ranking`) to the `config/config.yml` file as shown in the `config/example.yml` 
 
 > ***Warning:*** *Do not use SecurityTrails's enrichment on FREE subscription plan.*
 
@@ -67,7 +67,8 @@ options:
   -n NAME, --name NAME                analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
   -c FILE, --config FILE              config file (default: ".config/config.yml")
   -a ACTION, --action ACTION          action to execute [sniffer/...]
-  -e [SERVICES], --enrich [SERVICES]  data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/threatfox/securitytrails/virustotal/shodan/alienvault/bgpranking/all] (default if selected: all)
+  -e [SERVICES], --enrich [SERVICES]  data enrichment, use comma as a delimeter and double quotes when selecting more
+                                      [abuseipdb/alienvault/bgpranking/securitytrails/shodan/threatfox/virustotal/all] (default if selected: all)
   -o PATH, --output PATH              output directory file path for report files (default: reports/)
 ```
 
