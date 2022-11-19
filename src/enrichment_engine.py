@@ -135,9 +135,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the AbuseIPDB's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the AbuseIPDB's API")
             self.logger.error(
-                "Error ocurred while quering the AbuseIPDB's API", exc_info=True)
+                "Error ocurred while querying the AbuseIPDB's API", exc_info=True)
             return
 
     # API Reference : https://threatfox.abuse.ch/api/
@@ -168,8 +168,8 @@ class EnrichmentEngine:
                 return
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the ThreatFox's API")
-            self.logger.error("Error ocurred while quering the ThreatFox's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the ThreatFox's API")
+            self.logger.error("Error ocurred while querying the ThreatFox's API", exc_info=True)
             return
 
     # API Reference : https://docs.securitytrails.com/reference/ping
@@ -243,9 +243,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the SecurityTrail's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the SecurityTrail's API")
             self.logger.error(
-                "Error ocurred while quering the SecurityTrail's API", exc_info=True)
+                "Error ocurred while querying the SecurityTrail's API", exc_info=True)
             return
 
     # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
@@ -294,9 +294,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the VirusTotal's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the VirusTotal's API")
             self.logger.error(
-                "Error ocurred while quering the VirusTotal's API", exc_info=True)
+                "Error ocurred while querying the VirusTotal's API", exc_info=True)
             return
 
     # API Reference: https://shodan.readthedocs.io/en/latest/examples/basic-search.html
@@ -349,9 +349,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the Shodan's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the Shodan's API")
             self.logger.error(
-                "Error ocurred while quering the Shodan's API", exc_info=True)
+                "Error ocurred while querying the Shodan's API", exc_info=True)
             return
 
     # AlienVault External API documentation : https://otx.alienvault.com/assets/static/external_api.html
@@ -399,9 +399,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the AlienVault's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the AlienVault's API")
             self.logger.error(
-                "Error ocurred while quering the AlienVault's API", exc_info=True)
+                "Error ocurred while querying the AlienVault's API", exc_info=True)
             return
 
     # source : https://www.circl.lu/projects/bgpranking/
@@ -437,9 +437,9 @@ class EnrichmentEngine:
 
         except Exception as e:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while quering the CIRCL's API")
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the CIRCL's API")
             self.logger.error(
-                "Error ocurred while quering the CIRCL's API", exc_info=True)
+                "Error ocurred while querying the CIRCL's API", exc_info=True)
             return
 
 

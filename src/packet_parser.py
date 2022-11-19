@@ -9,7 +9,6 @@ import time
 from prettytable import PrettyTable
 from collections import Counter
 
-
 class PacketParser:
     def __init__(self, filepath):
         self.logger = logging.getLogger(__name__)
@@ -153,3 +152,30 @@ class PacketParser:
         print(table)
 
         print(f">> Number of HTTP payloads: {len(self.http_payloads)}")
+
+    # source : https://security.stackexchange.com/questions/123851/how-can-i-extract-the-certificate-from-this-pcap-file
+    # def extract_domains_from_certificates(self):
+    #     for packet in self.packets:
+    #         if 'SSL' in packet:
+    #             for layer in packet.layers:
+    #                 if layer.layer_name == 'ssl':
+    #                     if hasattr(layer, 'x509ce_dnsname'):
+    #                         print(layer.x509ce_dnsname) # domain
+    #     for packet in self.packets:
+    #         if "SSL" in packet:
+    #             # Look for attribute of x509
+    #             if hasattr(packet['SSL'], 'x509sat_utf8string'):
+    #                 print(packet["SSL"])
+    #                 print(dir(packet['SSL']))
+
+    # source : https://www.linux-magazine.com/Issues/2019/220/Packet-Analysis-with-Scapy
+    # def plot_graph(self):
+    #     import plotly
+
+    #     xData, yData = [], []
+
+    #     for ip, count in counter.most_common():
+    #         xData.append(ip)
+    #         yData.append(count)
+
+    #     plotly.offline.plot({"data":[plotly.graph_objs.Bar(x=xData, y=yData)]})

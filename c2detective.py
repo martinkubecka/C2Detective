@@ -11,28 +11,6 @@ from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
 
 
-#######################################################################################################################################################################
-# TODO
-# [1] General
-# --
-#
-# [2] Enrichment
-# -- ThreatFox : sharing IOCs associated with malware (https://threatfox.abuse.ch/
-#
-# # [3] Analysis
-# --
-#
-# [4] Detection
-# -- implement detection confidence scoring system
-# -- Feodo Tracker : sharing botnet C&C servers - lists generated every 5 minutes (https://feodotracker.abuse.ch/blocklist/)
-# -- SSL Blacklist (SSLBL) : identifying and blacklisting SSL certificates used by botnet C&C servers (https://sslbl.abuse.ch/)
-# -- URLhaus : sharing malicious URLs that are being used for malware distribution (https://urlhaus.abuse.ch/)
-# -- C&C Tracker : active and non-sinkholed C&C IP addresses (https://osint.bambenekconsulting.com/feeds/c2-ipmasterlist.txt)
-# -- Botvrij.eu provides different sets of open source IOCs (https://www.botvrij.eu/ ; https://www.botvrij.eu/data/)
-# -- Binary Defense Systems Artillery Threat Intelligence Feed and Banlist Feed (https://www.binarydefense.com/banlist.txt)
-#######################################################################################################################################################################
-
-
 def banner():
     print(r"""
    ____ ____  ____       _            _   _
