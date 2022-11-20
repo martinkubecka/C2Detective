@@ -57,6 +57,19 @@ def is_valid_file(filename, filetype):
     return True
 
 
+def check_report_directory(output_dir):
+    report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
+    
+    if output_dir == "reports":
+            report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
+    else:
+        report_dir = output_dir    
+    
+    if not os.path.isdir(report_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{report_dir}' for storing analysis reports")
+        logging.info(f"Creating '{report_dir}' for storing analysis reports")
+        os.mkdir(report_dir)
+
 def load_config(filename):
     with open(filename, "r") as ymlfile:
         config = yaml.safe_load(ymlfile)
@@ -88,13 +101,14 @@ def parse_arguments():
     #                     help='input file (.cap OR .pcap)', required=True)
     parser.add_argument('input', metavar='FILENAME',
                         help='input file (.cap OR .pcap)')
-
     parser.add_argument('-n', '--name', metavar="NAME",
                         help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
     parser.add_argument('-s', '--statistics', action='store_true',
                         help='print packet capture statistics')
+    parser.add_argument('-r', '--report-iocs', action='store_true',
+                        help='write extracted IOCs to JSON file')
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
     parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
@@ -129,6 +143,11 @@ def main():
 
     statistics = args.statistics
 
+    output_dir = args.output
+    check_report_directory(output_dir)
+
+    report_iocs = args.report_iocs
+
     if not args.name is None:
         analysis_name = args.name
         # use analysis name for output/report naming etc.
@@ -146,10 +165,8 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        packet_parser = PacketParser(input_file, statistics)
+        packet_parser = PacketParser(input_file, output_dir, report_iocs, statistics)
         # packet_parser = None    # TESTING ENRICHMENT
-
-    output_dir = args.output
 
     if not args.enrich is None:
         print(

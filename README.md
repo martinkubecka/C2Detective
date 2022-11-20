@@ -57,7 +57,7 @@ $ pip install -r requirements.txt
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-a ACTION] [-e [SERVICES]] [-o PATH] FILENAME
+usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-s] [-r] [-a ACTION] [-e [SERVICES]] [-o PATH] FILENAME
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
@@ -69,6 +69,8 @@ options:
   -q, --quiet                         don't print the banner and other noise
   -n NAME, --name NAME                analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
   -c FILE, --config FILE              config file (default: ".config/config.yml")
+  -s, --statistics                    print packet capture statistics
+  -r, --report-iocs                   write extracted IOCs to JSON file
   -a ACTION, --action ACTION          action to execute [sniffer/...]
   -e [SERVICES], --enrich [SERVICES]  data enrichment, use comma as a delimeter and double quotes when selecting more
                                       [abuseipdb/alienvault/bgpranking/securitytrails/shodan/threatfox/virustotal/all] (default if selected: all)

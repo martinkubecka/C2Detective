@@ -39,17 +39,7 @@ class EnrichmentEngine:
         self.packet_parser = packet_parser
         self.enrichment_services = enrichment_services
 
-        if output_dir == "reports":
-            self.report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
-            if not os.path.isdir(self.report_dir):
-                print(
-                    f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{self.report_dir}' for storing analysis reports")
-                self.logger.info(
-                    f"Creating '{self.report_dir}' for storing analysis reports")
-                os.mkdir(self.report_dir)
-        else:
-            print("TODO")
-            exit()
+        self.report_dir = output_dir
 
         self.abuseipdb_api_url = 'https://api.abuseipdb.com/api/v2/check'
         self.threatfox_api_url = "https://threatfox-api.abuse.ch/api/v1/"

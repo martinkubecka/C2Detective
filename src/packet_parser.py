@@ -10,11 +10,12 @@ import logging
 import time
 from prettytable import PrettyTable
 from collections import Counter
+import base64
 # import cryptography
 
 
 class PacketParser:
-    def __init__(self, filepath, statistics):
+    def __init__(self, filepath, output_dir, report_iocs, statistics):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
@@ -31,9 +32,9 @@ class PacketParser:
 
         # self.extract_domains_from_certificates()
 
-        self.report = True
+        self.report = report_iocs  
         if self.report:
-            self.report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
+            self.report_dir = output_dir
             self.extracted_iocs = self.correlate_iocs()
             self.extracted_iocs_json = json.dumps(
                 self.extracted_iocs, indent=4)
@@ -146,7 +147,7 @@ class PacketParser:
         sessions = self.packets.sessions()
         for session in sessions:
             http_payload = ""
-            field_entry = []
+            # field_entry = []
             for packet in sessions[session]:
                 try:
                     if packet[TCP].dport == 80 or packet[TCP].sport == 80:
@@ -156,15 +157,16 @@ class PacketParser:
                         dst_port = packet[IP].dport
                         http_payload = packet[TCP].payload
 
-                        # TODO : change to dictionary
-                        field_entry.append(src_ip)
-                        field_entry.append(src_port)
-                        field_entry.append(dst_ip)
-                        field_entry.append(dst_port)
-                        field_entry.append(http_payload)
+                        entry = dict(
+                            src_ip=src_ip,
+                            src_port=src_port,
+                            dst_ip=dst_ip,
+                            dst_port=dst_port,
+                            http_payload=http_payload
+                        )
 
                         http_payloads.append(http_payload)
-                        http_sessions.append(field_entry)
+                        http_sessions.append(entry)
                         # print(src_ip, src_port, dst_ip, dst_port)
                 except:
                     pass
@@ -298,6 +300,13 @@ class PacketParser:
         for entry in self.http_get_requests:
             http_get_requests.append(entry)
         iocs['http_get_requests'] = http_get_requests
+
+        # extracted HTTP sessions
+        # http_sessions = []
+        # for entry in self.http_sessions:
+        #     # print(entry)
+        #     http_sessions.append(entry)
+        # iocs['http_sessions'] = http_sessions
 
         return iocs
 
