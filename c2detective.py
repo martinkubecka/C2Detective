@@ -93,6 +93,8 @@ def parse_arguments():
                         help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help='config file (default: ".config/config.yml")')  # maybe load arguments from the config file too
+    parser.add_argument('-s', '--statistics', action='store_true',
+                        help='print packet capture statistics')
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
     parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
@@ -125,6 +127,8 @@ def main():
     if not args.quiet:
         banner()
 
+    statistics = args.statistics
+
     if not args.name is None:
         analysis_name = args.name
         # use analysis name for output/report naming etc.
@@ -142,7 +146,7 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        packet_parser = PacketParser(input_file)
+        packet_parser = PacketParser(input_file, statistics)
         # packet_parser = None    # TESTING ENRICHMENT
 
     output_dir = args.output

@@ -14,7 +14,7 @@ from collections import Counter
 
 
 class PacketParser:
-    def __init__(self, filepath):
+    def __init__(self, filepath, statistics):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
@@ -39,7 +39,7 @@ class PacketParser:
                 self.extracted_iocs, indent=4)
             self.iocs_to_file()
 
-        self.cli_statistics = True
+        self.cli_statistics = statistics
         if self.cli_statistics:
             self.print_statistics()
 
