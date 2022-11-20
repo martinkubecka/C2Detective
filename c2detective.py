@@ -40,7 +40,7 @@ def is_valid_file(filename, filetype):
         sys.exit(1)
     else:
         if filetype == "pcap":  # check if the filetype is .pcap or .cap
-            if not filename.endswith(".pcap") or filename.endswith(".cap"):
+            if not (filename.endswith(".pcap") or filename.endswith(".cap") or filename.endswith(".pcapng")):
                 print(
                     f"[{time.strftime('%H:%M:%S')}] [ERROR] Provided file '{filename}' is not a pcap/cap file.")
                 logging.error(

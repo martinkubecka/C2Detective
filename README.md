@@ -15,7 +15,9 @@
     - [Installing Required Packages](#package-installing-required-packages)
     - [API Keys](#old_key-api-keys) 
 - [Usage](#keyboard-usage)
-- [To-Do](#ballot_box_with_check-to-do)
+- [List of Features](#placard-list-of-features)
+    - [Implemented Features](#ballot_box_with_check-implemented-features)
+    - [To-Do](#clipboard-to-do)
 - [Development](#toolbox-development)
     - [Virtual Environment](#office-virtual-environment)
 
@@ -74,21 +76,58 @@ options:
 ```
 
 ---
-## :ballot_box_with_check: To-Do
+## :placard: List of Features
+
+### :ballot_box_with_check: Implemented Features
+
+#### General
+
+- [x] command-line interface (CLI) with argument parsing
+- [x] implemented logging
+- [x] load configurations from config file
+
+#### Packet Capture Analysis
+
+- [x] load and parse packet capture with Scapy
+- [x] extract various IOCs
+  - [x] unique connections
+  - [x] public IP addresses
+  - [x] domains from DNS responses
+  - [x] HTTP payloads
+  - [x] requested URLs
+- [x] show custom packet capture statistics
+
+#### Data Enrichment & Correlation 
+
+- [x] data enrichment with AlienVault
+- [x] data enrichment with AbuseIPDB
+- [x] data enrichment with CIRCL's BGP Ranking
+- [x] data enrichment with SecurityTrails
+- [x] data enrichment with Shodan
+- [x] data enrichment with ThreatFox
+- [x] data enrichment with VirusTotal
+- [x] correlating enriched data to one JSON object
+- [x] write correlated enriched data to the output report file
+
+#### Detection
+
+- *currently working on these features*
+
+
+### :clipboard: To-Do
 
 - following categories contains features that are in a queue for implementation
 - this list is ***not exhaustive*** and additional features will be added during development
 
-### General
+#### General
 
 - *no queued tasks at this moment*
 
-### Packet Capture Analysis
+#### Packet Capture Analysis
 
-- [ ] extract URLs and User-Agents from HTTP requests
 - [ ] extract domains from HTTPs X509 certificates
 
-### Data Enrichment & Correlation 
+#### Data Enrichment & Correlation 
 
 - [ ] add C&C Tracker : active and non-sinkholed C&C IP addresses (https://osint.bambenekconsulting.com/feeds/c2-ipmasterlist.txt)
 - [ ] add Feodo Tracker : sharing botnet C&C servers - lists generated every 5 minutes (https://feodotracker.abuse.ch/blocklist/)
@@ -97,7 +136,7 @@ options:
 - [ ] add Botvrij.eu : provides different sets of open source IOCs (https://www.botvrij.eu/ ; https://www.botvrij.eu/data/)
 - [ ] add Binary Defense Systems Artillery Threat Intelligence Feed and Banlist Feed (https://www.binarydefense.com/banlist.txt)
 
-### Detection
+#### Detection
 
 - [ ] detect suspicious domains and hosts based on the enriched and correlated data
   - [ ] detect malicious domains which received connections

@@ -6,3 +6,4 @@ requests
 ipaddress
 shodan
 prettytable
+cryptography==37.0.4    # required for loading TLS layer for Scapy
