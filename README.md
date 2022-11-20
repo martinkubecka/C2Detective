@@ -95,7 +95,12 @@ options:
   - [x] domains from DNS responses
   - [x] HTTP payloads
   - [x] requested URLs
-- [x] show custom packet capture statistics
+- [x] show custom packet capture statistics in terminal
+- [x] write extracted IOCs to JSON file
+  - [x] public IP addresses and their count
+  - [x] domains from DNS responses
+  - [x] HTTP GET requests
+  - [x] requested URLs
 
 #### Data Enrichment & Correlation 
 

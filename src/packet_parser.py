@@ -1,3 +1,4 @@
+import json
 from scapy.all import *
 from scapy.layers import http
 import pandas as pd
@@ -19,16 +20,28 @@ class PacketParser:
         self.packets = self.get_packet_list()  # creates a list in memory
 
         self.all_connections, self.external_connections = self.extract_unique_connections()
+
         self.src_ip_list, self.dst_ip_list = self.extract_public_ip_addresses()
+        self.src_unique_ip_list, self.dst_unique_ip_list = self.get_unique_public_addresses()
+        self.src_ip_counter, self.dst_ip_counter = self.count_public_ip_addresses()
+
         self.rrnames = self.extract_domains()
         self.http_payloads, self.http_sessions = self.get_http_sessions()
         self.urls, self.http_get_requests = self.extract_urls()
 
         # self.extract_domains_from_certificates()
 
-        self.statistics = True
-        if self.statistics:
-            self.get_statistics()
+        self.report = True
+        if self.report:
+            self.report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
+            self.extracted_iocs = self.correlate_iocs()
+            self.extracted_iocs_json = json.dumps(
+                self.extracted_iocs, indent=4)
+            self.iocs_to_file()
+
+        self.cli_statistics = True
+        if self.cli_statistics:
+            self.print_statistics()
 
     def get_packet_list(self):
         # load_layer('tls') # EXPERIMENTAL
@@ -85,6 +98,28 @@ class PacketParser:
 
         return src_ip_list, dst_ip_list
 
+    def get_unique_public_addresses(self):
+        src_ip_list_set = set(self.src_ip_list)
+        src_unique_ip_list = (list(src_ip_list_set))
+
+        dst_unique_ip_list_set = set(self.dst_ip_list)
+        dst_unique_ip_list = (list(dst_unique_ip_list_set))
+
+        return src_unique_ip_list, dst_unique_ip_list
+
+    def count_public_ip_addresses(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Counting public source/destination IP addresses ...")
+        self.logger.info(f"Counting public source/destination IP addresses")
+        src_ip_counter = Counter()
+        for ip in self.src_ip_list:
+            src_ip_counter[ip] += 1
+
+        dst_ip_counter = Counter()
+        for ip in self.dst_ip_list:
+            dst_ip_counter[ip] += 1
+
+        return src_ip_counter, dst_ip_counter
+
     def extract_domains(self):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domains from DNS responses ...")
@@ -102,7 +137,8 @@ class PacketParser:
         return rrnames
 
     def get_http_sessions(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
         self.logger.info("Extracting data from HTTP sessions")
         # e.g.: UDP 10.9.23.101:56868 > 10.9.23.23:53 ; TCP 137.184.114.20:80 > 10.9.23.101:58592
         http_payloads = []
@@ -136,14 +172,16 @@ class PacketParser:
         return http_payloads, http_sessions
 
     def extract_urls(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP GET requests ...")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP GET requests ...")
         self.logger.info("Extracting data from HTTP GET requests")
 
         http_get_requests = []
         urls = []
 
         for packet in self.packets:
-            if packet.haslayer(http.HTTPRequest):   # process packets which contains HTTP request 
+            # process packets which contains HTTP request
+            if packet.haslayer(http.HTTPRequest):
 
                 http_layer = packet.getlayer(http.HTTPRequest)
 
@@ -156,15 +194,16 @@ class PacketParser:
                 # scapy.layers.http.HTTPRequest : https://scapy.readthedocs.io/en/latest/api/scapy.layers.http.html
                 method = http_layer.fields.get('Method')
                 method = method.decode() if method else method  # if Method not None, decode bytes
-                
+
                 host = http_layer.fields.get('Host')
                 host = host.decode() if host else host  # if Host not None, decode bytes
-                
+
                 path = http_layer.fields.get('Path')
                 path = path.decode() if path else path  # if Path not None, decode bytes
-                
+
                 user_agent = http_layer.fields.get('User_Agent')
-                user_agent = user_agent.decode() if user_agent else user_agent  # if User-Agent not None, decode bytes
+                # if User-Agent not None, decode bytes
+                user_agent = user_agent.decode() if user_agent else user_agent
 
                 # print(f"[ENTRY] : {src_ip} requested {method} {host}{path} | {user_agent}")
                 # print(f"[URL] : {host}{path}")
@@ -188,8 +227,7 @@ class PacketParser:
 
         return urls, http_get_requests
 
-
-    def get_statistics(self):
+    def print_statistics(self):
         print(f"\n_________________ [ STATISTICS ] _________________")
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
@@ -198,20 +236,14 @@ class PacketParser:
 
         top_count = 3
         print(f">> Top {top_count} most common public source IP address")
-        src_ip_counter = Counter()
-        for ip in self.src_ip_list:
-            src_ip_counter[ip] += 1
         table = PrettyTable(["Source IP", "Count"])
-        for ip, count in src_ip_counter.most_common(top_count):
+        for ip, count in self.src_ip_counter.most_common(top_count):
             table.add_row([ip, count])
         print(table)
 
         print(f">> Top {top_count} most common public destination IP address")
-        dst_ip_counter = Counter()
-        for ip in self.dst_ip_list:
-            dst_ip_counter[ip] += 1
         table = PrettyTable(["Destination IP", "Count"])
-        for ip, count in dst_ip_counter.most_common(top_count):
+        for ip, count in self.dst_ip_counter.most_common(top_count):
             table.add_row([ip, count])
         print(table)
 
@@ -219,6 +251,64 @@ class PacketParser:
         # print(f">> Number of HTTP payloads: {len(self.http_payloads)}")   # compare number with sessions
         # print(f">> Number of HTTP GET requests : {len(self.http_get_requests)}") # compare number with urls
         print(f">> Number of extracted URLs : {len(self.urls)}")
+
+    def correlate_iocs(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating extracted IOCs ...")
+        self.logger.info(f"Correlating extracted IOCs")
+        iocs = {}
+
+        # rrnames from DNS responses
+        extracted_domains = []
+        for entry in self.rrnames:
+            extracted_domains.append(entry)
+        iocs['extracted_domains'] = extracted_domains
+
+        # unique public source IP address
+        public_src_ip_addresses = []
+        for ip in self.src_unique_ip_list:
+            public_src_ip_addresses.append(ip)
+        iocs['public_src_ip_addresses'] = public_src_ip_addresses
+
+        # unique public source IP address count
+        public_src_ip_addresses_count = {}
+        for ip, count in self.src_ip_counter.most_common():
+            public_src_ip_addresses_count[ip] = count
+        iocs['public_src_ip_addresses_count'] = public_src_ip_addresses_count
+
+        # unique public destination IP address
+        public_dst_ip_addresses = []
+        for ip in self.dst_unique_ip_list:
+            public_dst_ip_addresses.append(ip)
+        iocs['public_dst_ip_addresses'] = public_dst_ip_addresses
+
+        # unique public destination IP address count
+        public_dst_ip_addresses_count = {}
+        for ip, count in self.dst_ip_counter.most_common():
+            public_dst_ip_addresses_count[ip] = count
+        iocs['public_dst_ip_addresses_count'] = public_dst_ip_addresses_count
+
+        # extracted URLs
+        urls = []
+        for url in self.urls:
+            urls.append(url)
+        iocs['extracted_urls'] = urls
+
+        # extracted HTTP GET requests
+        http_get_requests = []
+        for entry in self.http_get_requests:
+            http_get_requests.append(entry)
+        iocs['http_get_requests'] = http_get_requests
+
+        return iocs
+
+    def iocs_to_file(self):
+        report_output_path = f"{self.report_dir}/extracted_iocs.json"
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Writing extracted IOCs to '{report_output_path}'")
+        self.logger.info(f"Writing extracted IOCs to '{report_output_path}'")
+
+        with open(report_output_path, "w") as output:
+            output.write(self.extracted_iocs_json)
 
     # ----------------------------------- EXPERIMENTAL FEATURES -----------------------------------
 
