@@ -48,13 +48,14 @@ class EnrichmentEngine:
         self.shodan_api_url = "https://api.shodan.io/"
         self.alienvault_api_url = "https://otx.alienvault.com/api/v1/indicators/"
         self.bgp_ranking_api_url = "https://bgpranking-ng.circl.lu/"
+        self.urlhaus_api_url = "https://urlhaus-api.abuse.ch/v1/"
 
     def enrich_data(self, target):
 
         # for key, value in self.enrichment_services.items():
         #     print(f"{key} : {value}")
 
-        abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking = None, None, None, None, None, None, None
+        abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus = None, None, None, None, None, None, None, None
 
         if self.enrichment_services['abuseipdb']:
             abuseipdb = self.query_abuseipdb(target)
@@ -77,8 +78,11 @@ class EnrichmentEngine:
         if self.enrichment_services['bgp_ranking']:
             bgp_ranking = self.query_bgp_ranking(target)
 
+        if self.enrichment_services['urlhaus']:
+            urlhaus = self.query_urlhaus(target)
+
         correlation_engine = EnrichmentCorrelation(
-            target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking)
+            target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus)
         correlated_data = correlation_engine.enrichment_correlation()
 
         json_object = json.dumps(correlated_data, indent=4)
@@ -362,8 +366,6 @@ class EnrichmentEngine:
                         f'{self.alienvault_api_url}IPv4/{target}/{section}')
                     dict_response.append(response.json())
 
-                json_object = json.dumps(dict_response, indent=4)
-
             elif ip_type == "IPv6":
                 for section in sections:
                     print(
@@ -371,8 +373,6 @@ class EnrichmentEngine:
                     response = requests.get(
                         f'{self.alienvault_api_url}IPv6/{target}/{section}')
                     dict_response.append(response.json())
-
-                json_object = json.dumps(dict_response, indent=4)
 
             else:   # target is a domain
                 for section in sections:
@@ -382,10 +382,10 @@ class EnrichmentEngine:
                         f'{self.alienvault_api_url}domain/{target}/{section}')
                     dict_response.append(response.json())
 
-                json_object = json.dumps(dict_response, indent=4)
-                self.output_report("alienvault", json_object)
+            json_object = json.dumps(dict_response, indent=4)
+            self.output_report("alienvault", json_object)
 
-                return dict_response
+            return dict_response
 
         except Exception as e:
             print(
@@ -393,6 +393,32 @@ class EnrichmentEngine:
             self.logger.error(
                 "Error ocurred while querying the AlienVault's API", exc_info=True)
             return
+
+
+    def query_urlhaus(self, target: str = None):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] URLHAUS")
+        self.logger.info(f"URLHAUS")
+        dict_response = []
+        try:
+            data = {'host' : target}
+            url = f"{self.urlhaus_api_url}host" # IPv4 address, hostname or domain name
+            response = requests.post(url, data=data)
+            dict_response = json.loads(response.text)
+
+            if dict_response['query_status'] == "ok":
+                json_object = json.dumps(dict_response, indent=4)
+                self.output_report("urlhaus", json_object)    
+
+                return dict_response
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No result or illegal search term")
+                self.logger.warning(f"No result or illegal search term ")
+                return
+
+        except Exception as e:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the URLhaus's API")
+            self.logger.error("Error ocurred while querying the URLhaus's API", exc_info=True)
+        return
 
     # source : https://www.circl.lu/projects/bgpranking/
     def query_bgp_ranking(self, asn: str = None, date: str = None):

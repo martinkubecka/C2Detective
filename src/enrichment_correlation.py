@@ -2,7 +2,7 @@ import time
 import logging
 
 class EnrichmentCorrelation:
-    def __init__(self, target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking):
+    def __init__(self, target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus):
         self.logger = logging.getLogger(__name__)
         self.target = target
         self.abuseipdb = abuseipdb
@@ -12,6 +12,7 @@ class EnrichmentCorrelation:
         self.shodan = shodan
         self.alienvault = alienvault
         self.bgp_ranking = bgp_ranking
+        self.urlhaus = urlhaus
 
     def enrichment_correlation(self):
         
@@ -367,5 +368,33 @@ class EnrichmentCorrelation:
                 bgp_ranking_entry['total_known_asns'] = total_known_asns
 
                 extracted_data['bgp_ranking'] = bgp_ranking_entry
+
+        if self.urlhaus:
+            urlhaus_entry = {}
+            urlhaus_reference = self.urlhaus.get('urlhaus_reference')
+            firstseen = self.urlhaus.get('firstseen')
+            urls = self.urlhaus.get('urls')
+            parsed_urls_data = []
+            if urls:
+                for entry in urls:
+                    urlhaus_reference = entry.get('urlhaus_reference')
+                    url  = entry.get('url')
+                    url_status = entry.get('url_status') 
+                    threat = entry.get('threat')
+                    tags = entry.get('tags')
+                    data = dict(
+                        urlhaus_reference=urlhaus_reference,
+                        url=url,
+                        url_status=url_status,
+                        threat=threat,
+                        tags=tags
+                    )
+                    parsed_urls_data.append(data)
+
+            urlhaus_entry['urlhaus_reference'] = urlhaus_reference
+            urlhaus_entry['firstseen'] = firstseen
+            urlhaus_entry['urls'] = parsed_urls_data
+
+            extracted_data['urlhaus'] = urlhaus_entry
 
         return extracted_data

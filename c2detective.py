@@ -112,7 +112,7 @@ def parse_arguments():
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
     parser.add_argument('-e', '--enrich', metavar="SERVICES", nargs='?', const="all",
-                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/alienvault/bgpranking/securitytrails/shodan/threatfox/virustotal/all] (default if selected: all)")
+                        help="data enrichment, use comma as a delimeter and double quotes when selecting more [abuseipdb/alienvault/bgpranking/securitytrails/shodan/threatfox/urlhaus/virustotal/all] (default if selected: all)")
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help='output directory file path for report files (default: reports/)')
 
@@ -181,7 +181,8 @@ def main():
             "virustotal": False,
             "shodan": False,
             "alienvault": False,
-            "bgp_ranking": False
+            "bgp_ranking": False,
+            "urlhaus": False,
         }
 
         for service in enrichment_options:
@@ -218,16 +219,18 @@ def main():
                 enrichment_services.update({"alienvault": True})
             if service == "bgpranking":
                 enrichment_services.update({"bgp_ranking": True})
+            if service == "urlhaus":
+                enrichment_services.update({"urlhaus": True})
 
         enrichment = EnrichmentEngine(analyst_profile, output_dir, packet_parser, enrichment_services)
         
         # ----------------- TESTING -----------------
         # enrichment.enrich_data("139.180.203.104")   # Cobalt Strike
         # enrichment.enrich_data("147.175.111.17")  # STU - open ports and a lot of vulns
-        enrichment.enrich_data("23.105.223.5")  # lot of abuse
+        # enrichment.enrich_data("23.105.223.5")  # lot of abuse
         # enrichment.enrich_data("027.ru")
         # enrichment.enrich_data("5577")    # ASN for bgp ranking
-
+        enrichment.enrich_data("182.120.67.93") #  Mozi.m
 
     # TODO
     action = args.action
