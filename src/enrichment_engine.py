@@ -4,7 +4,6 @@ import shodan
 import os
 import sys
 from ipaddress import ip_address, IPv4Address
-# from censys.search import CensysHosts
 import logging
 import time
 
@@ -33,11 +32,10 @@ def is_ip_address(string):
 
 
 class EnrichmentEngine:
-    def __init__(self, analyst_profile, output_dir,  packet_parser, enrichment_services):
+    def __init__(self, analyst_profile, output_dir):
         self.logger = logging.getLogger(__name__)
         self.analyst_profile = analyst_profile
-        self.packet_parser = packet_parser
-        self.enrichment_services = enrichment_services
+        self.enrichment_services = self.get_enrichment_services()
 
         self.report_dir = output_dir
 
@@ -49,6 +47,20 @@ class EnrichmentEngine:
         self.alienvault_api_url = "https://otx.alienvault.com/api/v1/indicators/"
         self.bgp_ranking_api_url = "https://bgpranking-ng.circl.lu/"
         self.urlhaus_api_url = "https://urlhaus-api.abuse.ch/v1/"
+
+    def get_enrichment_services(self):
+
+        enrichment_services = {}
+        enrichment_services['abuseipdb'] = self.analyst_profile.abuseipdb
+        enrichment_services['threatfox'] = self.analyst_profile.threatfox
+        enrichment_services['securitytrails'] = self.analyst_profile.securitytrails
+        enrichment_services['virustotal'] = self.analyst_profile.virustotal
+        enrichment_services['shodan'] = self.analyst_profile.shodan
+        enrichment_services['alienvault'] = self.analyst_profile.alienvault
+        enrichment_services['bgp_ranking'] = self.analyst_profile.bgp_ranking
+        enrichment_services['urlhaus'] = self.analyst_profile.urlhaus
+
+        return enrichment_services
 
     def enrich_data(self, target):
 
@@ -457,18 +469,6 @@ class EnrichmentEngine:
             self.logger.error(
                 "Error ocurred while querying the CIRCL's API", exc_info=True)
             return
-
-
-    # API Reference: https://censys-python.readthedocs.io/en/stable/quick-start.html
-    # https://github.com/censys/censys-python
-    # def query_censys(self):
-    #     print(f"\n~~~~~~~~~~~~~~~ CENSYS ~~~~~~~~~~~~~~~")
-    #     # to configure your search credentials run censys config or set
-    #     # both CENSYS_API_ID and CENSYS_API_SECRET environment variables
-    #     # $ censys config OR export CENSYS_API_ID=<your-api-id> ; export CENSYS_API_SECRET=<your-api-secret>
-    #     h = CensysHosts()
-    #     host = h.view("8.8.8.8")
-    #     print(host)
 
     def output_report(self, service_name, json_object):
         report_output_path = f"{self.report_dir}/{service_name}.json"
