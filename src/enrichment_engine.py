@@ -93,14 +93,17 @@ class EnrichmentEngine:
         if self.enrichment_services['urlhaus']:
             urlhaus = self.query_urlhaus(target)
 
-        correlation_engine = EnrichmentCorrelation(
-            target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus)
-        correlated_data = correlation_engine.enrichment_correlation()
+        if all(v is None for v in [abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus]):
+            return 
+        else:
+            correlation_engine = EnrichmentCorrelation(
+                target, abuseipdb, threatfox, securitytrails, virustotal, shodan, alienvault, bgp_ranking, urlhaus)
+            correlated_data = correlation_engine.enrichment_correlation()
 
-        json_object = json.dumps(correlated_data, indent=4)
-        self.output_report("correlated_data", json_object)
+            json_object = json.dumps(correlated_data, indent=4)
+            self.output_report("correlated_data", json_object)
 
-        return correlated_data
+            return correlated_data
 
     # CHECK Endpoint : https://docs.abuseipdb.com/#check-endpoint
 
@@ -154,7 +157,7 @@ class EnrichmentEngine:
         try:
             # IP/domain format check not necessary, respone contains "query_status": "ok"
             
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Querying ThreatFox's IOC database ...")
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Querying ThreatFox's IOC database for {target} ...")
             self.logger.info(f"Querying ThreatFox's IOC database ...")
 
             data = {"query": "search_ioc",
@@ -170,7 +173,7 @@ class EnrichmentEngine:
                 return dict_response
             else:
                 print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No result or illegal search term")
-                self.logger.warning(f"No result or illegal search term ")
+                self.logger.warning(f"No result or illegal search term (API response: '{dict_response['query_status']})'")
                 return
 
         except Exception as e:
@@ -261,6 +264,23 @@ class EnrichmentEngine:
         self.logger.info(f"VIRUSTOTAL")
         try:
             dict_response = []
+
+            # retrieve URL scan reports
+            # https://developers.virustotal.com/v2.0/reference/url-report
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] Retrieving scan reports for '{keyword}'")
+            self.logger.info(f"Retrieving scan reports for '{keyword}'")
+            url = f"{self.virustotal_api_url}url/report?apikey={self.analyst_profile.virustotal_api_key}&resource={keyword}&scan=1"
+            response = requests.get(url)
+            if response.status_code == 204:
+                print(f"[{time.strftime('%H:%M:%S')}] [WARNING] API request rate limit exceeded")
+                self.logger.warning(f"API request rate limit exceeded")
+                return
+            else:
+                response_text = json.loads(response.text)
+                dict_response.append(response_text)
+                # json_object = json.dumps(dict_response, indent=4)
+
             if not is_ip_address(keyword):  # input is a domain
                 # retrieves a domain report
                 # https://developers.virustotal.com/v2.0/reference/domain-report
@@ -269,8 +289,13 @@ class EnrichmentEngine:
                 self.logger.info(f"Retrieving domain report for '{keyword}'")
                 url = f"{self.virustotal_api_url}domain/report?apikey={self.analyst_profile.virustotal_api_key}&domain={keyword}"
                 response = requests.get(url)
-                dict_response.append(response.json())
-                # json_object = json.dumps(dict_response, indent=4)
+                if response.status_code == 204:
+                    print(f"[{time.strftime('%H:%M:%S')}] [WARNING] API request rate limit exceeded")
+                    self.logger.warning(f"API request rate limit exceeded")
+                    return
+                else:
+                    dict_response.append(response.json())
+                    # json_object = json.dumps(dict_response, indent=4)
             else:
                 # retrieve an IP address report
                 # https://developers.virustotal.com/v2.0/reference/ip-address-report
@@ -280,18 +305,13 @@ class EnrichmentEngine:
                     f"Retrieving IP address report for '{keyword}'")
                 url = f"{self.virustotal_api_url}ip-address/report?apikey={self.analyst_profile.virustotal_api_key}&ip={keyword}"
                 response = requests.get(url)
-                dict_response.append(response.json())
-                # json_object = json.dumps(dict_response, indent=4)
-
-            # retrieve URL scan reports
-            # https://developers.virustotal.com/v2.0/reference/url-report
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] Retrieving scan reports for '{keyword}'")
-            self.logger.info(f"Retrieving scan reports for '{keyword}'")
-            url = f"{self.virustotal_api_url}url/report?apikey={self.analyst_profile.virustotal_api_key}&resource={keyword}&scan=1"
-            response = requests.get(url)
-            dict_response.append(response.json())
-            # json_object = json.dumps(dict_response, indent=4)
+                if response.status_code == 204:
+                    print(f"[{time.strftime('%H:%M:%S')}] [WARNING] API request rate limit exceeded")
+                    self.logger.warning(f"API request rate limit exceeded")
+                    return
+                else:
+                    dict_response.append(response.json())
+                    # json_object = json.dumps(dict_response, indent=4)
 
             json_object = json.dumps(dict_response, indent=4)
             self.output_report("virustotal", json_object)

@@ -9,6 +9,7 @@ import time
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
+from src.detection_engine import DetectionEngine
 
 
 def banner():
@@ -158,7 +159,14 @@ def main():
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating data enrichment engine ...")
         logging.info("Configurating data enrichment engine")
-        enrichment = EnrichmentEngine(analyst_profile, output_dir)
+        enrichment_enchine = EnrichmentEngine(analyst_profile, output_dir)
+        # ----------------- TESTING -----------------
+        # enrichment_enchine.enrich_data("139.180.203.104")   # Cobalt Strike
+        # enrichment_enchine.enrich_data("147.175.111.17")  # STU - open ports and a lot of vulns
+        # enrichment_enchine.enrich_data("23.105.223.5")  # lot of abuse
+        # enrichment_enchine.enrich_data("027.ru")
+        # enrichment_enchine.enrich_data("5577")    # ASN for bgp ranking
+        # enrichment_enchine.enrich_data("182.120.67.93") #  Mozi.m
 
     input_file = args.input
     if is_valid_file(input_file, "pcap"):
@@ -168,22 +176,9 @@ def main():
         statistics = args.statistics
         packet_parser = PacketParser(
             input_file, output_dir, report_iocs, statistics)
-        # ----------------- TESTING -----------------
-        # enrichment.query_abuseipdb("147.175.111.17")
-        # enrichment.query_securitytrails("securitytrails.com")
-        # enrichment.query_virustotal("027.ru")
-        # enrichment.query_shodan("mail.elf.stuba.sk")
-        # enrichment.query_alienvault("13.107.21.200")
-        # enrichment.query_alienvault("2620:7:6001:0:0:ffff:c759:e653")
-        # enrichment.query_alienvault("027.ru")
-        # enrichment.query_bgp_ranking("5577", "2019-05-19")
-        # ----------------- TESTING -----------------
-        # enrichment.enrich_data("139.180.203.104")   # Cobalt Strike
-        # enrichment.enrich_data("147.175.111.17")  # STU - open ports and a lot of vulns
-        # enrichment.enrich_data("23.105.223.5")  # lot of abuse
-        # enrichment.enrich_data("027.ru")
-        # enrichment.enrich_data("5577")    # ASN for bgp ranking
-        # enrichment.enrich_data("182.120.67.93") #  Mozi.m
+
+    detection_engine = DetectionEngine(packet_parser, enrichment_enchine)
+    detection_engine.detect_connections()
 
     # TODO
     # action = args.action
@@ -193,3 +188,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# NOTE: data enrichment caching system/database
+# may be useful when running c2detective periodicly in the same environment  

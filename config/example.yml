@@ -5,9 +5,15 @@ api_keys:
   virustotal: "22222"
   securitytrails: "33333"
   shodan: "44444"
-  censys:
-    api_id: "55555"
-    secret: "66666"
+enrichment_services:
+  abuseipdb: True
+  threatfox: False
+  securitytrails: False  # DO NOT USE WITH FREE API KEY !!!
+  virustotal: True
+  shodan: False
+  alienvault: False
+  bgp_ranking: False
+  urlhaus: False
 arguments:
   quiet: False
   name: "analysis name"

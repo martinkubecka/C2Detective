@@ -1,0 +1,67 @@
+{
+    "1": {
+        "ioc_type": "url",
+        "fk_threat_type": "payload_delivery",
+        "description": "URL that delivers a malware payload"
+    },
+    "2": {
+        "ioc_type": "domain",
+        "fk_threat_type": "payload_delivery",
+        "description": "Domain name that delivers a malware payload"
+    },
+    "3": {
+        "ioc_type": "ip:port",
+        "fk_threat_type": "payload_delivery",
+        "description": "ip:port combination that delivery a malware payload"
+    },
+    "4": {
+        "ioc_type": "url",
+        "fk_threat_type": "botnet_cc",
+        "description": "URL that is used for botnet Command&control (C&C)"
+    },
+    "5": {
+        "ioc_type": "domain",
+        "fk_threat_type": "botnet_cc",
+        "description": "Domain that is used for botnet Command&control (C&C)"
+    },
+    "6": {
+        "ioc_type": "ip:port",
+        "fk_threat_type": "botnet_cc",
+        "description": "ip:port combination that is used for botnet Command&control (C&C)"
+    },
+    "7": {
+        "ioc_type": "envelope_from",
+        "fk_threat_type": "payload_delivery",
+        "description": "Sender email address (envelope from) that is used for payload delivery"
+    },
+    "8": {
+        "ioc_type": "body_from",
+        "fk_threat_type": "payload_delivery",
+        "description": "Sender email address (body from) that is used for payload delivery"
+    },
+    "9": {
+        "ioc_type": "md5_hash",
+        "fk_threat_type": "payload",
+        "description": "MD5 hash of a malware sample (payload)"
+    },
+    "10": {
+        "ioc_type": "sha256_hash",
+        "fk_threat_type": "payload",
+        "description": "SHA256 hash of a malware sample (payload)"
+    },
+    "11": {
+        "ioc_type": "sha3_384_hash",
+        "fk_threat_type": "payload",
+        "description": "SHA3-384 hash of a malware sample (payload)"
+    },
+    "12": {
+        "ioc_type": "sha1_hash",
+        "fk_threat_type": "payload",
+        "description": "SHA1 hash of a malware sample (payload)"
+    },
+    "13": {
+        "ioc_type": "domain",
+        "fk_threat_type": "cc_skimming",
+        "description": "Domain used for credit card skimming (usually related to Magecart attacks)"
+    }
+}

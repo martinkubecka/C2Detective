@@ -13,6 +13,18 @@ from collections import Counter
 import base64
 # import cryptography
 
+"""
+all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
+src_ip_list/dst_ip_list/ip_list :           all public source/destination IPs :     [] :            [ ip, ip, ... ] 
+src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
+src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
+rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
+http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
+urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
+http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
+"""
+
 
 class PacketParser:
     def __init__(self, filepath, output_dir, report_iocs, statistics):
@@ -22,17 +34,17 @@ class PacketParser:
 
         self.all_connections, self.external_connections = self.extract_unique_connections()
 
-        self.src_ip_list, self.dst_ip_list = self.extract_public_ip_addresses()
-        self.src_unique_ip_list, self.dst_unique_ip_list = self.get_unique_public_addresses()
-        self.src_ip_counter, self.dst_ip_counter = self.count_public_ip_addresses()
+        self.src_ip_list, self.dst_ip_list, self.ip_list = self.extract_public_ip_addresses()
+        self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
+        self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
 
         self.rrnames = self.extract_domains()
         self.http_payloads, self.http_sessions = self.get_http_sessions()
-        self.urls, self.http_get_requests = self.extract_urls()
+        self.urls, self.http_requests = self.extract_urls()
 
         # self.extract_domains_from_certificates()
 
-        self.report = report_iocs  
+        self.report = report_iocs
         if self.report:
             self.report_dir = output_dir
             self.extracted_iocs = self.correlate_iocs()
@@ -82,6 +94,7 @@ class PacketParser:
 
         src_ip_list = []
         dst_ip_list = []
+        ip_list = []
 
         for packet in self.packets:
             if 'IP' in packet:
@@ -91,13 +104,16 @@ class PacketParser:
 
                     if not ip_address(src_ip).is_private:  # append only public IPs
                         src_ip_list.append(src_ip)
+                        ip_list.append(src_ip)
 
                     if not ip_address(dst_ip).is_private:  # append only public IPs
                         dst_ip_list.append(dst_ip)
+                        ip_list.append(dst_ip)
+                
                 except:
                     pass
 
-        return src_ip_list, dst_ip_list
+        return src_ip_list, dst_ip_list, ip_list
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.src_ip_list)
@@ -106,10 +122,14 @@ class PacketParser:
         dst_unique_ip_list_set = set(self.dst_ip_list)
         dst_unique_ip_list = (list(dst_unique_ip_list_set))
 
-        return src_unique_ip_list, dst_unique_ip_list
+        combined_ip_list_set = set(self.ip_list)
+        combined_unique_ip_list = (list(combined_ip_list_set))
+
+        return src_unique_ip_list, dst_unique_ip_list, combined_unique_ip_list
 
     def count_public_ip_addresses(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Counting public source/destination IP addresses ...")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Counting public source/destination IP addresses ...")
         self.logger.info(f"Counting public source/destination IP addresses")
         src_ip_counter = Counter()
         for ip in self.src_ip_list:
@@ -119,7 +139,11 @@ class PacketParser:
         for ip in self.dst_ip_list:
             dst_ip_counter[ip] += 1
 
-        return src_ip_counter, dst_ip_counter
+        combined_ip_counter = Counter()
+        for ip in self.ip_list:
+            combined_ip_counter[ip] += 1
+
+        return src_ip_counter, dst_ip_counter, combined_ip_counter
 
     def extract_domains(self):
         print(
@@ -178,7 +202,7 @@ class PacketParser:
             f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP GET requests ...")
         self.logger.info("Extracting data from HTTP GET requests")
 
-        http_get_requests = []
+        http_requests = []
         urls = []
 
         for packet in self.packets:
@@ -225,9 +249,9 @@ class PacketParser:
                     url=url,
                     user_agent=user_agent
                 )
-                http_get_requests.append(get_request)
+                http_requests.append(get_request)
 
-        return urls, http_get_requests
+        return urls, http_requests
 
     def print_statistics(self):
         print(f"\n_________________ [ STATISTICS ] _________________")
@@ -235,6 +259,7 @@ class PacketParser:
         print(
             f">> Number of external connections: {len(self.external_connections)}")
         print(f">> Number of unique 'rrnames': {len(self.rrnames)}")
+        print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
 
         top_count = 3
         print(f">> Top {top_count} most common public source IP address")
@@ -289,6 +314,12 @@ class PacketParser:
             public_dst_ip_addresses_count[ip] = count
         iocs['public_dst_ip_addresses_count'] = public_dst_ip_addresses_count
 
+        # unique combined public IP address count
+        combined_ip_addresses_count = {}
+        for ip, count in self.all_ip_counter.most_common():
+            combined_ip_addresses_count[ip] = count
+        iocs['combined_ip_addresses_count'] = combined_ip_addresses_count
+
         # extracted URLs
         urls = []
         for url in self.urls:
@@ -297,7 +328,7 @@ class PacketParser:
 
         # extracted HTTP GET requests
         http_get_requests = []
-        for entry in self.http_get_requests:
+        for entry in self.http_requests:
             http_get_requests.append(entry)
         iocs['http_get_requests'] = http_get_requests
 
