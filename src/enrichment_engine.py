@@ -405,6 +405,7 @@ class EnrichmentEngine:
         self.logger.info(f"URLHAUS")
         dict_response = []
         try:
+            # Query host information : https://urlhaus-api.abuse.ch/#hostinfo
             data = {'host' : target}
             url = f"{self.urlhaus_api_url}host" # IPv4 address, hostname or domain name
 

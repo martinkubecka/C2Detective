@@ -157,7 +157,9 @@ class PacketParser:
             if packet.haslayer(DNSRR):
                 # if the an(swer) is a DNSRR, print the name it replied with
                 if isinstance(packet.an, DNSRR):
-                    rrnames.add(packet.an.rrname.decode('UTF-8'))
+                    rrname = packet.an.rrname.decode('UTF-8') # NOTE: UTF-8 may not be sufficient
+                    domain = rrname[:-1] if rrname.endswith(".") else rrname    # remove "." at the end
+                    rrnames.add(domain)
 
         return rrnames
 
