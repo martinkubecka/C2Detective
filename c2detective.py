@@ -107,7 +107,7 @@ def parse_arguments():
                         help='print packet capture statistics')
     parser.add_argument('-r', '--report-iocs', action='store_true',
                         help='write extracted IOCs to JSON file')
-    parser.add_argument('-e', '--enrich', action='store_true',
+    parser.add_argument('-e', '--enrich', action='store_true',  # TODO: should not be action='store_true'
                         help="enable data enrichment")
     parser.add_argument('-a', '--action', metavar="ACTION",
                         help='action to execute [sniffer/...]')
@@ -129,6 +129,7 @@ def init_logger():
 
 def main():
     os.system("clear")
+    terminal_size = os.get_terminal_size()
     # print("\033[H\033[J", end="")   # clean screen
 
     init_logger()
@@ -166,8 +167,10 @@ def main():
         # enrichment_enchine.enrich_data("23.105.223.5")  # lot of abuse
         # enrichment_enchine.enrich_data("027.ru")
         # enrichment_enchine.enrich_data("5577")    # ASN for bgp ranking
-        # enrichment_enchine.enrich_data("182.120.67.93") #  Mozi.m
+        # enrichment_enchine.enrich_data("66.54.96.58") #  Mozi.m
+        # exit()
 
+    print('-' * terminal_size.columns)
     input_file = args.input
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
@@ -176,14 +179,19 @@ def main():
         statistics = args.statistics
         packet_parser = PacketParser(
             input_file, output_dir, report_iocs, statistics)
-
+   
+    print('-' * terminal_size.columns)
+    print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
+    logging.info("Configurating detection engine")
     detection_engine = DetectionEngine(packet_parser, enrichment_enchine)
-    detection_engine.detect_connections()
+    detection_engine.threat_feeds()
 
     # TODO
+    print('-' * terminal_size.columns)
     # action = args.action
 
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")
+    logging.info("All done. Exiting program")
 
 
 if __name__ == '__main__':

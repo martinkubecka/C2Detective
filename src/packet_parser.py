@@ -203,7 +203,7 @@ class PacketParser:
         self.logger.info("Extracting data from HTTP GET requests")
 
         http_requests = []
-        urls = []
+        urls = set()
 
         for packet in self.packets:
             # process packets which contains HTTP request
@@ -235,7 +235,7 @@ class PacketParser:
                 # print(f"[URL] : {host}{path}")
 
                 url = f"{host}{path}"
-                urls.append(url)
+                urls.add(url)
 
                 get_request = dict(
                     src_ip=src_ip,

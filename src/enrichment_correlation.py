@@ -16,7 +16,7 @@ class EnrichmentCorrelation:
 
     def enrichment_correlation(self):
         
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating enriched data ...")
+        # print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating enriched data ...")
         self.logger.info(f"Correlating enriched data ...")
 
         extracted_data = {}
