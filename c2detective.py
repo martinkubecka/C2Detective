@@ -184,6 +184,7 @@ def main():
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
     detection_engine = DetectionEngine(packet_parser, enrichment_enchine)
+    detection_engine.detect_dga()
     detection_engine.threat_feeds()
 
     # TODO
