@@ -142,7 +142,7 @@ options:
 
 #### General
 
-- *no queued tasks at this moment*
+- implement cashing (e.g. database) for enriched data and IOCs
 
 #### Packet Capture Analysis
 
@@ -158,7 +158,10 @@ options:
 
 #### Detection
 
-- [ ] detect known malicious User-Agents 
+- [ ] detect traffic to TOR exit nodes
+- [ ] detect outgoing access to popular crypto currency mining domains
+- [ ] detect unusual big HTML response size 
+- [ ] detect known malicious default HTTP headers
 - [ ] detect connections with excessive frequency
 - [ ] detect long connection
 - [ ] detect signs of beaconing behavior comming in and out of the network
