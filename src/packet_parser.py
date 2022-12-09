@@ -256,7 +256,7 @@ class PacketParser:
         return urls, http_requests
 
     def print_statistics(self):
-        print(f"\n_________________ [ STATISTICS ] _________________")
+        print('-' * os.get_terminal_size().columns)
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
             f">> Number of external connections: {len(self.external_connections)}")

@@ -1,15 +1,16 @@
-from prettytable import PrettyTable
-from colorama import Back
-from colorama import Fore
-import requests
-import time
-import pprint
-import logging
-import os
 import sys
+import os
+import logging
+import pprint
+import time
+import requests
+from colorama import Fore
+from colorama import Back
+from prettytable import PrettyTable
 # https://lindevs.com/disable-tensorflow-2-debugging-information
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from dgad.prediction import Detective
+
 
 """
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
@@ -29,6 +30,101 @@ class DetectionEngine:
         self.logger = logging.getLogger(__name__)
         self.packet_parser = packet_parser
         self.enrichment_enchine = enrichment_enchine
+        # self.tor_exit_nodes_list_url = "https://www.dan.me.uk/torlist/?exit"
+        self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
+
+    def get_tor_nodes(self):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Loading cached TOR node list ...")
+        logging.info("Loading cached TOR node list")
+
+        # NOTE: TEMPORARY SOLUTION ; WILL BE CHANGED WHEN PROPER CACHING IS IMPLMEMENTED
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor"
+
+        with open(f"{filepath}/tor_nodes_list.txt", "r") as nodes_file:
+            tor_nodes = [line.rstrip() for line in nodes_file]
+
+        with open(f"{filepath}/tor_exit_nodes_list.txt", "r") as nodes_file:
+            exit_nodes = [line.rstrip() for line in nodes_file]
+
+        return tor_nodes, exit_nodes
+
+        # # you can only fetch the data every 30 minutes
+        # response = requests.get(self.tor_exit_nodes_list_url)
+        # data = response.text
+        # # returns string, each IP on separate line, split on a new line character
+        # nodes_list = data.split("\n")
+
+        # return nodes_list
+
+    def detect_outgoing_traffic_to_tor(self):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for outgoing network traffic to TOR exit nodes ...")
+        logging.info("Looking for outgoing network traffic to TOR exit nodes")
+
+        detected_ips = []
+        detected = False
+        for dst_ip in self.packet_parser.dst_unique_ip_list:
+            if dst_ip in self.tor_exit_nodes:
+                detected_ips.append(dst_ip)
+                detected = True
+
+        if detected:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
+            logging.info(
+                f"Detected outgoing network traffic to TOR exit nodes. (detected_ips : {detected_ips})")
+            self.print_detected_tor_exit_nodes(detected_ips)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Outgoing network traffic to TOR exit nodes not detected{Fore.RESET}")
+            logging.info(
+                f"Outgoing network traffic to TOR exit nodes not detected")
+
+    def print_detected_tor_exit_nodes(self, detected_ips):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing network traffic to detected TOR exit nodes")
+        logging.info(f"Listing network traffic to detected TOR exit nodes")
+
+        for src_ip, dst_ip in self.packet_parser.external_connections:
+            if src_ip in detected_ips:
+                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
+            if dst_ip in detected_ips:
+                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
+
+    def detect_tor_traffic(self):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to public TOR nodes ...")
+        logging.info("Looking for network traffic to public TOR nodes")
+
+        detected_ips = []
+        detected = False
+        for dst_ip in self.packet_parser.dst_unique_ip_list:
+            if dst_ip in self.tor_nodes:
+                detected_ips.append(dst_ip)
+                detected = True
+
+        if detected:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected network traffic to public TOR nodes{Fore.RESET}")
+            logging.info(
+                f"Detected network traffic to public TOR nodes. (detected_ips : {detected_ips})")
+            self.print_detected_tor_nodes(detected_ips)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Network traffic to public TOR nodes not detected{Fore.RESET}")
+            logging.info(f"Network traffic to public TOR nodes not detected")
+
+    def print_detected_tor_nodes(self, detected_ips):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing traffic to public TOR nodes")
+        logging.info(f"Listing traffic to public TOR nodes")
+
+        for src_ip, dst_ip in self.packet_parser.external_connections:
+            if src_ip in detected_ips:
+                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
+            if dst_ip in detected_ips:
+                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
 
     # def detect_malicious_user_agents(self):
     #     print(
@@ -55,7 +151,7 @@ class DetectionEngine:
 
     # def print_malicious_user_agents(self):
     #     print(
-    #         f"\n[{time.strftime('%H:%M:%S')}] [INFO] Listing detected known malicious User-Agents\n")
+    #         f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected known malicious User-Agents")
     #     logging.info(f"Listing detected known malicious User-Agents")
     #     for domain in detected_domains:
     #         print(f"{Fore.RED}{domain}{Fore.RESET}")
@@ -63,6 +159,7 @@ class DetectionEngine:
     # DGA Detective : https://cossas-project.org/portfolio/dgad/
     # source code: https://github.com/COSSAS/dgad
     # package: https://pypi.org/project/dgad/
+
     def detect_dga(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Hunting domains generated by Domain Generation Algorithms (DGA) ...")
         logging.info(
@@ -96,11 +193,11 @@ class DetectionEngine:
                 f"Domains generated by Domain Generation Algorithms (DGA) not detected")
 
     def print_dga_domains(self, detected_domains):
-        print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains generated by Domain Generation Algorithms (DGA)\n")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains generated by Domain Generation Algorithms (DGA)")
         logging.info(
             f"Listing detected domains generated by Domain Generation Algorithms (DGA)")
         for domain in detected_domains:
-            print(f"{Fore.RED}{domain}{Fore.RESET}")
+            print(f">> {Fore.RED}{domain}{Fore.RESET}")
 
     def threat_feeds(self):
         print(
@@ -174,7 +271,7 @@ class DetectionEngine:
 
     def print_malicious_connections(self, detected_ip_iocs):
         print(
-            f"\n[{time.strftime('%H:%M:%S')}] [INFO] Listing external connections with C2 servers\n")
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing external connections with C2 servers")
         logging.info(f"Listing external connections with C2 servers")
         # table = PrettyTable(["Source IP", "Destination IP"])
         # for src_ip, dst_ip in self.packet_parser.external_connections:
@@ -186,9 +283,9 @@ class DetectionEngine:
 
         for src_ip, dst_ip in self.packet_parser.external_connections:
             if src_ip in detected_ip_iocs:
-                print(f"{Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
+                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
             if dst_ip in detected_ip_iocs:
-                print(f"{src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
+                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
 
     def detect_malicious_domains(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting malicious domains which received/initiated connections ...")
@@ -234,10 +331,10 @@ class DetectionEngine:
 
     def print_malicious_domains(self, detected_domains):
         print(
-            f"\n[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains for C2 servers\n")
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains for C2 servers")
         logging.info(f"Listing detected domains for C2 servers")
         for domain in detected_domains:
-            print(f"{Fore.RED}{domain}{Fore.RESET}")
+            print(f">> {Fore.RED}{domain}{Fore.RESET}")
 
     # def threatfox_analysis(self, enriched_ip):
     #     threatfox = enriched_ip.get('threatfox')

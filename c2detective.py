@@ -185,7 +185,8 @@ def main():
     logging.info("Configurating detection engine")
     detection_engine = DetectionEngine(packet_parser, enrichment_enchine)
     detection_engine.detect_dga()
-    # detection_engine.detect_outgoing_traffic_to_tor()
+    detection_engine.detect_tor_traffic()
+    detection_engine.detect_outgoing_traffic_to_tor()
     # using set() to remove duplicates and check for values count
     no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
     # do not use enrichment services when all services are set to 'False'
