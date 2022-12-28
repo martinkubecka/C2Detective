@@ -192,6 +192,7 @@ def main():
     # do not use enrichment services when all services are set to 'False'
     if not no_enabled_services:
         detection_engine.threat_feeds()
+    detection_engine.evaluate_detection()
 
     # TODO
     print('-' * terminal_size.columns)
