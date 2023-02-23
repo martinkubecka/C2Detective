@@ -102,15 +102,15 @@ def parse_arguments():
     parser.add_argument('-n', '--name', metavar="NAME",
                         help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
-                        help='config file (default: ".config/config.yml")')  # add option to load arguments config file
+                        help="config file (default: 'config/config.yml')")  # add option to load arguments config file
     parser.add_argument('-s', '--statistics', action='store_true',
                         help='print packet capture statistics')
     parser.add_argument('-r', '--report-iocs', action='store_true',
                         help='write extracted IOCs to JSON file')
     parser.add_argument('-e', '--enrich', action='store_true',  # TODO: should not be action='store_true'
                         help="enable data enrichment")
-    parser.add_argument('-a', '--action', metavar="ACTION",
-                        help='action to execute [sniffer/...]')
+    # parser.add_argument('-a', '--action', metavar="ACTION",
+    #                     help='action to execute [sniffer/...]')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
 
@@ -187,11 +187,14 @@ def main():
     detection_engine.detect_dga()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()
+    # detection_engine.detect_crypto_miner_domains() # TODO
     # using set() to remove duplicates and check for values count
     no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
     # do not use enrichment services when all services are set to 'False'
     if not no_enabled_services:
         detection_engine.threat_feeds()
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] No enrichment service is enabled ...")
+        logging.info("No enrichment service is enabled")
     detection_engine.evaluate_detection()
 
     # TODO

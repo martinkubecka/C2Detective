@@ -1,3 +1,4 @@
+from dgad.prediction import Detective
 import sys
 import os
 import logging
@@ -9,7 +10,6 @@ from colorama import Back
 from prettytable import PrettyTable
 # https://lindevs.com/disable-tensorflow-2-debugging-information
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-from dgad.prediction import Detective
 
 
 """
@@ -37,10 +37,12 @@ class DetectionEngine:
     def evaluate_detection(self):
         if self.c2_indicators_detected:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.YELLOW}Command & Control communication indicators detected{Fore.RESET}")
-            logging.info(f"Command & Control communication indicators detected")
+            logging.info(
+                f"Command & Control communication indicators detected")
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Command & Control communication indicators not detected{Fore.RESET}")
-            logging.info(f"Command & Control communication indicators not detected")
+            logging.info(
+                f"Command & Control communication indicators not detected")
 
     def get_tor_nodes(self):
         print(
@@ -137,6 +139,23 @@ class DetectionEngine:
             if dst_ip in detected_ips:
                 print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
 
+    def detect_crypto_miner_domains(self, detected_domains):
+        crypto_miner_domains = []   # TODO: add domains
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto miner pool domains ...")
+        logging.info(
+            f"Looking for network traffic to crypto miner pool domains")
+
+        crypto_miner_detected = False
+        detected_domains = []
+
+        for domain in self.packet_parser.rrnames:
+            if domain in crypto_miner_domains:
+                crypto_miner_detected = True
+                crypto_miner_domains.append(domain)
+
+        return crypto_miner_domains
+
     # def detect_malicious_user_agents(self):
     #     print(
     #         f"[{time.strftime('%H:%M:%S')}] [INFO] Investigating extracted User-Agents ...")
@@ -225,25 +244,28 @@ class DetectionEngine:
         if c2_ips_detected:
             self.c2_indicators_detected = True
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious IP addresses which received/initiated connections detected{Fore.RESET}")
-            logging.info(f"Malicious IP addresses which received/initiated connections detected")
+            logging.info(
+                f"Malicious IP addresses which received/initiated connections detected")
             self.print_malicious_connections(detected_ips)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Malicious IP addresses which received/initiated connections not detected{Fore.RESET}")
-            logging.info(f"Malicious IP addresses which received/initiated connections not detected")
+            logging.info(
+                f"Malicious IP addresses which received/initiated connections not detected")
 
         if c2_domains_detected:
             self.c2_indicators_detected = True
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious domains which received/initiated connections detected{Fore.RESET}")
-            logging.info(f"Malicious domains which received/initiated connections detected")
+            logging.info(
+                f"Malicious domains which received/initiated connections detected")
             self.print_malicious_domains(detected_domains)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Malicious domains which received/initiated connections not detected{Fore.RESET}")
-            logging.info(f"Malicious domains which received/initiated connections not detected")
-        
-
+            logging.info(
+                f"Malicious domains which received/initiated connections not detected")
 
     # REQUIRES threatfox or urlhaus enrichment service enabled
     # RECOMMENDED to enable both services
+
     def detect_malicious_ip_addresses(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting malicious IP addresses which received/initiated connections ...")
         logging.info(

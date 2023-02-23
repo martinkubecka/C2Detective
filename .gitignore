@@ -2,7 +2,11 @@ config/config.yml
 samples/
 reports/
 logs/
+testing/
+tls_testing/
 testing.py
+
+src/database_engine.py
 
 ##########################################################################
 ############################# Python template ############################
