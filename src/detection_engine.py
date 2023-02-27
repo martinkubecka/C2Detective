@@ -1,5 +1,6 @@
 from dgad.prediction import Detective
 import sys
+import json
 import os
 import logging
 import pprint
@@ -9,8 +10,7 @@ from colorama import Fore
 from colorama import Back
 from prettytable import PrettyTable
 # https://lindevs.com/disable-tensorflow-2-debugging-information
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
 
 """
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
@@ -31,8 +31,8 @@ class DetectionEngine:
         self.c2_indicators_detected = False
         self.packet_parser = packet_parser
         self.enrichment_enchine = enrichment_enchine
-        # self.tor_exit_nodes_list_url = "https://www.dan.me.uk/torlist/?exit"
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
+        self.crypto_domains = self.get_crypto_domains()
 
     def evaluate_detection(self):
         if self.c2_indicators_detected:
@@ -49,24 +49,26 @@ class DetectionEngine:
             f"[{time.strftime('%H:%M:%S')}] [INFO] Loading cached TOR node list ...")
         logging.info("Loading cached TOR node list")
 
-        # NOTE: TEMPORARY SOLUTION ; WILL BE CHANGED WHEN PROPER CACHING IS IMPLMEMENTED
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor"
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
 
-        with open(f"{filepath}/tor_nodes_list.txt", "r") as nodes_file:
-            tor_nodes = [line.rstrip() for line in nodes_file]
-
-        with open(f"{filepath}/tor_exit_nodes_list.txt", "r") as nodes_file:
-            exit_nodes = [line.rstrip() for line in nodes_file]
+        with open(filepath, 'r') as tor_nodes_iocs:
+            data = json.load(tor_nodes_iocs)
+            tor_nodes = data['all_nodes']
+            exit_nodes = data['exit_nodes']
 
         return tor_nodes, exit_nodes
 
-        # # you can only fetch the data every 30 minutes
-        # response = requests.get(self.tor_exit_nodes_list_url)
-        # data = response.text
-        # # returns string, each IP on separate line, split on a new line character
-        # nodes_list = data.split("\n")
+    def get_crypto_domains(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading cached crypto / cryptojacking based sites list ...")
+        logging.info("Loading cached crypto / cryptojacking based sites list")
 
-        # return nodes_list
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
+
+        with open(filepath, 'r') as crypto_domains_iocs:
+            data = json.load(crypto_domains_iocs)
+            crypto_domains = data['crypto_domains']
+
+        return crypto_domains
 
     def detect_outgoing_traffic_to_tor(self):
         print(
@@ -138,23 +140,6 @@ class DetectionEngine:
                 print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
             if dst_ip in detected_ips:
                 print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
-
-    def detect_crypto_miner_domains(self, detected_domains):
-        crypto_miner_domains = []   # TODO: add domains
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto miner pool domains ...")
-        logging.info(
-            f"Looking for network traffic to crypto miner pool domains")
-
-        crypto_miner_detected = False
-        detected_domains = []
-
-        for domain in self.packet_parser.rrnames:
-            if domain in crypto_miner_domains:
-                crypto_miner_detected = True
-                crypto_miner_domains.append(domain)
-
-        return crypto_miner_domains
 
     # def detect_malicious_user_agents(self):
     #     print(
@@ -395,3 +380,31 @@ class DetectionEngine:
     #             last_seen=last_seen
     #         )
     #     return
+
+    def detect_crypto_domains(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto / cryptojacking based sites ...")
+        logging.info(f"Looking for network traffic to crypto / cryptojacking based sites")
+
+        crypto_miner_detected = False
+        detected_domains = []
+
+        for domain in self.packet_parser.rrnames:
+            if domain in self.crypto_domains:
+                crypto_miner_detected = True
+                crypto_miner_domains.append(domain)
+
+        if crypto_miner_detected:
+            self.c2_indicators_detected = True
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected crypto / cryptojacking based sites{Fore.RESET}")
+            logging.info(f"Detected crypto / cryptojacking based sites (detected_domains : {detected_domains})")
+            self.print_crypto_domains(detected_domains)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Crypto / cryptojacking based sites not detected{Fore.RESET}")
+            logging.info(f"Crypto / cryptojacking based sites not detected")
+
+    def print_crypto_domains(self, detected_domains):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected crypto / cryptojacking based sites")
+        logging.info(f"Listing detected crypto / cryptojacking based sites")
+        for domain in detected_domains:
+            print(f">> {Fore.RED}{domain}{Fore.RESET}")

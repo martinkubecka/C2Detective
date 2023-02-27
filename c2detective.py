@@ -6,6 +6,9 @@ import yaml
 import logging
 import time
 
+from iocs.tor.update_tor_nodes import TorNodes
+from iocs.crypto_domains.update_crypto_domains import CryptoDomains
+
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
@@ -113,6 +116,12 @@ def parse_arguments():
     #                     help='action to execute [sniffer/...]')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
+    
+    parser.add_argument('-utn', '--update-tor-nodes', action='store_true',
+                        help='update tor nodes list')   
+    parser.add_argument('-ucd', '--update-crypto-domains', action='store_true',
+                        help='update crypto / cryptojacking based sites list')   
+    
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -129,7 +138,6 @@ def init_logger():
 
 def main():
     os.system("clear")
-    terminal_size = os.get_terminal_size()
     # print("\033[H\033[J", end="")   # clean screen
 
     init_logger()
@@ -139,6 +147,40 @@ def main():
 
     if not args.quiet:
         banner()
+
+    terminal_size = os.get_terminal_size()
+    print('-' * terminal_size.columns)
+
+    # TODO: add check if IOCs are present in the project
+    if args.update_tor_nodes:
+        tor_nodes = TorNodes()
+        tor_nodes.update_tor_nodes()
+    else:
+        file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
+        modified_time = os.path.getmtime(file_path)
+        current_time = time.time()
+        time_diff = current_time - modified_time
+
+        # Tor node list was not updated in the last 30 minutes
+        if not time_diff < 1800:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+            logging.info(f"It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+
+    if args.update_crypto_domains:
+        crypto_domains = CryptoDomains()
+        crypto_domains.update_crypto_domains()
+    else:
+        file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
+        modified_time = os.path.getmtime(file_path)
+        current_time = time.time()
+        time_diff = current_time - modified_time
+
+        # crypto domains list was not updated in the last 24 hours
+        if not time_diff < 24 * 60 * 60: 
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
+            logging.info(f"It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
+
+    print('-' * terminal_size.columns)
 
     output_dir = args.output
     check_report_directory(output_dir)
@@ -187,7 +229,7 @@ def main():
     detection_engine.detect_dga()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()
-    # detection_engine.detect_crypto_miner_domains() # TODO
+    detection_engine.detect_crypto_domains() 
     # using set() to remove duplicates and check for values count
     no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
     # do not use enrichment services when all services are set to 'False'
@@ -197,8 +239,8 @@ def main():
         logging.info("No enrichment service is enabled")
     detection_engine.evaluate_detection()
 
-    # TODO
     print('-' * terminal_size.columns)
+    # TODO
     # action = args.action
 
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")
