@@ -13,18 +13,18 @@
 
 - [:memo: Pre-requisites](#memo-pre-requisites)
   - [:package: Installing Required Packages](#package-installing-required-packages)
-  - [:old_key: API Keys](#old_key-api-keys)
+  - [:old\_key: API Keys](#old_key-api-keys)
 - [:keyboard: Usage](#keyboard-usage)
 - [:placard: List of Features](#placard-list-of-features)
-  - [:ballot_box_with_check: Implemented Features](#ballot_box_with_check-implemented-features)
+  - [:ballot\_box\_with\_check: Implemented Features](#ballot_box_with_check-implemented-features)
     - [General](#general)
     - [Packet Capture Analysis](#packet-capture-analysis)
-    - [Data Enrichment & Correlation](#data-enrichment--correlation)
+    - [Data Enrichment \& Correlation](#data-enrichment--correlation)
     - [Detection](#detection)
   - [:clipboard: To-Do](#clipboard-to-do)
     - [General](#general-1)
     - [Packet Capture Analysis](#packet-capture-analysis-1)
-    - [Data Enrichment & Correlation](#data-enrichment--correlation-1)
+    - [Data Enrichment \& Correlation](#data-enrichment--correlation-1)
     - [Detection](#detection-1)
 - [:toolbox: Development](#toolbox-development)
   - [:office: Virtual Environment](#office-virtual-environment)
@@ -112,6 +112,7 @@ options:
   - [x] domains from DNS responses
   - [x] HTTP GET requests
   - [x] requested URLs
+- [x] extract fields of interest from TLS certificates
 
 #### Data Enrichment & Correlation 
 
@@ -150,7 +151,7 @@ options:
 
 #### Packet Capture Analysis
 
-- [ ] extract domains from HTTPs X509 certificates
+- *no queued tasks at this moment*
 
 #### Data Enrichment & Correlation 
 

@@ -7,8 +7,9 @@ reports/
 logs/
 testing/
 tls_testing/
-testing.py
 
+testing.py
+testing_detection.py
 
 src/database_engine.py
 

@@ -6,9 +6,6 @@ import yaml
 import logging
 import time
 
-from iocs.tor.update_tor_nodes import TorNodes
-from iocs.crypto_domains.update_crypto_domains import CryptoDomains
-
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
@@ -61,19 +58,46 @@ def is_valid_file(filename, filetype):
     return True
 
 
-def check_report_directory(output_dir):
-    report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
+def check_required_structure(output_dir):
+    base_relative_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}"
+    report_dir = f"{base_relative_path}/reports"
+    iocs_dir = f"{base_relative_path}/iocs"
+    tor_iocs_dir = f"{base_relative_path}/iocs/tor"
+    cypto_iocs_dir = f"{base_relative_path}/iocs/crypto_domains"
 
-    if output_dir == "reports":
-        report_dir = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/reports"
-    else:
+    if not output_dir == "reports":
         report_dir = output_dir
 
     if not os.path.isdir(report_dir):
         print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{report_dir}' for storing analysis reports")
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{report_dir}' for storing analysis reports ...")
         logging.info(f"Creating '{report_dir}' for storing analysis reports")
         os.mkdir(report_dir)
+
+    missing_update_script = False
+    if not os.path.isdir(iocs_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{iocs_dir}' for storing IOCs ...")
+        logging.info(f"Creating '{iocs_dir}' for for storing IOCs")
+        os.mkdir(iocs_dir)
+        missing_update_script = True
+    
+    if not os.path.isdir(tor_iocs_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{tor_iocs_dir}' for storing Tor node lists ...")
+        logging.info(f"Creating '{tor_iocs_dir}' for storing Tor node lists")
+        os.mkdir(tor_iocs_dir)
+        missing_update_script = True
+
+    if not os.path.isdir(cypto_iocs_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{cypto_iocs_dir}' for crypto / cryptojacking based sites list ...")
+        logging.info(f"Creating '{cypto_iocs_dir}' for crypto / cryptojacking based sites list")
+        os.mkdir(cypto_iocs_dir)
+        missing_update_script = True
+
+    if missing_update_script:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Download the missing update scripts from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
+        logging.error(f"Download the missing update scripts from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
+        print("\nExiting program ...\n")
+        sys.exit(1)
 
 
 def load_config(filename):
@@ -100,10 +124,11 @@ def parse_arguments():
     #                     type=lambda file: is_valid_file(file))
     # parser.add_argument('-i', '--input', metavar='FILE',
     #                     help='input file (.cap OR .pcap)', required=True)
+
     parser.add_argument('input', metavar='FILENAME',
                         help='input file (.cap OR .pcap)')
-    parser.add_argument('-n', '--name', metavar="NAME",
-                        help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
+    # parser.add_argument('-n', '--name', metavar="NAME",
+    #                     help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help="config file (default: 'config/config.yml')")  # add option to load arguments config file
     parser.add_argument('-s', '--statistics', action='store_true',
@@ -149,46 +174,62 @@ def main():
         banner()
 
     terminal_size = os.get_terminal_size()
-    print('-' * terminal_size.columns)
 
+    print('-' * terminal_size.columns)
+    print(f"[{time.strftime('%H:%M:%S')}] [INFO] Verifying required directory structure ...")
+    logging.info("Verifying required directory structure")
+    output_dir = args.output
+    check_required_structure(output_dir)
+
+    print('-' * terminal_size.columns)
     # TODO: add check if IOCs are present in the project
     if args.update_tor_nodes:
+        from iocs.tor.update_tor_nodes import TorNodes
         tor_nodes = TorNodes()
         tor_nodes.update_tor_nodes()
     else:
         file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
-        modified_time = os.path.getmtime(file_path)
-        current_time = time.time()
-        time_diff = current_time - modified_time
+        if os.path.exists(file_path):
+            modified_time = os.path.getmtime(file_path)
+            current_time = time.time()
+            time_diff = current_time - modified_time
 
-        # Tor node list was not updated in the last 30 minutes
-        if not time_diff < 1800:
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
-            logging.info(f"It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+            # Tor node list was not updated in the last 30 minutes
+            if not time_diff < 1800:
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+                logging.info(f"It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/tor/tor_nodes.json' does not exist (use '-utn' next time)")
+            logging.error(f"Required file '{file_path}' does not exist (use '-utn' next time)")
+            print("\nExiting program ...\n")
+            sys.exit(1)
 
     if args.update_crypto_domains:
+        from iocs.crypto_domains.update_crypto_domains import CryptoDomains
         crypto_domains = CryptoDomains()
         crypto_domains.update_crypto_domains()
     else:
         file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
-        modified_time = os.path.getmtime(file_path)
-        current_time = time.time()
-        time_diff = current_time - modified_time
+        if os.path.exists(file_path):
+            modified_time = os.path.getmtime(file_path)
+            current_time = time.time()
+            time_diff = current_time - modified_time
 
-        # crypto domains list was not updated in the last 24 hours
-        if not time_diff < 24 * 60 * 60: 
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
-            logging.info(f"It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
-
-    print('-' * terminal_size.columns)
-
-    output_dir = args.output
-    check_report_directory(output_dir)
+            # crypto domains list was not updated in the last 24 hours
+            if not time_diff < 24 * 60 * 60: 
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
+                logging.info(f"It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/crypto_domains/crypto_domains.json' does not exist (use '-ucd' next time)")
+            logging.error(f"Required file '{file_path}' does not exist (use '-ucd' next time)")
+            print("\nExiting program ...\n")
+            sys.exit(1)
 
     # use analysis name for output/report naming etc.
-    if not args.name is None:
-        analysis_name = args.name
+    # if not args.name is None:
+    #     analysis_name = args.name
 
+    print('-' * terminal_size.columns)
     if not args.config is None:
         if is_valid_file(args.config, "yml"):
             print(
@@ -235,14 +276,15 @@ def main():
     # do not use enrichment services when all services are set to 'False'
     if not no_enabled_services:
         detection_engine.threat_feeds()
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] No enrichment service is enabled ...")
-        logging.info("No enrichment service is enabled")
+        # print(f"[{time.strftime('%H:%M:%S')}] [INFO] No enrichment service is enabled ...")
+        # logging.info("No enrichment service is enabled")
     detection_engine.evaluate_detection()
 
-    print('-' * terminal_size.columns)
     # TODO
+    # print('-' * terminal_size.columns)
     # action = args.action
 
+    print('-' * terminal_size.columns)
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")
     logging.info("All done. Exiting program")
 

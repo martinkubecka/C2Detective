@@ -40,7 +40,7 @@ class TorNodes:
 
         # caching fetched Tor nodes
         if not all_nodes or not exit_nodes:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Retrieving Tor IOCs was not successful ...")
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Retrieving Tor IOCs was not successful")
             logging.error(f"Retrieving Tor IOCs was not successful")
             print("\nExiting program ...\n")
             sys.exit(1)
