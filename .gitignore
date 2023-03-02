@@ -5,9 +5,9 @@ iocs/crypto_domains/crypto_domains.json
 samples/
 reports/
 logs/
+
 testing/
 tls_testing/
-
 testing.py
 testing_detection.py
 

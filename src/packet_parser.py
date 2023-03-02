@@ -15,6 +15,7 @@ import base64
 
 """
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
+connections_with_frequencies :              all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 src_ip_list/dst_ip_list/ip_list :           all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
@@ -33,6 +34,7 @@ class PacketParser:
         self.packets = self.get_packet_list()  # creates a list in memory
 
         self.all_connections, self.external_connections = self.extract_unique_connections()
+        self.connections_with_frequencies = self.extract_connections_with_frequencies()
 
         self.src_ip_list, self.dst_ip_list, self.ip_list = self.extract_public_ip_addresses()
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
@@ -42,7 +44,6 @@ class PacketParser:
         self.http_payloads, self.http_sessions = self.get_http_sessions()
         self.urls, self.http_requests = self.extract_urls()
         self.certificates = self.extract_certificates()
-        # self.extract_domains_from_certificates()
 
         self.report = report_iocs
         if self.report:
@@ -57,7 +58,6 @@ class PacketParser:
             self.print_statistics()
 
     def get_packet_list(self):
-        # load_layer('tls') # EXPERIMENTAL
         t_start = perf_counter()
         packets = rdpcap(self.filepath)
         t_stop = perf_counter()
@@ -114,6 +114,34 @@ class PacketParser:
                     pass
 
         return src_ip_list, dst_ip_list, ip_list
+
+    def extract_connections_with_frequencies(self):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting TCP connections and counting their respective frequencies ...")
+        self.logger.info("Extracting TCP connections and counting their respective frequencies")
+
+        connections = {}
+
+        for packet in self.packets:
+
+            if TCP in packet:
+
+                src_ip = packet[IP].src
+                dst_ip = packet[IP].dst
+                src_port = packet[TCP].sport
+                dst_port = packet[TCP].dport
+                
+                # create connection tuple
+                connection = (src_ip, src_port, dst_ip, dst_port)
+                
+                # update connection count
+                if connection in connections:
+                    connections[connection] += 1
+                else:
+                    connections[connection] = 1
+
+        return connections 
+
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.src_ip_list)
@@ -370,7 +398,7 @@ class PacketParser:
 
     # -------------------------------------------------------------------------------------------
 
-    def print_statistics(self):
+    def print_statistics(self): 
         print('-' * os.get_terminal_size().columns)
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
@@ -470,91 +498,3 @@ class PacketParser:
 
         with open(report_output_path, "w") as output:
             output.write(self.extracted_iocs_json)
-
-    # ----------------------------------- EXPERIMENTAL FEATURES -----------------------------------
-
-    # def get_packet_layers(self, packet):
-    #     counter = 0
-    #     while True:
-    #         layer = packet.getlayer(counter)
-    #         if layer is None:
-    #             break
-
-    #         yield layer
-    #         counter += 1
-
-    # source : https://security.stackexchange.com/questions/123851/how-can-i-extract-the-certificate-from-this-pcap-file
-    # https://stackoverflow.com/questions/58272264/cannot-read-tls-section-even-after-calling-load-layertls-in-scapy
-    # def extract_domains_from_certificates(self):
-        # source : https://github.com/secdev/scapy/blob/master/doc/notebooks/tls/notebook2_tls_protected.ipynb
-
-        # (C) <--- (S) ServerHello
-        # record2 = TLS(open('samples/02_srv.raw', 'rb').read())
-        # print(record2.show())
-
-        # (C) <--- (S) Certificate
-        # record3 = TLS(open('samples/03_srv.raw', 'rb').read())
-        # print(record3.show())
-
-        # Indeed the certificate may be used with other domains than its CN 'www.github.com'
-        # x509c = record3.msg[0].certs[0][1].x509Cert
-        # x509c.tbsCertificate.extensions[2].show()
-
-        # 'samples/https_wireshark.pcap'
-
-        # tls_server_hello = self.packets[1526]
-        # layer = tls_server_hello.getlayer(TLS)
-        # print(tls_server_hello.load)
-
-        # with open('reports/tls_packets_structure.txt', 'w') as output_file:
-        #     for packet in self.packets:
-        #         try:
-        #             packet = TLS(packet.load)
-        #             for layer in self.get_packet_layers(packet):
-        #                 if not layer.name == "Encrypted Content":
-        #                     print(layer.name)
-        #             print("----")
-
-        #             # c_hello = packet.getlayer('TLS Handshake - Client Hello')
-        #             # print(c_hello.show())
-
-        #             # data = TLS(packet.load)
-        #             # print(type(data))
-        #             # print(data.show())
-        #             # print("\n")
-
-        #             # if 'TLS' in data:
-        #             #     x = data.getlayer(TLS)
-        #             #     print(x.show())
-
-        #             # output_file.write(data.decode('latin-1'))
-        #         except AttributeError as e:
-        #             pass
-        #         except KeyError as k:
-        #             pass
-
-        # for packet in self.packets:
-        #     if "TLS" in packet:
-        # for layer in packet.layers:
-        #     if layer.layer_name == 'tls':
-        #         if hasattr(layer, 'x509ce_dnsname'):
-        #             print(layer.x509ce_dnsname) # domain
-
-        # for packet in self.packets:
-        #     if "TLS" in packet:
-        #         # Look for attribute of x509
-        #         if hasattr(packet['TLS'], 'x509sat_utf8string'):
-        #             print(packet["TLS"])
-        #             print(dir(packet['TLS']))
-
-    # source : https://www.linux-magazine.com/Issues/2019/220/Packet-Analysis-with-Scapy
-    # def plot_graph(self):
-    #     import plotly
-
-    #     xData, yData = [], []
-
-    #     for ip, count in counter.most_common():
-    #         xData.append(ip)
-    #         yData.append(count)
-
-    #     plotly.offline.plot({"data":[plotly.graph_objs.Bar(x=xData, y=yData)]})

@@ -137,6 +137,7 @@ options:
 - [x] detect TOR network traffic
 - [x] detect outgoing traffic to TOR exit nodes
 - [x] detect outgoing traffic to crypto / cryptojacking based sites
+- [x] detect connections with excessive frequency
 
 > *currently working on detection features*
 
@@ -165,7 +166,6 @@ options:
 
 - [ ] detect unusual big HTML response size 
 - [ ] detect known malicious default HTTP headers
-- [ ] detect connections with excessive frequency
 - [ ] detect long connection
 - [ ] detect signs of beaconing behavior comming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)

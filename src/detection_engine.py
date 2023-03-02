@@ -14,6 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
 
 """
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
+connections_with_frequencies :              all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 src_ip_list/dst_ip_list/ip_list :           all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
@@ -69,6 +70,46 @@ class DetectionEngine:
             crypto_domains = data['crypto_domains']
 
         return crypto_domains
+
+    def detect_connections_with_excessive_frequency(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with excessive frequency ...")
+        logging.info("Looking for connections with excessive frequency")
+
+        threshold = len(self.packet_parser.packets) * 0.1  # TODO: (maybe) let user define desired threshold
+
+        detected = False
+        detected_connections = {}
+
+        # find connections with excessive frequency
+        for connection, count in self.packet_parser.connections_with_frequencies.items():
+            if count > threshold:
+                detected = True
+                detected_connections[connection] = count
+                # print(f"Connection {connection} has {count} packets, which is over {threshold:.0f}% of total packets.")
+
+        if detected:
+            self.c2_indicators_detected = True
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected connections with excessive frequency{Fore.RESET}")
+            logging.info(
+                f"Detected connections with excessive frequency. (detected_connections : {detected_connections})")
+            self.print_detected_connections_with_excessive_frequency(detected_connections)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with excessive frequency not detected{Fore.RESET}")
+            logging.info(f"Connections with excessive frequency not detected")
+
+    def print_detected_connections_with_excessive_frequency(self, detected_connections):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with excessive frequency")
+        logging.info(f"Listing connections with excessive frequency")
+
+        for connection, count in detected_connections.items():
+            src_ip = connection[0]
+            src_port = connection[1]
+            dst_ip = connection[2]
+            dst_port = connection[3]
+            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)}")
 
     def detect_outgoing_traffic_to_tor(self):
         print(
