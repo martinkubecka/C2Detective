@@ -9,6 +9,8 @@ import requests
 from colorama import Fore
 from colorama import Back
 from prettytable import PrettyTable
+from scapy.all import *
+
 # https://lindevs.com/disable-tensorflow-2-debugging-information
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
 
@@ -110,6 +112,52 @@ class DetectionEngine:
             dst_ip = connection[2]
             dst_port = connection[3]
             print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)}")
+
+    def detect_long_connection(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with long duration ...")
+        logging.info("Looking for connections with long duration")
+
+        detected = False
+        max_duration = 14000    # TODO: (maybe) let user define desired threshold ; set for testing 'Qakbot.pcap'
+        connection_start_times = {}
+        detected_connections = []
+
+        for packet in self.packet_parser.packets:
+            # check if packet has IP and TCP layers
+            if IP in packet and TCP in packet:
+                # extract connection information
+                src_ip = packet[IP].src
+                src_port = packet[TCP].sport
+                dst_ip = packet[IP].dst
+                dst_port = packet[TCP].dport
+                connection = (src_ip, src_port, dst_ip, dst_port)
+
+                # check if connection is in dictionary
+                if connection not in connection_start_times:
+                    # add connection to dictionary with current time as start time
+                    connection_start_times[connection] = packet.time
+                else:
+                    # calculate time duration of connection
+                    duration = packet.time - connection_start_times[connection]
+
+                    # check if duration exceeds maximum set duration
+                    if duration > max_duration:
+                        detected = True
+                        detected_connections.append((src_ip, src_port, dst_ip, dst_port, duration))
+
+        if detected:
+            unqiue_detected = set((str(connection) for connection in detected_connections))
+            count_unqiue_detected = len(unqiue_detected)
+            self.c2_indicators_detected = True
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_unqiue_detected} connections with long duration{Fore.RESET}")
+            logging.info(
+                f"Detected {count_unqiue_detected} connections with long duration. (detected_connections : {unqiue_detected})")
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with long duration not detected{Fore.RESET}")
+            logging.info(f"Connections with long duration not detected")
+
 
     def detect_outgoing_traffic_to_tor(self):
         print(
@@ -426,15 +474,15 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto / cryptojacking based sites ...")
         logging.info(f"Looking for network traffic to crypto / cryptojacking based sites")
 
-        crypto_miner_detected = False
+        detected = False
         detected_domains = []
 
         for domain in self.packet_parser.rrnames:
             if domain in self.crypto_domains:
-                crypto_miner_detected = True
-                crypto_miner_domains.append(domain)
+                detected = True
+                detected_domains.append(domain)
 
-        if crypto_miner_detected:
+        if detected:
             self.c2_indicators_detected = True
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected crypto / cryptojacking based sites{Fore.RESET}")
             logging.info(f"Detected crypto / cryptojacking based sites (detected_domains : {detected_domains})")
