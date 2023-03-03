@@ -139,6 +139,7 @@ options:
 - [x] detect outgoing traffic to crypto / cryptojacking based sites
 - [x] detect connections with excessive frequency
 - [x] detect long connection
+- [x] detect unusual big HTML response size 
 
 > *currently working on detection features*
 
@@ -165,7 +166,6 @@ options:
 
 #### Detection
 
-- [ ] detect unusual big HTML response size 
 - [ ] detect known malicious default HTTP headers
 - [ ] detect signs of beaconing behavior comming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)

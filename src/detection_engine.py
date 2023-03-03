@@ -10,6 +10,7 @@ from colorama import Fore
 from colorama import Back
 from prettytable import PrettyTable
 from scapy.all import *
+from scapy.layers import http
 
 # https://lindevs.com/disable-tensorflow-2-debugging-information
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
@@ -77,14 +78,14 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with excessive frequency ...")
         logging.info("Looking for connections with excessive frequency")
 
-        threshold = len(self.packet_parser.packets) * 0.1  # TODO: (maybe) let user define desired threshold
+        MAX_FREQUENCY = len(self.packet_parser.packets) * 0.1  # TODO: (maybe) let user define desired threshold
 
         detected = False
         detected_connections = {}
 
         # find connections with excessive frequency
         for connection, count in self.packet_parser.connections_with_frequencies.items():
-            if count > threshold:
+            if count > MAX_FREQUENCY:
                 detected = True
                 detected_connections[connection] = count
                 # print(f"Connection {connection} has {count} packets, which is over {threshold:.0f}% of total packets.")
@@ -111,14 +112,14 @@ class DetectionEngine:
             src_port = connection[1]
             dst_ip = connection[2]
             dst_port = connection[3]
-            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)}")
+            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)}")
 
     def detect_long_connection(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with long duration ...")
         logging.info("Looking for connections with long duration")
 
         detected = False
-        max_duration = 14000    # TODO: (maybe) let user define desired threshold ; set for testing 'Qakbot.pcap'
+        MAX_DURATION = 14000    # TODO: (maybe) let user define desired threshold ; set for testing 'Qakbot.pcap'
         connection_start_times = {}
         detected_connections = []
 
@@ -141,7 +142,7 @@ class DetectionEngine:
                     duration = packet.time - connection_start_times[connection]
 
                     # check if duration exceeds maximum set duration
-                    if duration > max_duration:
+                    if duration > MAX_DURATION:
                         detected = True
                         detected_connections.append((src_ip, src_port, dst_ip, dst_port, duration))
 
@@ -153,11 +154,57 @@ class DetectionEngine:
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_unqiue_detected} connections with long duration{Fore.RESET}")
             logging.info(
                 f"Detected {count_unqiue_detected} connections with long duration. (detected_connections : {unqiue_detected})")
+            # TODO : process / display which connections (src IP - dst IP) were detected
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with long duration not detected{Fore.RESET}")
             logging.info(f"Connections with long duration not detected")
 
+    def detect_big_HTML_response_size(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTML response size ...")
+        logging.info("Looking for unusual big HTML response size")
+
+        detected = False
+        MAX_HTML_SIZE = 50000   # TODO: (maybe) let user define desired threshold in bytes
+
+        connection_sizes = {}
+
+        for packet in self.packet_parser.packets:
+            # check if packet contains HTTP responses
+            if packet.haslayer(http.HTTPResponse):
+                response = packet.getlayer(http.HTTPResponse)
+                
+                # if packet has respone and Content Length, check if it is larger than the threshold
+                if response and response.Content_Length and int(response.Content_Length) > MAX_HTML_SIZE:
+                    detected = True
+                    connection = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
+                    
+                    if connection not in connection_sizes:
+                        connection_sizes[connection] = 0
+                    
+                    connection_sizes[connection] += int(response.Content_Length)
+
+        if detected:
+            self.c2_indicators_detected = True
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTML response size{Fore.RESET}")
+            logging.info(f"Detected unusual big HTML response size")
+            self.print_connections_with_big_HTML_response_size(connection_sizes, MAX_HTML_SIZE)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTML response size not detected{Fore.RESET}")
+            logging.info(f"Unusual big HTML response size not detected")
+
+    def print_connections_with_big_HTML_response_size(self, connection_sizes, MAX_HTML_SIZE):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTML response size")
+        logging.info(f"Listing connections with unusual big HTML response size")
+
+        for connection, size in connection_sizes.items():
+            if size > MAX_HTML_SIZE:
+                src_ip = connection[0]
+                src_port = connection[1]
+                dst_ip = connection[2]
+                dst_port = connection[3]
+                print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {size} bytes")
 
     def detect_outgoing_traffic_to_tor(self):
         print(
