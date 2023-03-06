@@ -167,7 +167,7 @@ options:
 #### Detection
 
 - [ ] detect known malicious default HTTP headers
-- [ ] detect signs of beaconing behavior comming in and out of the network
+- [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)
 - [ ] implement detection confidence scoring system
 

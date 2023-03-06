@@ -21,9 +21,8 @@ src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :     
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
-http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, url:, path:, user_agent:, http_headers:{}}, {}, ... ]  
+unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
 """
 
 
@@ -41,8 +40,9 @@ class PacketParser:
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
 
         self.rrnames = self.extract_domains()
-        self.http_payloads, self.http_sessions = self.get_http_sessions()
-        self.urls, self.http_requests = self.extract_urls()
+
+        self.http_sessions, self.http_payloads, self.unique_urls = self.extract_http_sessions()
+
         self.certificates = self.extract_certificates()
 
         self.report = report_iocs
@@ -142,7 +142,6 @@ class PacketParser:
 
         return connections 
 
-
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.src_ip_list)
         src_unique_ip_list = (list(src_ip_list_set))
@@ -191,55 +190,37 @@ class PacketParser:
 
         return rrnames
 
-    def get_http_sessions(self):
+    # source: https://stackoverflow.com/questions/72136317/how-to-convert-key-and-value-of-dictionary-from-byte-to-string
+    def _convert_dict(self, data):
+        if isinstance(data,str):
+            return data
+        elif isinstance(data,bytes):
+            return data.decode()
+        elif isinstance(data,dict):
+            newdata = {}  # Build a new dict
+            for key, val in data.items():
+                if isinstance(key,bytes):
+                    key = key.decode()
+                newdata[key] = self._convert_dict(val)  # Update new dict (and use the val since items() gives it for free)
+            return newdata
+        elif isinstance(data,list):
+            return [self._convert_dict(dt) for dt in data]
+        else:
+            return data
+
+    def extract_http_sessions(self):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
         self.logger.info("Extracting data from HTTP sessions")
-        # e.g.: UDP 10.9.23.101:56868 > 10.9.23.23:53 ; TCP 137.184.114.20:80 > 10.9.23.101:58592
+
         http_payloads = []
         http_sessions = []
-        sessions = self.packets.sessions()
-        for session in sessions:
-            http_payload = ""
-            # field_entry = []
-            for packet in sessions[session]:
-                try:
-                    if packet[TCP].dport == 80 or packet[TCP].sport == 80:
-                        src_ip = packet[IP].src
-                        src_port = packet[IP].sport
-                        dst_ip = packet[IP].dst
-                        dst_port = packet[IP].dport
-                        http_payload = packet[TCP].payload
-
-                        entry = dict(
-                            src_ip=src_ip,
-                            src_port=src_port,
-                            dst_ip=dst_ip,
-                            dst_port=dst_port,
-                            http_payload=http_payload
-                        )
-
-                        http_payloads.append(http_payload)
-                        http_sessions.append(entry)
-                        # print(src_ip, src_port, dst_ip, dst_port)
-                except:
-                    pass
-
-        return http_payloads, http_sessions
-
-    def extract_urls(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP GET requests ...")
-        self.logger.info("Extracting data from HTTP GET requests")
-
-        http_requests = []
-        urls = set()
+        unique_urls = set()
 
         for packet in self.packets:
-            # process packets which contains HTTP request
-            if packet.haslayer(http.HTTPRequest):
 
-                http_layer = packet.getlayer(http.HTTPRequest)
+            # Check if the packet has an HTTP layer (i.e., is an HTTP request or response)
+            if packet.haslayer('HTTPRequest') or packet.haslayer('HTTPResponse'):
 
                 src_ip = packet[IP].src
                 src_port = packet[IP].sport
@@ -247,41 +228,48 @@ class PacketParser:
                 dst_port = packet[IP].dport
                 http_payload = packet[TCP].payload
 
+                # get HTTP headers either from request or response 
+                http_headers = packet.getlayer('HTTPRequest').fields if packet.haslayer('HTTPRequest') else packet.getlayer('HTTPResponse').fields
+                http_headers =  self._convert_dict(http_headers)
+
                 # scapy.layers.http.HTTPRequest : https://scapy.readthedocs.io/en/latest/api/scapy.layers.http.html
-                method = http_layer.fields.get('Method')
-                method = method.decode() if method else method  # if Method not None, decode bytes
+                http_request = packet.getlayer(http.HTTPRequest)
+                if http_request:
+                    host = http_request.fields.get('Host')
+                    if host and isinstance(host, bytes):
+                        host = host.decode() # decode bytes
+                    
+                    path = http_request.fields.get('Path')
+                    if path and isinstance(path, bytes):
+                        path = path.decode() # decode bytes
+                    
+                    user_agent = http_request.fields.get('User_Agent')
+                    if user_agent and isinstance(user_agent, bytes):
+                        user_agent = user_agent.decode() # decode bytes
 
-                host = http_layer.fields.get('Host')
-                host = host.decode() if host else host  # if Host not None, decode bytes
+                    if host:
+                        url = f"{host}{path}"
+                        unique_urls.add(url)
 
-                path = http_layer.fields.get('Path')
-                path = path.decode() if path else path  # if Path not None, decode bytes
-
-                user_agent = http_layer.fields.get('User_Agent')
-                # if User-Agent not None, decode bytes
-                user_agent = user_agent.decode() if user_agent else user_agent
-
-                # print(f"[ENTRY] : {src_ip} requested {method} {host}{path} | {user_agent}")
-                # print(f"[URL] : {host}{path}")
-
-                url = f"{host}{path}"
-                urls.add(url)
-
-                get_request = dict(
+                session = dict(
                     src_ip=src_ip,
                     src_port=src_port,
                     dst_ip=dst_ip,
                     dst_port=dst_port,
-                    # http_payload=http_payload,
-                    method=method,
-                    host=host,
-                    path=path,
                     url=url,
-                    user_agent=user_agent
+                    path=path,
+                    user_agent=user_agent,
+                    http_headers=http_headers
                 )
-                http_requests.append(get_request)
 
-        return urls, http_requests
+                if packet.haslayer('Raw'):
+                    payload = packet['Raw'].load
+                    http_payloads.append(payload)
+
+
+                http_sessions.append(session)
+
+        return http_sessions, http_payloads, unique_urls
 
     def extract_certificates(self):
         cmd = f'tshark -nr {self.filepath} -Y "tls.handshake.certificate" -V'
@@ -422,7 +410,7 @@ class PacketParser:
         print(f">> Number of HTTP sessions: {len(self.http_sessions)}")
         # print(f">> Number of HTTP payloads: {len(self.http_payloads)}")   # compare number with sessions
         # print(f">> Number of HTTP GET requests : {len(self.http_get_requests)}") # compare number with urls
-        print(f">> Number of extracted URLs : {len(self.urls)}")
+        print(f">> Number of extracted URLs : {len(self.unique_urls)}")
 
         print(f">> Number of extracted TLS certificates : {len(self.certificates)}")
 
@@ -431,17 +419,11 @@ class PacketParser:
         self.logger.info(f"Correlating extracted IOCs")
         iocs = {}
 
-        # rrnames from DNS responses
-        extracted_domains = []
-        for entry in self.rrnames:
-            extracted_domains.append(entry)
-        iocs['extracted_domains'] = extracted_domains
+        # extracted rrnames (domains) from DNS responses
+        iocs['extracted_domains'] = list(self.rrnames)
 
         # unique public source IP address
-        public_src_ip_addresses = []
-        for ip in self.src_unique_ip_list:
-            public_src_ip_addresses.append(ip)
-        iocs['public_src_ip_addresses'] = public_src_ip_addresses
+        iocs['public_src_ip_addresses'] = self.src_unique_ip_list
 
         # unique public source IP address count
         public_src_ip_addresses_count = {}
@@ -450,10 +432,7 @@ class PacketParser:
         iocs['public_src_ip_addresses_count'] = public_src_ip_addresses_count
 
         # unique public destination IP address
-        public_dst_ip_addresses = []
-        for ip in self.dst_unique_ip_list:
-            public_dst_ip_addresses.append(ip)
-        iocs['public_dst_ip_addresses'] = public_dst_ip_addresses
+        iocs['public_dst_ip_addresses'] = self.dst_unique_ip_list
 
         # unique public destination IP address count
         public_dst_ip_addresses_count = {}
@@ -468,24 +447,15 @@ class PacketParser:
         iocs['combined_ip_addresses_count'] = combined_ip_addresses_count
 
         # extracted URLs
-        urls = []
-        for url in self.urls:
-            urls.append(url)
-        iocs['extracted_urls'] = urls
+        iocs['extracted_urls'] = list(self.unique_urls)
 
-        # extracted HTTP GET requests
-        http_get_requests = []
-        for entry in self.http_requests:
-            http_get_requests.append(entry)
-        iocs['http_get_requests'] = http_get_requests
+        # extracted HTTP requests
+        # iocs['http_get_requests'] = self.http_requests
 
         # extracted HTTP sessions
-        # http_sessions = []
-        # for entry in self.http_sessions:
-        #     # print(entry)
-        #     http_sessions.append(entry)
-        # iocs['http_sessions'] = http_sessions
+        iocs['http_sessions'] = self.http_sessions
 
+        # extracted data from TLS certificates
         iocs['tls_certificates'] = self.certificates
 
         return iocs

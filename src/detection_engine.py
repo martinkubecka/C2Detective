@@ -23,9 +23,8 @@ src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :     
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
-http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, url:, path:, user_agent:, http_headers:{}}, {}, ... ]  
+unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
 """
 
 
@@ -112,7 +111,7 @@ class DetectionEngine:
             src_port = connection[1]
             dst_ip = connection[2]
             dst_port = connection[3]
-            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)}")
+            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)} connections")
 
     def detect_long_connection(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with long duration ...")
