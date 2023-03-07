@@ -64,6 +64,7 @@ def check_required_structure(output_dir):
     iocs_dir = f"{base_relative_path}/iocs"
     tor_iocs_dir = f"{base_relative_path}/iocs/tor"
     cypto_iocs_dir = f"{base_relative_path}/iocs/crypto_domains"
+    config_dir = f"{base_relative_path}/config"
 
     if not output_dir == "reports":
         report_dir = output_dir
@@ -75,9 +76,16 @@ def check_required_structure(output_dir):
         os.mkdir(report_dir)
 
     missing_update_script = False
+    missing_config_files = False
+    if not os.path.isdir(config_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{config_dir}' for storing config files ...")
+        logging.info(f"Creating '{config_dir}' for config files")
+        os.mkdir(config_dir)
+        missing_config_files = True
+
     if not os.path.isdir(iocs_dir):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{iocs_dir}' for storing IOCs ...")
-        logging.info(f"Creating '{iocs_dir}' for for storing IOCs")
+        logging.info(f"Creating '{iocs_dir}' for storing IOCs")
         os.mkdir(iocs_dir)
         missing_update_script = True
     
@@ -98,6 +106,13 @@ def check_required_structure(output_dir):
         logging.error(f"Download the missing update scripts from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
         print("\nExiting program ...\n")
         sys.exit(1)
+
+    if missing_config_files:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
+        logging.error(f"Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
+        print("\nExiting program ...\n")
+        sys.exit(1)
+        
 
 
 def load_config(filename):
@@ -271,6 +286,7 @@ def main():
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_dga() # TODO: works but disable printing warnings/error to console
+    detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()
     detection_engine.detect_crypto_domains() 

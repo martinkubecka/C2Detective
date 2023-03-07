@@ -140,6 +140,7 @@ options:
 - [x] detect connections with excessive frequency
 - [x] detect long connection
 - [x] detect unusual big HTML response size 
+- [x] detect known C2 default HTTP headers
 
 > *currently working on detection features*
 
@@ -166,7 +167,6 @@ options:
 
 #### Detection
 
-- [ ] detect known malicious default HTTP headers
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)
 - [ ] implement detection confidence scoring system

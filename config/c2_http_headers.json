@@ -1,0 +1,22 @@
+{
+    "Cobalt Strike C2": [
+        "Cobalt Strike Beacon",
+        "cs4.4"
+    ],
+    "Metasploit Framework C2": [
+        "msf4"
+    ],
+    "Covenant C2": [
+        "Blazor"
+    ],
+    "Brute Ratel C4": [
+        "Brute Ratel C4"
+    ],
+    "Sliver C2": [
+        "sliver-client"
+    ],
+    "PANDA C2": [
+        "PANDA",
+        "layui"
+    ]
+}

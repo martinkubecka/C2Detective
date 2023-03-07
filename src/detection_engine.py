@@ -40,6 +40,7 @@ class DetectionEngine:
         self.enrichment_enchine = enrichment_enchine
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
         self.crypto_domains = self.get_crypto_domains()
+        self.c2_http_headers = self.get_c2_http_headers()
 
     def evaluate_detection(self):
         if self.c2_indicators_detected:
@@ -50,6 +51,17 @@ class DetectionEngine:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Command & Control communication indicators not detected{Fore.RESET}")
             logging.info(
                 f"Command & Control communication indicators not detected")
+
+    def get_c2_http_headers(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading known C2 HTTP headers ...")
+        logging.info("Loading known C2 HTTP headers")
+        
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/c2_http_headers.json"
+
+        with open(filepath, 'r') as http_headers:
+            c2_http_headers = json.load(http_headers)
+
+        return c2_http_headers
 
     def get_tor_nodes(self):
         print(
@@ -209,6 +221,42 @@ class DetectionEngine:
                 dst_port = connection[3]
                 print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {size} bytes")
 
+    def detect_known_malicious_HTTP_headers(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious HTTP headers ...")
+        logging.info("Looking for known malicious HTTP headers")
+
+        detected = False
+        detected_headers = []
+
+        for entry in self.packet_parser.http_sessions:
+            for key, value in entry['http_headers'].items():
+                for c2_framework, http_headers in self.c2_http_headers.items():
+                    for malicious_header in http_headers:
+                        if malicious_header in value:
+                            detected = True
+                            entry = dict(
+                                c2_framework=c2_framework,
+                                malicious_header=malicious_header,
+                                session=entry
+                            )
+                            detected_headers.append(entry)
+
+        if detected:
+            self.c2_indicators_detected = True
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious HTTP headers{Fore.RESET}")
+            logging.info(f"Detected known malicious HTTP headers. (detected_headers : {detected_headers})")
+            self.print_detected_malicious_headers(detected_headers)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious HTTP headers not detected{Fore.RESET}")
+            logging.info(f"Known malicious HTTP headers not detected")
+
+    def print_detected_malicious_headers(self, detected_headers):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected HTTP sessions which contain known malicious HTTP headers")
+        logging.info(f"Listing detected HTTP sessions which contain known malicious HTTP headers")
+   
+        for entry in detected_headers:
+            print(f">> {Fore.RED}'{entry['c2_framework']}' : '{entry['malicious_header']}'{Fore.RESET} in '{entry['session']}'")
+
     def detect_outgoing_traffic_to_tor(self):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for outgoing network traffic to TOR exit nodes ...")
@@ -279,36 +327,6 @@ class DetectionEngine:
                 print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
             if dst_ip in detected_ips:
                 print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
-
-    # def detect_malicious_user_agents(self):
-    #     print(
-    #         f"[{time.strftime('%H:%M:%S')}] [INFO] Investigating extracted User-Agents ...")
-    #     logging.info("Investigating extracted User-Agents")
-
-    #     ua_detected = False
-    #     detected_user_agents = []
-
-    #     for connection in self.packet_parser.http_requests:
-    #         # TODO: add function to extract only user_agents to its own array
-    #         print(connection['user_agent'])
-
-    #     if ua_detected:
-    #         print(
-    #             f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious User-Agents{Fore.RESET}")
-    #         logging.info(
-    #             f"Detected known malicious User-Agents. (detected_user_agents : {detected_user_agents})")
-    #         self.print_malicious_user_agents(detected_user_agents)
-    #     else:
-    #         print(
-    #             f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious User-Agents not detected{Fore.RESET}")
-    #         logging.info(f"Known malicious User-Agents not detected")
-
-    # def print_malicious_user_agents(self):
-    #     print(
-    #         f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected known malicious User-Agents")
-    #     logging.info(f"Listing detected known malicious User-Agents")
-    #     for domain in detected_domains:
-    #         print(f"{Fore.RED}{domain}{Fore.RESET}")
 
     # DGA Detective : https://cossas-project.org/portfolio/dgad/
     # source code: https://github.com/COSSAS/dgad
