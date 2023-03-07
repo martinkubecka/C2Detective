@@ -21,8 +21,9 @@ src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :     
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, url:, path:, user_agent:, http_headers:{}}, {}, ... ]  
-unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
+urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
+http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
 
@@ -32,7 +33,7 @@ class PacketParser:
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
 
-        self.all_connections, self.external_connections = self.extract_unique_connections()
+        self.start_time, self.end_time, self.all_connections, self.external_connections = self.extract_unique_connections()
         self.connections_with_frequencies = self.extract_connections_with_frequencies()
 
         self.src_ip_list, self.dst_ip_list, self.ip_list = self.extract_public_ip_addresses()
@@ -75,7 +76,15 @@ class PacketParser:
         all_connections = set()
         external_connections = set()
 
+        start_time = None
+        end_time = None
+
         for packet in self.packets:
+
+            if start_time is None:
+                # the first packet arrival time (time of capture of the packet)
+                start_time = round(float(packet.time), 6) 
+
             if 'IP' in packet:
                 ip_layer = packet['IP']  # obtain the IPv4 header
                 src_ip = ip_layer.src   # get source ip
@@ -85,7 +94,14 @@ class PacketParser:
                 if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
                     external_connections.add((src_ip, dst_ip))
 
-        return all_connections, external_connections
+            # update the end time of capture with each packet
+            end_time = round(float(packet.time), 6)
+
+        # process converted Unix timestamps with microseconds precision
+        start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+
+        return start_time, end_time, all_connections, external_connections
 
     def extract_public_ip_addresses(self):
         print(
@@ -250,6 +266,8 @@ class PacketParser:
                     if host:
                         url = f"{host}{path}"
                         unique_urls.add(url)
+                    else:
+                        url = ""
 
                 session = dict(
                     src_ip=src_ip,
@@ -280,8 +298,6 @@ class PacketParser:
         certificates = [] #list to store certificates 
         current_cert = {}
         for index, line in enumerate(lines):
-            # line = line.strip()
-            # print(line)
             
                 if line.lstrip(" ").startswith("serialNumber"):   
                     serialNumber = line.lstrip(" ").split(" ")[1]
@@ -388,6 +404,9 @@ class PacketParser:
 
     def print_statistics(self): 
         print('-' * os.get_terminal_size().columns)
+        print(f">> Packet capture stared at: {self.start_time}")
+        print(f">> Packet capture ended at: {self.end_time}")
+        
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
             f">> Number of external connections: {len(self.external_connections)}")
@@ -419,7 +438,13 @@ class PacketParser:
         self.logger.info(f"Correlating extracted IOCs")
         iocs = {}
 
-        # extracted rrnames (domains) from DNS responses
+        # start and end times of the processed packet capture
+        iocs['capture_timestamps'] = dict(
+            start_time=self.start_time,
+            end_time=self.end_time
+        )
+
+        # rrnames (domains) from DNS responses
         iocs['extracted_domains'] = list(self.rrnames)
 
         # unique public source IP address
