@@ -15,16 +15,20 @@ from scapy.layers import http
 # https://lindevs.com/disable-tensorflow-2-debugging-information
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
 
+
 """
+start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
+end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
-connections_with_frequencies :              all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
-src_ip_list/dst_ip_list/ip_list :           all public source/destination IPs :     [] :            [ ip, ip, ... ] 
+connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, url:, path:, user_agent:, http_headers:{}}, {}, ... ]  
-unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
+urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
+http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
 
@@ -83,7 +87,7 @@ class DetectionEngine:
         detected_connections = {}
 
         # find connections with excessive frequency
-        for connection, count in self.packet_parser.connections_with_frequencies.items():
+        for connection, count in self.packet_parser.connection_frequency.items():
             if count > MAX_FREQUENCY:
                 detected = True
                 detected_connections[connection] = count

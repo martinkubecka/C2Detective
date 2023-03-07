@@ -11,12 +11,14 @@ import time
 from prettytable import PrettyTable
 from collections import Counter
 import base64
-# import cryptography
+
 
 """
+start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
+end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
-connections_with_frequencies :              all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
-src_ip_list/dst_ip_list/ip_list :           all public source/destination IPs :     [] :            [ ip, ip, ... ] 
+connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
@@ -33,16 +35,11 @@ class PacketParser:
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
 
-        self.start_time, self.end_time, self.all_connections, self.external_connections = self.extract_unique_connections()
-        self.connections_with_frequencies = self.extract_connections_with_frequencies()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.rrnames, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
 
-        self.src_ip_list, self.dst_ip_list, self.ip_list = self.extract_public_ip_addresses()
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
+        
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
-
-        self.rrnames = self.extract_domains()
-
-        self.http_sessions, self.http_payloads, self.unique_urls = self.extract_http_sessions()
 
         self.certificates = self.extract_certificates()
 
@@ -68,16 +65,38 @@ class PacketParser:
             "Packet capture '{self.filepath}' loaded in " + "{:.2f}s".format(t_stop - t_start))
         return packets
 
-    def extract_unique_connections(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting unique connections ...")
+    def extract_packet_data(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting the start and end timestamps from the provided packet capture ...")
+        self.logger.info("Extracting the start and end timestamps from the provided packet capture")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting public source and destination IP addresses ...")
+        self.logger.info("Extracting public source and destination IP addresses")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting unique connections ...")
         self.logger.info("Extracting unique connections")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting TCP connections and counting their respective frequencies ...")
+        self.logger.info("Extracting TCP connections and counting their respective frequencies")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domain names from DNS responses ...")
+        self.logger.info("Extracting domain names from DNS responses")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
+        self.logger.info("Extracting data from HTTP sessions")
 
-        all_connections = set()
-        external_connections = set()
-
+        # store packet capture start and end time
         start_time = None
         end_time = None
+        # store connections with their respective frequency 
+        connection_frequency = {}
+        # store source and destination public IP addresses
+        public_src_ip_list = []
+        public_dst_ip_list = []
+        public_ip_list = []
+        # store all and only external connections
+        all_connections = set()
+        external_connections = set()
+        # store extracted domain names from DNS responses
+        rrnames = set()
+        # store data from HTTP sessions
+        http_payloads = []
+        http_sessions = []
+        unique_urls = set()
 
         for packet in self.packets:
 
@@ -85,65 +104,27 @@ class PacketParser:
                 # the first packet arrival time (time of capture of the packet)
                 start_time = round(float(packet.time), 6) 
 
-            if 'IP' in packet:
-                ip_layer = packet['IP']  # obtain the IPv4 header
-                src_ip = ip_layer.src   # get source ip
-                dst_ip = ip_layer.dst   # get destination ip
-                all_connections.add((src_ip, dst_ip))
-                # if src or dst ip is public add to separate set
-                if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
-                    external_connections.add((src_ip, dst_ip))
-
-            # update the end time of capture with each packet
-            end_time = round(float(packet.time), 6)
-
-        # process converted Unix timestamps with microseconds precision
-        start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-
-        return start_time, end_time, all_connections, external_connections
-
-    def extract_public_ip_addresses(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting public source/destination IP addresses ...")
-        self.logger.info("Extracting public source/destination IP addresses")
-
-        src_ip_list = []
-        dst_ip_list = []
-        ip_list = []
-
-        for packet in self.packets:
-            if 'IP' in packet:
-                try:
-                    src_ip = packet[IP].src
-                    dst_ip = packet[IP].dst
-
-                    if not ip_address(src_ip).is_private:  # append only public IPs
-                        src_ip_list.append(src_ip)
-                        ip_list.append(src_ip)
-
-                    if not ip_address(dst_ip).is_private:  # append only public IPs
-                        dst_ip_list.append(dst_ip)
-                        ip_list.append(dst_ip)
-                
-                except:
-                    pass
-
-        return src_ip_list, dst_ip_list, ip_list
-
-    def extract_connections_with_frequencies(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting TCP connections and counting their respective frequencies ...")
-        self.logger.info("Extracting TCP connections and counting their respective frequencies")
-
-        connections = {}
-
-        for packet in self.packets:
-
-            if TCP in packet:
+            if packet.haslayer(IP):
 
                 src_ip = packet[IP].src
                 dst_ip = packet[IP].dst
+
+                if not ip_address(src_ip).is_private:  # append only public IPs
+                    public_src_ip_list.append(src_ip)
+                    public_ip_list.append(src_ip)
+
+                if not ip_address(dst_ip).is_private:  # append only public IPs
+                    public_dst_ip_list.append(dst_ip)
+                    public_ip_list.append(dst_ip)
+
+                all_connections.add((src_ip, dst_ip))
+
+                # if src or dst ip is public add it to a separate set
+                if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
+                    external_connections.add((src_ip, dst_ip))
+
+            if packet.haslayer(TCP):
+
                 src_port = packet[TCP].sport
                 dst_port = packet[TCP].dport
                 
@@ -151,91 +132,23 @@ class PacketParser:
                 connection = (src_ip, src_port, dst_ip, dst_port)
                 
                 # update connection count
-                if connection in connections:
-                    connections[connection] += 1
+                if connection in connection_frequency:
+                    connection_frequency[connection] += 1
                 else:
-                    connections[connection] = 1
+                    connection_frequency[connection] = 1
 
-        return connections 
-
-    def get_unique_public_addresses(self):
-        src_ip_list_set = set(self.src_ip_list)
-        src_unique_ip_list = (list(src_ip_list_set))
-
-        dst_unique_ip_list_set = set(self.dst_ip_list)
-        dst_unique_ip_list = (list(dst_unique_ip_list_set))
-
-        combined_ip_list_set = set(self.ip_list)
-        combined_unique_ip_list = (list(combined_ip_list_set))
-
-        return src_unique_ip_list, dst_unique_ip_list, combined_unique_ip_list
-
-    def count_public_ip_addresses(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Counting public source/destination IP addresses ...")
-        self.logger.info(f"Counting public source/destination IP addresses")
-        src_ip_counter = Counter()
-        for ip in self.src_ip_list:
-            src_ip_counter[ip] += 1
-
-        dst_ip_counter = Counter()
-        for ip in self.dst_ip_list:
-            dst_ip_counter[ip] += 1
-
-        combined_ip_counter = Counter()
-        for ip in self.ip_list:
-            combined_ip_counter[ip] += 1
-
-        return src_ip_counter, dst_ip_counter, combined_ip_counter
-
-    def extract_domains(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domains from DNS responses ...")
-        self.logger.info("Extracting domains from DNS responses")
-
-        rrnames = set()
-        # iterate through every packet
-        for packet in self.packets:
             # only interested packets with a DNS Round Robin layer
             if packet.haslayer(DNSRR):
                 # if the an(swer) is a DNSRR, print the name it replied with
                 if isinstance(packet.an, DNSRR):
-                    rrname = packet.an.rrname.decode('UTF-8') # NOTE: UTF-8 may not be sufficient
-                    domain = rrname[:-1] if rrname.endswith(".") else rrname    # remove "." at the end
-                    rrnames.add(domain)
+                    try:
+                        rrname = packet.an.rrname.decode()  # NOTE: may not be sufficient
+                        domain = rrname[:-1] if rrname.endswith(".") else rrname    # remove "." at the end
+                        rrnames.add(domain)
+                    except UnicodeDecodeError:
+                        pass
 
-        return rrnames
-
-    # source: https://stackoverflow.com/questions/72136317/how-to-convert-key-and-value-of-dictionary-from-byte-to-string
-    def _convert_dict(self, data):
-        if isinstance(data,str):
-            return data
-        elif isinstance(data,bytes):
-            return data.decode()
-        elif isinstance(data,dict):
-            newdata = {}  # Build a new dict
-            for key, val in data.items():
-                if isinstance(key,bytes):
-                    key = key.decode()
-                newdata[key] = self._convert_dict(val)  # Update new dict (and use the val since items() gives it for free)
-            return newdata
-        elif isinstance(data,list):
-            return [self._convert_dict(dt) for dt in data]
-        else:
-            return data
-
-    def extract_http_sessions(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
-        self.logger.info("Extracting data from HTTP sessions")
-
-        http_payloads = []
-        http_sessions = []
-        unique_urls = set()
-
-        for packet in self.packets:
-
-            # Check if the packet has an HTTP layer (i.e., is an HTTP request or response)
+            # check if the packet has an HTTP layer (i.e., is an HTTP request or response)
             if packet.haslayer('HTTPRequest') or packet.haslayer('HTTPResponse'):
 
                 src_ip = packet[IP].src
@@ -284,10 +197,64 @@ class PacketParser:
                     payload = packet['Raw'].load
                     http_payloads.append(payload)
 
-
                 http_sessions.append(session)
 
-        return http_sessions, http_payloads, unique_urls
+            # update the end time of capture with each packet
+            end_time = round(float(packet.time), 6)
+
+        # process converted Unix timestamps with microseconds precision
+        start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, rrnames, http_sessions, http_payloads, unique_urls
+
+    def get_unique_public_addresses(self):
+        src_ip_list_set = set(self.public_src_ip_list)
+        src_unique_ip_list = (list(src_ip_list_set))
+
+        dst_unique_ip_list_set = set(self.public_dst_ip_list)
+        dst_unique_ip_list = (list(dst_unique_ip_list_set))
+
+        combined_ip_list_set = set(self.public_ip_list)
+        combined_unique_ip_list = (list(combined_ip_list_set))
+
+        return src_unique_ip_list, dst_unique_ip_list, combined_unique_ip_list
+
+    def count_public_ip_addresses(self):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Counting the public source and destination IP addresses ...")
+        self.logger.info(f"Counting the public source and destination IP addresses")
+        src_ip_counter = Counter()
+        for ip in self.public_src_ip_list:
+            src_ip_counter[ip] += 1
+
+        dst_ip_counter = Counter()
+        for ip in self.public_dst_ip_list:
+            dst_ip_counter[ip] += 1
+
+        combined_ip_counter = Counter()
+        for ip in self.public_ip_list:
+            combined_ip_counter[ip] += 1
+
+        return src_ip_counter, dst_ip_counter, combined_ip_counter
+
+    # source: https://stackoverflow.com/questions/72136317/how-to-convert-key-and-value-of-dictionary-from-byte-to-string
+    def _convert_dict(self, data):
+        if isinstance(data,str):
+            return data
+        elif isinstance(data,bytes):
+            return data.decode()
+        elif isinstance(data,dict):
+            newdata = {}  # Build a new dict
+            for key, val in data.items():
+                if isinstance(key,bytes):
+                    key = key.decode()
+                newdata[key] = self._convert_dict(val)  # Update new dict (and use the val since items() gives it for free)
+            return newdata
+        elif isinstance(data,list):
+            return [self._convert_dict(dt) for dt in data]
+        else:
+            return data
 
     def extract_certificates(self):
         cmd = f'tshark -nr {self.filepath} -Y "tls.handshake.certificate" -V'
@@ -434,8 +401,8 @@ class PacketParser:
         print(f">> Number of extracted TLS certificates : {len(self.certificates)}")
 
     def correlate_iocs(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating extracted IOCs ...")
-        self.logger.info(f"Correlating extracted IOCs")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating the extracted IOCs ...")
+        self.logger.info(f"Correlating the extracted IOCs")
         iocs = {}
 
         # start and end times of the processed packet capture
