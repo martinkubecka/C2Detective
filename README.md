@@ -96,6 +96,8 @@ options:
 - [x] command-line interface (CLI) with argument parsing
 - [x] implemented logging
 - [x] load configurations from config file
+  - [x] enrichment services enabling and their API keys
+  - [x] option for setting custom thresholds for detecion
 
 #### Packet Capture Analysis
 
@@ -141,6 +143,7 @@ options:
 - [x] detect long connection
 - [x] detect unusual big HTML response size 
 - [x] detect known C2 default HTTP headers
+- [x] detect known C2 values in TLS certificates
 
 > *currently working on detection features*
 
@@ -152,7 +155,6 @@ options:
 #### General
 
 - implement cashing (e.g. database) for enriched data and IOCs
-- USER SET TRESHOLD IN CONFIG
 
 #### Packet Capture Analysis
 
@@ -168,7 +170,6 @@ options:
 
 #### Detection
 
-- [ ] detect known C2 values in TLS certificates
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)
 - [ ] implement detection confidence scoring system

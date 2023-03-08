@@ -44,6 +44,7 @@ class DetectionEngine:
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
         self.crypto_domains = self.get_crypto_domains()
         self.c2_http_headers = self.get_c2_http_headers()
+        self.c2_tls_certificate_values = self.get_c2_tls_certificate_values()
 
     def evaluate_detection(self):
         if self.c2_indicators_detected:
@@ -91,6 +92,21 @@ class DetectionEngine:
             crypto_domains = data['crypto_domains']
 
         return crypto_domains
+
+    def get_c2_tls_certificate_values(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading known C2 values in TLS certificates ...")
+        logging.info("Loading known C2 values in TLS certificates")
+        
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/c2_tls_certificate_values.json"
+
+        with open(filepath, 'r') as tls_values:
+            c2_tls_certificate_values = json.load(tls_values)
+
+        return c2_tls_certificate_values
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------- NETWORK TRAFFIC DETECTION ------------------------------------------
+    # ----------------------------------------------------------------------------------------------------------------
 
     def detect_connections_with_excessive_frequency(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with excessive frequency ...")
@@ -259,6 +275,47 @@ class DetectionEngine:
    
         for entry in detected_headers:
             print(f">> {Fore.RED}'{entry['c2_framework']}' : '{entry['malicious_header']}'{Fore.RESET} in '{entry['session']}'")
+
+    def detect_known_c2_tls_values(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious values in extracted data from TLS certificates ...")
+        logging.info("Looking for known malicious values in extracted data from TLS certificates")
+
+        detected_certificates = []
+
+        for entry in self.packet_parser.certificates:          
+
+            for c2_framework, tls_values in self.c2_tls_certificate_values.items():
+                detected_value = False
+
+                for malicious_value in tls_values:
+
+                    if malicious_value in entry.get('serialNumber'):
+                        detected_value = True
+
+                    if malicious_value in entry.get('issuer').values():
+                        detected_value = True
+
+                    if malicious_value in entry.get('subject').values():
+                        detected_value = True
+
+            if detected_value:
+                detected_certificates.append(entry)
+
+        if detected_certificates:
+            self.c2_indicators_detected = True
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious values in extracted data from TLS certificates{Fore.RESET}")
+            logging.info(f"Detected known malicious values in extracted data from TLS certificates. (detected_certificates : {detected_certificates})")
+            self.print_detected_malicious_certificates(detected_certificates)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious values in extracted data from TLS certificates not detected{Fore.RESET}")
+            logging.info(f"Known malicious values in extracted data from TLS certificates not detected")
+
+    def print_detected_malicious_certificates(self, detected_certificates):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected malicious TLS certificates")
+        logging.info(f"Listing detected malicious TLS certificates")
+   
+        for entry in detected_certificates:
+            print(f"{Fore.RED}{entry}{Fore.RESET}")
 
     def detect_outgoing_traffic_to_tor(self):
         print(

@@ -265,8 +265,24 @@ class PacketParser:
         certificates = [] #list to store certificates 
         current_cert = {}
         for index, line in enumerate(lines):
-            
-                if line.lstrip(" ").startswith("serialNumber"):   
+
+                if  line.lstrip(" ").startswith("Source Address"):
+                    src_ip = line.lstrip(" ").split(" ")[2]
+                    current_cert['src_ip'] = src_ip
+
+                elif line.lstrip(" ").startswith("Destination Address"):
+                    dst_ip = line.lstrip(" ").split(" ")[2]
+                    current_cert['dst_ip'] = dst_ip
+ 
+                elif line.lstrip(" ").startswith("Source Port"):
+                    src_port = line.lstrip(" ").split(" ")[2]
+                    current_cert['src_port'] = src_port
+ 
+                elif line.lstrip(" ").startswith("Destination Port"):
+                    dst_port = line.lstrip(" ").split(" ")[2]
+                    current_cert['dst_port'] = dst_port
+ 
+                elif line.lstrip(" ").startswith("serialNumber"):   
                     serialNumber = line.lstrip(" ").split(" ")[1]
                     current_cert['serialNumber'] = serialNumber
 
