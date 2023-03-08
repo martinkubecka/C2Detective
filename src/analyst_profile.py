@@ -7,7 +7,7 @@ class AnalystProfile:
         self.virustotal_api_key = self.api_keys['virustotal']
         self.securitytrails_api_key = self.api_keys['securitytrails']
         self.shodan_api_key = self.api_keys['shodan']
-        
+
         self.enrichment_services = config['enrichment_services']
         self.abuseipdb = self.enrichment_services['abuseipdb']
         self.threatfox = self.enrichment_services['threatfox']
@@ -17,8 +17,13 @@ class AnalystProfile:
         self.alienvault = self.enrichment_services['alienvault']
         self.bgp_ranking = self.enrichment_services['bgp_ranking']
         self.urlhaus = self.enrichment_services['urlhaus']
-        
+
         self.arguments = config['arguments']
+
+        self.thresholds = config['thresholds']
+        self.MAX_FREQUENCY = self.thresholds['MAX_FREQUENCY']
+        self.MAX_DURATION = self.thresholds['MAX_DURATION']
+        self.MAX_HTML_SIZE = self.thresholds['MAX_HTML_SIZE']
 
     def print_config(self):
         print(f"name: {self.name}")
@@ -28,3 +33,6 @@ class AnalystProfile:
         print(f"shodan: {self.shodan_api_key}")
         print(f"enrichment_services: {self.enrichment_services}")
         print(f"arguments: {self.arguments}")
+        print(f"MAX_FREQUENCY: {self.MAX_FREQUENCY}")
+        print(f"MAX_DURATION: {self.MAX_DURATION}")
+        print(f"MAX_HTML_SIZE: {self.MAX_HTML_SIZE}")

@@ -152,6 +152,7 @@ options:
 #### General
 
 - implement cashing (e.g. database) for enriched data and IOCs
+- USER SET TRESHOLD IN CONFIG
 
 #### Packet Capture Analysis
 
@@ -167,6 +168,7 @@ options:
 
 #### Detection
 
+- [ ] detect known C2 values in TLS certificates
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] detect signs of DNS based covert channels (DNS Tunneling)
 - [ ] implement detection confidence scoring system

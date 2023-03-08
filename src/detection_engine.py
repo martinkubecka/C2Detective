@@ -33,11 +33,14 @@ http_requests :                             detailed HTTP requests              
 
 
 class DetectionEngine:
-    def __init__(self, packet_parser, enrichment_enchine):
+    def __init__(self, analyst_profile, packet_parser, enrichment_enchine):
         self.logger = logging.getLogger(__name__)
         self.c2_indicators_detected = False
+
+        self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
         self.enrichment_enchine = enrichment_enchine
+
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
         self.crypto_domains = self.get_crypto_domains()
         self.c2_http_headers = self.get_c2_http_headers()
@@ -93,7 +96,7 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with excessive frequency ...")
         logging.info("Looking for connections with excessive frequency")
 
-        MAX_FREQUENCY = len(self.packet_parser.packets) * 0.1  # TODO: (maybe) let user define desired threshold
+        MAX_FREQUENCY = len(self.packet_parser.packets) * (self.analyst_profile.MAX_FREQUENCY / 100)
 
         detected = False
         detected_connections = {}
@@ -134,7 +137,7 @@ class DetectionEngine:
         logging.info("Looking for connections with long duration")
 
         detected = False
-        MAX_DURATION = 14000    # TODO: (maybe) let user define desired threshold ; set for testing 'Qakbot.pcap'
+        MAX_DURATION = self.analyst_profile.MAX_DURATION    # 14000 set for testing 'Qakbot.pcap'
         connection_start_times = {}
         detected_connections = []
 
@@ -180,7 +183,7 @@ class DetectionEngine:
         logging.info("Looking for unusual big HTML response size")
 
         detected = False
-        MAX_HTML_SIZE = 50000   # TODO: (maybe) let user define desired threshold in bytes
+        MAX_HTML_SIZE = self.analyst_profile.MAX_HTML_SIZE
 
         connection_sizes = {}
 

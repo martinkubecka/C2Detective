@@ -114,7 +114,6 @@ def check_required_structure(output_dir):
         sys.exit(1)
         
 
-
 def load_config(filename):
     with open(filename, "r") as ymlfile:
         config = yaml.safe_load(ymlfile)
@@ -281,7 +280,7 @@ def main():
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
-    detection_engine = DetectionEngine(packet_parser, enrichment_enchine)
+    detection_engine = DetectionEngine(analyst_profile, packet_parser, enrichment_enchine)
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
