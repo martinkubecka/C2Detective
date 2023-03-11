@@ -277,6 +277,7 @@ def main():
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
     detection_engine.detect_dga() # TODO: works but disable printing warnings/error to console
+    detection_engine.detect_dns_tunneling()
     detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()

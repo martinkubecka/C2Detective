@@ -14,13 +14,14 @@ import base64
 
 
 """
-start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
-end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
+start_time :                                timestamp when packet capture stared    string :        %Y-%m-%d %H:%M:%S
+end_time :                                  timestamp when packet capture ended     string :        %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
+dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
 rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
@@ -35,7 +36,7 @@ class PacketParser:
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
 
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.rrnames, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.rrnames, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
 
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         
@@ -74,6 +75,8 @@ class PacketParser:
         self.logger.info("Extracting unique connections")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting TCP connections and counting their respective frequencies ...")
         self.logger.info("Extracting TCP connections and counting their respective frequencies")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Filtering and storing packets with DNS layer ...")
+        self.logger.info("Filtering and storing with DNS layer")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domain names from DNS responses ...")
         self.logger.info("Extracting domain names from DNS responses")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
@@ -91,6 +94,8 @@ class PacketParser:
         # store all and only external connections
         all_connections = set()
         external_connections = set()
+        # store filtered DNS packets
+        dns_packets = []
         # store extracted domain names from DNS responses
         rrnames = set()
         # store data from HTTP sessions
@@ -136,6 +141,9 @@ class PacketParser:
                     connection_frequency[connection] += 1
                 else:
                     connection_frequency[connection] = 1
+
+            if packet.haslayer(DNS):
+                dns_packets.append(packet)
 
             # only interested packets with a DNS Round Robin layer
             if packet.haslayer(DNSRR):
@@ -206,7 +214,7 @@ class PacketParser:
         start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
         end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, rrnames, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, rrnames, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.public_src_ip_list)

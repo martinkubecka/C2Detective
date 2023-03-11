@@ -24,6 +24,7 @@ class AnalystProfile:
         self.MAX_FREQUENCY = self.thresholds['MAX_FREQUENCY']
         self.MAX_DURATION = self.thresholds['MAX_DURATION']
         self.MAX_HTML_SIZE = self.thresholds['MAX_HTML_SIZE']
+        self.MAX_SUBDOMAIN_LENGTH = self.thresholds['MAX_SUBDOMAIN_LENGTH']
 
     def print_config(self):
         print(f"name: {self.name}")
@@ -36,3 +37,5 @@ class AnalystProfile:
         print(f"MAX_FREQUENCY: {self.MAX_FREQUENCY}")
         print(f"MAX_DURATION: {self.MAX_DURATION}")
         print(f"MAX_HTML_SIZE: {self.MAX_HTML_SIZE}")
+        print(f"MAX_SUBDOMAIN_LENGTH: {self.MAX_SUBDOMAIN_LENGTH}")
+

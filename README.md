@@ -144,6 +144,7 @@ options:
 - [x] detect unusual big HTML response size 
 - [x] detect known C2 default HTTP headers
 - [x] detect known C2 values in TLS certificates
+- [x] detect signs of DNS based covert channels (DNS Tunneling)
 
 > *currently working on detection features*
 
@@ -170,8 +171,8 @@ options:
 
 #### Detection
 
+- [x] detect signs of ICMP based covert channels (ICMP Tunneling)
 - [ ] detect signs of beaconing behavior coming in and out of the network
-- [ ] detect signs of DNS based covert channels (DNS Tunneling)
 - [ ] implement detection confidence scoring system
 
 ---
