@@ -26,7 +26,7 @@ public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs : 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
-rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
+domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
 urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
@@ -402,8 +402,8 @@ class DetectionEngine:
         detected_domains = []
 
         detective = Detective()
-        # convert extracted rrnames strings into dgad.schema.Domain
-        mydomains, _ = detective.prepare_domains(self.packet_parser.rrnames)
+        # convert extracted domain names strings into dgad.schema.Domain
+        mydomains, _ = detective.prepare_domains(self.packet_parser.domain_names)
         # classify them
         detective.investigate(mydomains)
 
@@ -597,7 +597,7 @@ class DetectionEngine:
         detected_domains = []
         c2_detected = False
 
-        for domain in self.packet_parser.rrnames:
+        for domain in self.packet_parser.domain_names:
             enriched_domain = self.enrichment_enchine.enrich_data(
                 domain)   # TODO: REWORK
             # maybe call specific service directly ...                      <------
@@ -665,7 +665,7 @@ class DetectionEngine:
         detected = False
         detected_domains = []
 
-        for domain in self.packet_parser.rrnames:
+        for domain in self.packet_parser.domain_names:
             if domain in self.crypto_domains:
                 detected = True
                 detected_domains.append(domain)

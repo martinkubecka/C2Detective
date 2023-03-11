@@ -22,7 +22,7 @@ public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs : 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
-rrnames :                                   extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
+domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
 urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
@@ -36,7 +36,7 @@ class PacketParser:
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
 
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.rrnames, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
 
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         
@@ -77,8 +77,8 @@ class PacketParser:
         self.logger.info("Extracting TCP connections and counting their respective frequencies")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Filtering and storing packets with DNS layer ...")
         self.logger.info("Filtering and storing with DNS layer")
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domain names from DNS responses ...")
-        self.logger.info("Extracting domain names from DNS responses")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting domain names from DNS queries ...")
+        self.logger.info("Extracting domain names from DNS queries")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting data from HTTP sessions ...")
         self.logger.info("Extracting data from HTTP sessions")
 
@@ -96,8 +96,8 @@ class PacketParser:
         external_connections = set()
         # store filtered DNS packets
         dns_packets = []
-        # store extracted domain names from DNS responses
-        rrnames = set()
+        # store extracted domain names from DNS queries
+        domain_names = set()
         # store data from HTTP sessions
         http_payloads = []
         http_sessions = []
@@ -145,16 +145,14 @@ class PacketParser:
             if packet.haslayer(DNS):
                 dns_packets.append(packet)
 
-            # only interested packets with a DNS Round Robin layer
-            if packet.haslayer(DNSRR):
-                # if the an(swer) is a DNSRR, print the name it replied with
-                if isinstance(packet.an, DNSRR):
-                    try:
-                        rrname = packet.an.rrname.decode()  # NOTE: may not be sufficient
-                        domain = rrname[:-1] if rrname.endswith(".") else rrname    # remove "." at the end
-                        rrnames.add(domain)
-                    except UnicodeDecodeError:
-                        pass
+            # extract queried domains from DNS packets with DNSQR layer
+            if packet.haslayer(DNSQR):
+                try:
+                    query = packet[DNSQR].qname.decode('utf-8')  # NOTE: may not be sufficient
+                    domain = query[:-1] if query.endswith(".") else query    # remove "." at the end
+                    domain_names.add(domain)
+                except UnicodeDecodeError:
+                    pass
 
             # check if the packet has an HTTP layer (i.e., is an HTTP request or response)
             if packet.haslayer('HTTPRequest') or packet.haslayer('HTTPResponse'):
@@ -214,7 +212,7 @@ class PacketParser:
         start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
         end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, rrnames, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.public_src_ip_list)
@@ -401,7 +399,7 @@ class PacketParser:
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
             f">> Number of external connections: {len(self.external_connections)}")
-        print(f">> Number of unique 'rrnames': {len(self.rrnames)}")
+        print(f">> Number of unique domain names: {len(self.domain_names)}")
         print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
 
         top_count = 3
@@ -435,8 +433,8 @@ class PacketParser:
             end_time=self.end_time
         )
 
-        # rrnames (domains) from DNS responses
-        iocs['extracted_domains'] = list(self.rrnames)
+        # domain names from DNS queries
+        iocs['extracted_domains'] = list(self.domain_names)
 
         # unique public source IP address
         iocs['public_src_ip_addresses'] = self.src_unique_ip_list
