@@ -108,13 +108,13 @@ options:
   - [x] domains from DNS responses
   - [x] HTTP payloads
   - [x] requested URLs
+  - [x] fields of interest from TLS certificates
 - [x] show custom packet capture statistics in terminal
 - [x] write extracted IOCs to JSON file
   - [x] public IP addresses and their count
   - [x] domains from DNS responses
   - [x] HTTP GET requests
   - [x] requested URLs
-- [x] extract fields of interest from TLS certificates
 
 #### Data Enrichment & Correlation 
 

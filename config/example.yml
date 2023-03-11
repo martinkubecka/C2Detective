@@ -17,3 +17,7 @@ enrichment_services:
 arguments:
   quiet: False
   name: "analysis name"
+thresholds:
+  MAX_FREQUENCY: 10 # percentage
+  MAX_DURATION: 14000 # seconds
+  MAX_HTML_SIZE: 50000 # bytes

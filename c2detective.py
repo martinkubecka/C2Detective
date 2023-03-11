@@ -177,7 +177,6 @@ def init_logger():
 
 def main():
     os.system("clear")
-    # print("\033[H\033[J", end="")   # clean screen
 
     init_logger()
     is_platfrom_supported()
@@ -196,7 +195,6 @@ def main():
     check_required_structure(output_dir)
 
     print('-' * terminal_size.columns)
-    # TODO: add check if IOCs are present in the project
     if args.update_tor_nodes:
         from iocs.tor.update_tor_nodes import TorNodes
         tor_nodes = TorNodes()
@@ -246,26 +244,11 @@ def main():
     print('-' * terminal_size.columns)
     if not args.config is None:
         if is_valid_file(args.config, "yml"):
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
             logging.info(f"Loading config '{args.config}'")
             config = load_config(args.config)
             analyst_profile = AnalystProfile(config)
             # analyst_profile.print_config()
-
-    if not args.enrich is None:
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating data enrichment engine ...")
-        logging.info("Configurating data enrichment engine")
-        enrichment_enchine = EnrichmentEngine(analyst_profile, output_dir)
-        # ----------------- TESTING -----------------
-        # enrichment_enchine.enrich_data("139.180.203.104")   # Cobalt Strike
-        # enrichment_enchine.enrich_data("147.175.111.17")  # STU - open ports and a lot of vulns
-        # enrichment_enchine.enrich_data("23.105.223.5")  # lot of abuse
-        # enrichment_enchine.enrich_data("027.ru")
-        # enrichment_enchine.enrich_data("5577")    # ASN for bgp ranking
-        # enrichment_enchine.enrich_data("66.54.96.58") #  Mozi.m
-        # exit()
 
     print('-' * terminal_size.columns)
     input_file = args.input
@@ -276,7 +259,15 @@ def main():
         statistics = args.statistics
         packet_parser = PacketParser(
             input_file, output_dir, report_iocs, statistics)
-   
+
+    if args.enrich:
+        print('-' * terminal_size.columns)
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating data enrichment engine ...")
+        logging.info("Configurating data enrichment engine")
+        enrichment_enchine = EnrichmentEngine(analyst_profile, output_dir)
+    else:
+        enrichment_enchine = None
+
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
@@ -290,13 +281,17 @@ def main():
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()
     detection_engine.detect_crypto_domains() 
-    # using set() to remove duplicates and check for values count
-    no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
-    # do not use enrichment services when all services are set to 'False'
-    if not no_enabled_services:
-        detection_engine.threat_feeds()
-        # print(f"[{time.strftime('%H:%M:%S')}] [INFO] No enrichment service is enabled ...")
-        # logging.info("No enrichment service is enabled")
+
+    if not enrichment_enchine is None:
+        # using set() to remove duplicates and check for values count
+        no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
+        # do not use enrichment services when all services are set to 'False' even if enrichment is enavled
+        if no_enabled_services:
+            print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No enrichment services are enabled ...")
+            logging.warning("No enrichment services are enabled")
+        else:
+            detection_engine.threat_feeds()
+    
     detection_engine.evaluate_detection()
 
     # TODO
