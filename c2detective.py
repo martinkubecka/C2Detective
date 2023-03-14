@@ -149,7 +149,9 @@ def parse_arguments():
                         help='print packet capture statistics')
     parser.add_argument('-r', '--report-iocs', action='store_true',
                         help='write extracted IOCs to JSON file')
-    parser.add_argument('-e', '--enrich', action='store_true',  # TODO: should not be action='store_true'
+    parser.add_argument('-d', '--dga-detection', action='store_true',
+                        help="enable DGA domain detection")
+    parser.add_argument('-e', '--enrich', action='store_true', 
                         help="enable data enrichment")
     # parser.add_argument('-a', '--action', metavar="ACTION",
     #                     help='action to execute [sniffer/...]')
@@ -276,7 +278,8 @@ def main():
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
-    detection_engine.detect_dga() # TODO: works but disable printing warnings/error to console
+    if args.dga_detection:
+        detection_engine.detect_dga() # TODO: works but disable printing warnings/error to console
     detection_engine.detect_dns_tunneling()
     detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
