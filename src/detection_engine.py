@@ -163,7 +163,6 @@ class DetectionEngine:
         detected_connections = []
 
         for packet in self.packet_parser.packets:
-            # TODO: FIX DETECTION ONLY FOR EXTERNAL CONNECTIONS
             # check if packet has IP and TCP layers
             if IP in packet and TCP in packet:
                 # extract connection information
@@ -171,27 +170,33 @@ class DetectionEngine:
                 src_port = packet[TCP].sport
                 dst_ip = packet[IP].dst
                 dst_port = packet[TCP].dport
-                connection = (src_ip, src_port, dst_ip, dst_port)
 
-                # check if connection is in dictionary
-                if connection not in connection_start_times:
-                    # add connection to dictionary with current time as start time
-                    connection_start_times[connection] = packet.time
+                # if src or dst ip is public, further process this connection
+                if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
+
+                    connection = (src_ip, src_port, dst_ip, dst_port)
+
+                    # check if connection is in dictionary
+                    if connection not in connection_start_times:
+                        # add connection to dictionary with current time as start time
+                        connection_start_times[connection] = packet.time
+                    else:
+                        # calculate time duration of connection
+                        duration = float(packet.time - connection_start_times[connection])
+
+                        # check if duration exceeds maximum set duration
+                        if duration > MAX_DURATION:
+                            detected = True
+                            entry = dict(
+                                src_ip=src_ip,
+                                src_port=src_port,
+                                dst_ip=dst_ip,
+                                dst_port=dst_port,
+                                duration=duration
+                            )
+                            detected_connections.append(entry)
                 else:
-                    # calculate time duration of connection
-                    duration = float(packet.time - connection_start_times[connection])
-
-                    # check if duration exceeds maximum set duration
-                    if duration > MAX_DURATION:
-                        detected = True
-                        entry = dict(
-                            src_ip=src_ip,
-                            src_port=src_port,
-                            dst_ip=dst_ip,
-                            dst_port=dst_port,
-                            duration=duration
-                        )
-                        detected_connections.append(entry)
+                    continue
 
         if detected:
             self.c2_indicators_detected = True
