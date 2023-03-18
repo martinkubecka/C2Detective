@@ -262,10 +262,10 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        report_extracted_data = args.write_extracted
-        statistics = args.statistics
+        report_extracted_data_option = args.write_extracted
+        statistics_option = args.statistics
         packet_parser = PacketParser(
-            input_file, output_dir, report_extracted_data, statistics)
+            input_file, output_dir, report_extracted_data_option, statistics_option)
 
     if args.enrich:
         print('-' * terminal_size.columns)

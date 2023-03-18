@@ -11,6 +11,7 @@ from prettytable import PrettyTable
 from scapy.all import *
 from scapy.layers import http
 import tldextract
+from ipaddress import ip_address
 
 
 """
@@ -18,6 +19,7 @@ start_time :                                timestamp when packet capture stared
 end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+connection_time :                           all TCP connections with duration :     {} :            {(src_ip, src_port, dst_ip, dst_port):duration, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
@@ -273,7 +275,6 @@ class DetectionEngine:
         detected = False
         detected_headers = []
 
-        # TODO: FIX SEARCHING FOR SUBSTRINGS
         for entry in self.packet_parser.http_sessions:
             for key, value in entry['http_headers'].items():
                 for c2_framework, http_headers in self.c2_http_headers.items():
@@ -312,20 +313,24 @@ class DetectionEngine:
 
         for entry in self.packet_parser.certificates:          
 
-            for c2_framework, tls_values in self.c2_tls_certificate_values.items():
+            issuer_values = entry.get("issuer").values()
+            subject_values = entry.get("subject").values()
+
+            for c2_framework, malicious_tls_values in self.c2_tls_certificate_values.items():
                 detected_value = False
 
-                # TODO: FIX SEARCHING FOR SUBSTRINGS
-                for malicious_value in tls_values:
+                for malicious_value in malicious_tls_values:
 
                     if malicious_value in entry.get('serialNumber'):
                         detected_value = True
 
-                    if malicious_value in entry.get('issuer').values():
-                        detected_value = True
+                    for value in issuer_values:
+                        if malicious_value in value:
+                            detected_value = True
 
-                    if malicious_value in entry.get('subject').values():
-                        detected_value = True
+                    for value in subject_values:
+                        if malicious_value in value:
+                            detected_value = True
 
             if detected_value:
                 detected_certificates.append(entry)
