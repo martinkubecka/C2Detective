@@ -10,7 +10,7 @@ from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
 from src.enrichment_engine import EnrichmentEngine
 from src.detection_engine import DetectionEngine
-
+from src.detection_reporter import DetectionReporter
 
 def banner():
     print(r"""
@@ -134,35 +134,30 @@ def parse_arguments():
 
     parser.add_argument(
         '-q', '--quiet', help="do not print banner", action='store_true')
-    # parser.add_argument('-i', help='input file (.cap OR .pcap)', metavar='FILE', required=True,
-    #                     type=lambda file: is_valid_file(file))
-    # parser.add_argument('-i', '--input', metavar='FILE',
-    #                     help='input file (.cap OR .pcap)', required=True)
-
     parser.add_argument('input', metavar='FILENAME',
                         help='input file (.cap OR .pcap)')
     # parser.add_argument('-n', '--name', metavar="NAME",
     #                     help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
+    # parser.add_argument('-a', '--action', metavar="ACTION",
+    #                     help='action to execute [sniffer/...]')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
-                        help="config file (default: 'config/config.yml')")  # add option to load arguments config file
+                        help="configuration file (default: 'config/config.yml')")  # add option to load arguments config file
+    parser.add_argument('-o', '--output', metavar='PATH', default="reports",
+                        help="output directory file path for report files (default: 'reports/')")
     parser.add_argument('-s', '--statistics', action='store_true',
-                        help='print packet capture statistics')
-    parser.add_argument('-r', '--report-iocs', action='store_true',
-                        help='write extracted IOCs to JSON file')
+                        help='print packet capture statistics to the console')
+    parser.add_argument('-w', '--write-extracted', action='store_true',
+                        help='write extracted data to a JSON file')
     parser.add_argument('-d', '--dga-detection', action='store_true',
                         help="enable DGA domain detection")
     parser.add_argument('-e', '--enrich', action='store_true', 
                         help="enable data enrichment")
-    # parser.add_argument('-a', '--action', metavar="ACTION",
-    #                     help='action to execute [sniffer/...]')
-    parser.add_argument('-o', '--output', metavar='PATH', default="reports",
-                        help="output directory file path for report files (default: 'reports/')")
     
-    parser.add_argument('-utn', '--update-tor-nodes', action='store_true',
+    update_group = parser.add_argument_group('update options')
+    update_group.add_argument('-utn', '--update-tor-nodes', action='store_true',
                         help='update tor nodes list')   
-    parser.add_argument('-ucd', '--update-crypto-domains', action='store_true',
+    update_group.add_argument('-ucd', '--update-crypto-domains', action='store_true',
                         help='update crypto / cryptojacking based sites list')   
-    
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -212,6 +207,9 @@ def main():
             if not time_diff < 1800:
                 print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
                 logging.info(f"It is recommended to update the Tor node list every 30 minutes (use '-utn' next time)")
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] Tor node list is up-to-date")
+                logging.info(f"Tor node list is up-to-date")
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/tor/tor_nodes.json' does not exist (use '-utn' next time)")
             logging.error(f"Required file '{file_path}' does not exist (use '-utn' next time)")
@@ -233,15 +231,22 @@ def main():
             if not time_diff < 24 * 60 * 60: 
                 print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
                 logging.info(f"It is recommended to update the crypto / cryptojacking based sites list every 24 hours (use '-ucd' next time)")
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] Crypto / cryptojacking based sites list is up-to-date")
+                logging.info(f"Crypto / cryptojacking based sites list is up-to-date")
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/crypto_domains/crypto_domains.json' does not exist (use '-ucd' next time)")
             logging.error(f"Required file '{file_path}' does not exist (use '-ucd' next time)")
             print("\nExiting program ...\n")
             sys.exit(1)
 
-    # use analysis name for output/report naming etc.
+    # use analysis name for example for output report naming
     # if not args.name is None:
     #     analysis_name = args.name
+
+    # TODO
+    # print('-' * terminal_size.columns)
+    # action = args.action
 
     print('-' * terminal_size.columns)
     if not args.config is None:
@@ -257,10 +262,10 @@ def main():
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        report_iocs = args.report_iocs
+        report_extracted_data = args.write_extracted
         statistics = args.statistics
         packet_parser = PacketParser(
-            input_file, output_dir, report_iocs, statistics)
+            input_file, output_dir, report_extracted_data, statistics)
 
     if args.enrich:
         print('-' * terminal_size.columns)
@@ -279,7 +284,7 @@ def main():
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
     if args.dga_detection:
-        detection_engine.detect_dga() # TODO: works but disable printing warnings/error to console
+        detection_engine.detect_dga()
     detection_engine.detect_dns_tunneling()
     detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
@@ -298,9 +303,10 @@ def main():
     
     detection_engine.evaluate_detection()
 
-    # TODO
-    # print('-' * terminal_size.columns)
-    # action = args.action
+    print('-' * terminal_size.columns)
+    detected_iocs = detection_engine.get_detected_iocs() 
+    detection_reporter = DetectionReporter(output_dir, detected_iocs)
+    detection_reporter.write_detected_iocs_to_file()
 
     print('-' * terminal_size.columns)
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")

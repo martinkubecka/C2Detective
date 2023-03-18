@@ -1,8 +1,6 @@
 import json
 from scapy.all import *
 from scapy.layers import http
-import pandas as pd
-import numpy as np
 import binascii  # binary to ASCII
 from time import perf_counter
 from ipaddress import ip_address
@@ -16,7 +14,7 @@ import base64
 """
 start_time :                                timestamp when packet capture stared    string :        %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended     string :        %Y-%m-%d %H:%M:%S
-all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
+all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
@@ -31,7 +29,7 @@ http_requests :                             detailed HTTP requests              
 
 
 class PacketParser:
-    def __init__(self, filepath, output_dir, report_iocs, statistics):
+    def __init__(self, filepath, output_dir, report_extracted_data_option, statistics_option):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
@@ -44,15 +42,12 @@ class PacketParser:
 
         self.certificates = self.extract_certificates()
 
-        self.report = report_iocs
-        if self.report:
+        if report_extracted_data_option:
             self.report_dir = output_dir
-            self.extracted_iocs = self.correlate_iocs()
-            self.extracted_iocs_json = json.dumps(
-                self.extracted_iocs, indent=4)
-            self.iocs_to_file()
+            self.extracted_data = self.correlate_extracted_data()
+            self.extracted_data_to_file()
 
-        self.cli_statistics = statistics
+        self.cli_statistics = statistics_option
         if self.cli_statistics:
             self.print_statistics()
 
@@ -422,63 +417,62 @@ class PacketParser:
 
         print(f">> Number of extracted TLS certificates : {len(self.certificates)}")
 
-    def correlate_iocs(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating the extracted IOCs ...")
-        self.logger.info(f"Correlating the extracted IOCs")
-        iocs = {}
+    def correlate_extracted_data(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating extracted data ...")
+        self.logger.info(f"Correlating extracted data")
+        extracted_data = {}
 
         # start and end times of the processed packet capture
-        iocs['capture_timestamps'] = dict(
+        extracted_data['capture_timestamps'] = dict(
             start_time=self.start_time,
             end_time=self.end_time
         )
 
         # domain names from DNS queries
-        iocs['extracted_domains'] = list(self.domain_names)
+        extracted_data['extracted_domains'] = list(self.domain_names)
 
         # unique public source IP address
-        iocs['public_src_ip_addresses'] = self.src_unique_ip_list
+        extracted_data['public_src_ip_addresses'] = self.src_unique_ip_list
 
         # unique public source IP address count
         public_src_ip_addresses_count = {}
         for ip, count in self.src_ip_counter.most_common():
             public_src_ip_addresses_count[ip] = count
-        iocs['public_src_ip_addresses_count'] = public_src_ip_addresses_count
+        extracted_data['public_src_ip_addresses_count'] = public_src_ip_addresses_count
 
         # unique public destination IP address
-        iocs['public_dst_ip_addresses'] = self.dst_unique_ip_list
+        extracted_data['public_dst_ip_addresses'] = self.dst_unique_ip_list
 
         # unique public destination IP address count
         public_dst_ip_addresses_count = {}
         for ip, count in self.dst_ip_counter.most_common():
             public_dst_ip_addresses_count[ip] = count
-        iocs['public_dst_ip_addresses_count'] = public_dst_ip_addresses_count
+        extracted_data['public_dst_ip_addresses_count'] = public_dst_ip_addresses_count
 
         # unique combined public IP address count
         combined_ip_addresses_count = {}
         for ip, count in self.all_ip_counter.most_common():
             combined_ip_addresses_count[ip] = count
-        iocs['combined_ip_addresses_count'] = combined_ip_addresses_count
+        extracted_data['combined_ip_addresses_count'] = combined_ip_addresses_count
 
         # extracted URLs
-        iocs['extracted_urls'] = list(self.unique_urls)
+        extracted_data['extracted_urls'] = list(self.unique_urls)
 
         # extracted HTTP requests
-        # iocs['http_get_requests'] = self.http_requests
+        # extracted_data['http_get_requests'] = self.http_requests
 
         # extracted HTTP sessions
-        iocs['http_sessions'] = self.http_sessions
+        extracted_data['http_sessions'] = self.http_sessions
 
         # extracted data from TLS certificates
-        iocs['tls_certificates'] = self.certificates
+        extracted_data['tls_certificates'] = self.certificates
 
-        return iocs
+        return json.dumps(extracted_data, indent=4)
 
-    def iocs_to_file(self):
-        report_output_path = f"{self.report_dir}/extracted_iocs.json"
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Writing extracted IOCs to '{report_output_path}'")
-        self.logger.info(f"Writing extracted IOCs to '{report_output_path}'")
+    def extracted_data_to_file(self):
+        report_output_path = f"{self.report_dir}/extracted_data.json"
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing extracted data to '{report_output_path}'")
+        self.logger.info(f"Writing extracted data to '{report_output_path}'")
 
         with open(report_output_path, "w") as output:
-            output.write(self.extracted_iocs_json)
+            output.write(self.extracted_data)

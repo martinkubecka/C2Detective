@@ -66,7 +66,7 @@ $ pip install -r requirements.txt
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] [-n NAME] [-c FILE] [-s] [-r] [-e] [-o PATH] [-utn] [-ucd] FILENAME
+usage: c2detective [-h] [-q] [-c FILE] [-o PATH] [-s] [-w] [-d] [-e] [-utn] [-ucd] FILENAME
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
@@ -76,12 +76,14 @@ positional arguments:
 options:
   -h, --help                     show this help message and exit
   -q, --quiet                    do not print banner
-  -n NAME, --name NAME           analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)
-  -c FILE, --config FILE         config file (default: 'config/config.yml')
-  -s, --statistics               print packet capture statistics
-  -r, --report-iocs              write extracted IOCs to JSON file
-  -e, --enrich                   enable data enrichment
+  -c FILE, --config FILE         configuration file (default: 'config/config.yml')
   -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
+  -s, --statistics               print packet capture statistics to the console
+  -w, --write-extracted          write extracted data to a JSON file
+  -d, --dga-detection            enable DGA domain detection
+  -e, --enrich                   enable data enrichment
+
+update options:
   -utn, --update-tor-nodes       update tor nodes list
   -ucd, --update-crypto-domains  update crypto / cryptojacking based sites list
 ```
@@ -98,23 +100,24 @@ options:
 - [x] load configurations from config file
   - [x] enrichment services enabling and their API keys
   - [x] option for setting custom thresholds for detecion
+- [x] update options for Tor node list and crypto / cryptojacking based sites list
+  - [x] notify the user if Tor node list or crypto / cryptojacking based sites list is out-of-date  
 
 #### Packet Capture Analysis
 
-- [x] load and parse packet capture with Scapy
-- [x] extract various IOCs
-  - [x] unique connections
-  - [x] public IP addresses
-  - [x] domains from DNS responses
-  - [x] HTTP payloads
-  - [x] requested URLs
-  - [x] fields of interest from TLS certificates
+- [x] load and parse provided packet capture with Scapy
+  - [x] extract various data from loaded packet capture
+    - [x] packet capture timestamps
+    - [x] public IP addresses
+    - [x] unique connections
+    - [x] TCP connections and their respective frequencies
+    - [x] packets with DNS layer
+    - [x] domains from DNS queries
+    - [x] HTTP sessions
+    - [x] requested URLs
+    - [x] fields of interest from TLS certificates
 - [x] show custom packet capture statistics in terminal
-- [x] write extracted IOCs to JSON file
-  - [x] public IP addresses and their count
-  - [x] domains from DNS responses
-  - [x] HTTP GET requests
-  - [x] requested URLs
+- [x] write extracted data from packet capture to JSON file (`extracted_data.json`)
 
 #### Data Enrichment & Correlation 
 
@@ -126,8 +129,8 @@ options:
 - [x] data enrichment with ThreatFox
 - [x] data enrichment with URLhaus
 - [x] data enrichment with VirusTotal
-- [x] correlating enriched data to one JSON object
-- [x] write correlated enriched data to the output report file
+- [x] correlate enriched data to one JSON object
+- [x] write detected IOCs to JSON file (`detected_iocs.json`)
 
 #### Detection
 - [x] detect suspicious domains and hosts based on the enriched data
@@ -156,6 +159,7 @@ options:
 #### General
 
 - implement cashing (e.g. database) for enriched data and IOCs
+- create final HTML report file containg the detected IOCs 
 
 #### Packet Capture Analysis
 
@@ -171,7 +175,7 @@ options:
 
 #### Detection
 
-- [x] detect signs of ICMP based covert channels (ICMP Tunneling)
+- [ ] detect signs of ICMP based covert channels (ICMP Tunneling)
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] implement detection confidence scoring system
 

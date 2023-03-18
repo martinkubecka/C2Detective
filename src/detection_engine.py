@@ -1,4 +1,3 @@
-from dgad.prediction import Detective
 import sys
 import json
 import os
@@ -13,14 +12,11 @@ from scapy.all import *
 from scapy.layers import http
 import tldextract
 
-# https://lindevs.com/disable-tensorflow-2-debugging-information
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
-
 
 """
 start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
-all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         (src_ip, dst_ip)
+all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
@@ -38,6 +34,7 @@ class DetectionEngine:
     def __init__(self, analyst_profile, packet_parser, enrichment_enchine):
         self.logger = logging.getLogger(__name__)
         self.c2_indicators_detected = False
+        self.detected_iocs = {}
 
         self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
@@ -117,17 +114,25 @@ class DetectionEngine:
         MAX_FREQUENCY = len(self.packet_parser.packets) * (self.analyst_profile.MAX_FREQUENCY / 100)
 
         detected = False
-        detected_connections = {}
+        detected_connections = []
 
         # find connections with excessive frequency
         for connection, count in self.packet_parser.connection_frequency.items():
             if count > MAX_FREQUENCY:
                 detected = True
-                detected_connections[connection] = count
+                entry = dict(
+                    src_ip=connection[0],
+                    src_port=connection[1],
+                    dst_ip=connection[2],
+                    dst_port=connection[3],
+                    frequency=count
+                )
                 # print(f"Connection {connection} has {count} packets, which is over {threshold:.0f}% of total packets.")
+                detected_connections.append(entry)
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['excessive_frequency'] = detected_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected connections with excessive frequency{Fore.RESET}")
             logging.info(
@@ -143,12 +148,8 @@ class DetectionEngine:
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with excessive frequency")
         logging.info(f"Listing connections with excessive frequency")
 
-        for connection, count in detected_connections.items():
-            src_ip = connection[0]
-            src_port = connection[1]
-            dst_ip = connection[2]
-            dst_port = connection[3]
-            print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {count}/{len(self.packet_parser.packets)} connections")
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['frequency']}/{len(self.packet_parser.packets)} connections")
 
     def detect_long_connection(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with long duration ...")
@@ -160,6 +161,7 @@ class DetectionEngine:
         detected_connections = []
 
         for packet in self.packet_parser.packets:
+            # TODO: FIX DETECTION ONLY FOR EXTERNAL CONNECTIONS
             # check if packet has IP and TCP layers
             if IP in packet and TCP in packet:
                 # extract connection information
@@ -175,17 +177,28 @@ class DetectionEngine:
                     connection_start_times[connection] = packet.time
                 else:
                     # calculate time duration of connection
-                    duration = packet.time - connection_start_times[connection]
+                    duration = float(packet.time - connection_start_times[connection])
 
                     # check if duration exceeds maximum set duration
                     if duration > MAX_DURATION:
                         detected = True
-                        detected_connections.append((src_ip, src_port, dst_ip, dst_port, duration))
+                        entry = dict(
+                            src_ip=src_ip,
+                            src_port=src_port,
+                            dst_ip=dst_ip,
+                            dst_port=dst_port,
+                            duration=duration
+                        )
+                        detected_connections.append(entry)
 
         if detected:
+            self.c2_indicators_detected = True
+
+            # pprint.pprint(detected_connections)
+            self.detected_iocs['long_connection'] = detected_connections
             unqiue_detected = set((str(connection) for connection in detected_connections))
             count_unqiue_detected = len(unqiue_detected)
-            self.c2_indicators_detected = True
+
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_unqiue_detected} connections with long duration{Fore.RESET}")
             logging.info(
@@ -203,7 +216,7 @@ class DetectionEngine:
         detected = False
         MAX_HTML_SIZE = self.analyst_profile.MAX_HTML_SIZE
 
-        connection_sizes = {}
+        connection_sizes = []
 
         for packet in self.packet_parser.packets:
             # check if packet contains HTTP responses
@@ -215,13 +228,29 @@ class DetectionEngine:
                     detected = True
                     connection = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
                     
-                    if connection not in connection_sizes:
-                        connection_sizes[connection] = 0
-                    
-                    connection_sizes[connection] += int(response.Content_Length)
+                    # check if connection is already in list of dictionaries
+                    index = None
+                    for i, conn in enumerate(connection_sizes):
+                        if connection == (conn['src_ip'], conn['src_port'], conn['dst_ip'], conn['dst_port']):
+                            index = i
+                            break
+                            
+                    # if connection is already in list of dictionaries, update the size
+                    if index is not None:
+                        connection_sizes[index]['size'] += int(response.Content_Length)
+                    # otherwise, add a new dictionary to the list
+                    else:
+                        connection_sizes.append({
+                            'src_ip': packet[IP].src,
+                            'src_port': packet[TCP].sport,
+                            'dst_ip': packet[IP].dst,
+                            'dst_port': packet[TCP].dport,
+                            'respone_size': int(response.Content_Length)
+                        })
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['big_HTML_response_size'] = connection_sizes
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTML response size{Fore.RESET}")
             logging.info(f"Detected unusual big HTML response size")
             self.print_connections_with_big_HTML_response_size(connection_sizes, MAX_HTML_SIZE)
@@ -234,13 +263,8 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTML response size")
         logging.info(f"Listing connections with unusual big HTML response size")
 
-        for connection, size in connection_sizes.items():
-            if size > MAX_HTML_SIZE:
-                src_ip = connection[0]
-                src_port = connection[1]
-                dst_ip = connection[2]
-                dst_port = connection[3]
-                print(f">> {Fore.RED}{src_ip}:{src_port} -> {dst_ip}:{dst_port}{Fore.RESET} = {size} bytes")
+        for entry in connection_sizes:
+            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['respone_size']} bytes")
 
     def detect_known_malicious_HTTP_headers(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious HTTP headers ...")
@@ -249,6 +273,7 @@ class DetectionEngine:
         detected = False
         detected_headers = []
 
+        # TODO: FIX SEARCHING FOR SUBSTRINGS
         for entry in self.packet_parser.http_sessions:
             for key, value in entry['http_headers'].items():
                 for c2_framework, http_headers in self.c2_http_headers.items():
@@ -264,6 +289,7 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['malicious_HTTP_headers'] = detected_headers
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious HTTP headers{Fore.RESET}")
             logging.info(f"Detected known malicious HTTP headers. (detected_headers : {detected_headers})")
             self.print_detected_malicious_headers(detected_headers)
@@ -289,6 +315,7 @@ class DetectionEngine:
             for c2_framework, tls_values in self.c2_tls_certificate_values.items():
                 detected_value = False
 
+                # TODO: FIX SEARCHING FOR SUBSTRINGS
                 for malicious_value in tls_values:
 
                     if malicious_value in entry.get('serialNumber'):
@@ -305,6 +332,7 @@ class DetectionEngine:
 
         if detected_certificates:
             self.c2_indicators_detected = True
+            self.detected_iocs['malicious_TLS_certificates'] = detected_certificates
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious values in extracted data from TLS certificates{Fore.RESET}")
             logging.info(f"Detected known malicious values in extracted data from TLS certificates. (detected_certificates : {detected_certificates})")
             self.print_detected_malicious_certificates(detected_certificates)
@@ -324,15 +352,25 @@ class DetectionEngine:
             f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for outgoing network traffic to TOR exit nodes ...")
         logging.info("Looking for outgoing network traffic to TOR exit nodes")
 
-        detected_ips = []
         detected = False
-        for dst_ip in self.packet_parser.dst_unique_ip_list:
-            if dst_ip in self.tor_exit_nodes:
-                detected_ips.append(dst_ip)
-                detected = True
+        detected_ips = []
+        seen_ips = set()
+
+        for src_ip, dst_ip in self.packet_parser.external_connections:
+            if src_ip in self.tor_exit_nodes or dst_ip in self.tor_exit_nodes:
+                entry = dict(
+                    src_ip=src_ip,
+                    dst_ip=dst_ip
+                )
+                entry_frozenset = frozenset(entry.items())
+                if entry_frozenset not in seen_ips:
+                    detected_ips.append(entry)
+                    seen_ips.add(entry_frozenset)
+                    detected = True
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['outgoing_Tor_network_traffic'] = detected_ips
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
             logging.info(
@@ -360,15 +398,25 @@ class DetectionEngine:
             f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to public TOR nodes ...")
         logging.info("Looking for network traffic to public TOR nodes")
 
-        detected_ips = []
         detected = False
-        for dst_ip in self.packet_parser.dst_unique_ip_list:
-            if dst_ip in self.tor_nodes:
-                detected_ips.append(dst_ip)
-                detected = True
+        detected_ips = []
+        seen_ips = set()
+
+        for src_ip, dst_ip in self.packet_parser.external_connections:
+            if src_ip in self.tor_nodes or dst_ip in self.tor_nodes:
+                entry = dict(
+                    src_ip=src_ip,
+                    dst_ip=dst_ip
+                )
+                entry_frozenset = frozenset(entry.items())
+                if entry_frozenset not in seen_ips:
+                    detected_ips.append(entry)
+                    seen_ips.add(entry_frozenset)
+                    detected = True
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['Tor_network_traffic'] = detected_ips
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected network traffic to public TOR nodes{Fore.RESET}")
             logging.info(
@@ -395,6 +443,10 @@ class DetectionEngine:
     # package: https://pypi.org/project/dgad/
 
     def detect_dga(self):
+        # https://lindevs.com/disable-tensorflow-2-debugging-information
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
+        from dgad.prediction import Detective
+        
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Hunting domains generated by Domain Generation Algorithms (DGA) ...")
         logging.info(
             "Hunting domains generated by Domain Generation Algorithms (DGA)")
@@ -418,6 +470,7 @@ class DetectionEngine:
 
         if dga_detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['DGA_domains'] = detected_domains
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected domains generated by Domain Generation Algorithms (DGA){Fore.RESET}")
             logging.info(
                 f"Detected domains generated by Domain Generation Algorithms (DGA). (detected_domains : {detected_domains})")
@@ -477,6 +530,7 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['DNS_Tunneling'] = detected_queries
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected DNS Tunneling technique{Fore.RESET}")
             logging.info(f"Detected DNS Tunneling technique. (detected_queries : {detected_queries})")
             self.print_detected_dns_tunneling(detected_queries)
@@ -505,6 +559,7 @@ class DetectionEngine:
 
         if c2_ips_detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['malicious_IPs'] = detected_ips
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious IP addresses which received/initiated connections detected{Fore.RESET}")
             logging.info(
                 f"Malicious IP addresses which received/initiated connections detected")
@@ -516,6 +571,7 @@ class DetectionEngine:
 
         if c2_domains_detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['malicious_domains'] = detected_domains
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious domains which received/initiated connections detected{Fore.RESET}")
             logging.info(
                 f"Malicious domains which received/initiated connections detected")
@@ -672,6 +728,7 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['crypto_domains'] = detected_domains
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected crypto / cryptojacking based sites{Fore.RESET}")
             logging.info(f"Detected crypto / cryptojacking based sites (detected_domains : {detected_domains})")
             self.print_crypto_domains(detected_domains)
@@ -685,3 +742,8 @@ class DetectionEngine:
         logging.info(f"Listing detected crypto / cryptojacking based sites")
         for domain in detected_domains:
             print(f">> {Fore.RED}{domain}{Fore.RESET}")
+
+    # ----------------------------------------------------------------------------------------------------------------
+
+    def get_detected_iocs(self):
+        return self.detected_iocs
