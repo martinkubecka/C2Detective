@@ -19,7 +19,6 @@ start_time :                                timestamp when packet capture stared
 end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
-connection_time :                           all TCP connections with duration :     {} :            {(src_ip, src_port, dst_ip, dst_port):duration, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
@@ -159,62 +158,58 @@ class DetectionEngine:
 
         detected = False
         MAX_DURATION = self.analyst_profile.MAX_DURATION    # 14000 set for testing 'Qakbot.pcap'
-        connection_start_times = {}
+        
         detected_connections = []
 
-        for packet in self.packet_parser.packets:
-            # check if packet has IP and TCP layers
-            if IP in packet and TCP in packet:
-                # extract connection information
-                src_ip = packet[IP].src
-                src_port = packet[TCP].sport
-                dst_ip = packet[IP].dst
-                dst_port = packet[TCP].dport
+        for connection in self.packet_parser.connections:
+
+            if 'TCP' in connection:
+
+                connection_arr = connection.split(" ")
+                src_ip, src_port = connection_arr[1].split(":")
+                dst_ip, dst_port = connection_arr[3].split(":")
 
                 # if src or dst ip is public, further process this connection
                 if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
 
-                    connection = (src_ip, src_port, dst_ip, dst_port)
+                    packets = self.packet_parser.connections[connection]
+                    first_packet = packets[0]
+                    last_packet = packets[-1]
+                    duration = last_packet.time - first_packet.time
 
-                    # check if connection is in dictionary
-                    if connection not in connection_start_times:
-                        # add connection to dictionary with current time as start time
-                        connection_start_times[connection] = packet.time
-                    else:
-                        # calculate time duration of connection
-                        duration = float(packet.time - connection_start_times[connection])
-
-                        # check if duration exceeds maximum set duration
-                        if duration > MAX_DURATION:
-                            detected = True
-                            entry = dict(
-                                src_ip=src_ip,
-                                src_port=src_port,
-                                dst_ip=dst_ip,
-                                dst_port=dst_port,
-                                duration=duration
-                            )
-                            detected_connections.append(entry)
+                    if duration > MAX_DURATION:
+                        detected = True
+                        entry = dict(
+                            src_ip=src_ip,
+                            src_port=src_port,
+                            dst_ip=dst_ip,
+                            dst_port=dst_port,
+                            duration=float(duration)
+                        )
+                        detected_connections.append(entry)
                 else:
                     continue
 
         if detected:
             self.c2_indicators_detected = True
-
-            # pprint.pprint(detected_connections)
             self.detected_iocs['long_connection'] = detected_connections
-            unqiue_detected = set((str(connection) for connection in detected_connections))
-            count_unqiue_detected = len(unqiue_detected)
-
+            count_detected = len(detected_connections)
             print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_unqiue_detected} connections with long duration{Fore.RESET}")
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_detected} connections with long duration{Fore.RESET}")
             logging.info(
-                f"Detected {count_unqiue_detected} connections with long duration. (detected_connections : {unqiue_detected})")
-            # TODO : process / display which connections (src IP - dst IP) were detected
+                f"Detected {count_detected} connections with long duration. (detected_connections : {detected_connections})")
+            self.print_detected_long_connections(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with long duration not detected{Fore.RESET}")
             logging.info(f"Connections with long duration not detected")
+
+    def print_detected_long_connections(self, detected_connections):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected connections with long duration")
+        logging.info(f"Listing detected connections with long duration")
+
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['duration']} seconds")
 
     def detect_big_HTML_response_size(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTML response size ...")
@@ -455,7 +450,7 @@ class DetectionEngine:
     def detect_dga(self):
         # https://lindevs.com/disable-tensorflow-2-debugging-information
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
-        from dgad.prediction import Detective
+        from dgad.prediction import Detective 
         
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Hunting domains generated by Domain Generation Algorithms (DGA) ...")
         logging.info(

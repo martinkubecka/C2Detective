@@ -16,7 +16,6 @@ start_time :                                timestamp when packet capture stared
 end_time :                                  timestamp when packet capture ended     string :        %Y-%m-%d %H:%M:%S
 all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
-connection_time :                           all TCP connections with duration :     {} :            {(src_ip, src_port, dst_ip, dst_port):duration, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
@@ -34,8 +33,9 @@ class PacketParser:
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.packets = self.get_packet_list()  # creates a list in memory
+        self.connections = self.get_connections()
 
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.connection_time, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
 
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         
@@ -61,6 +61,16 @@ class PacketParser:
         self.logger.info(
             "Packet capture '{self.filepath}' loaded in " + "{:.2f}s".format(t_stop - t_start))
         return packets
+
+    def get_connections(self):
+        t_start = perf_counter()
+        connections = self.packets.sessions()
+        t_stop = perf_counter()
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Packets grouped into connections in " +
+              "{:.2f}s".format(t_stop - t_start))
+        self.logger.info(
+            "Packets grouped into connections in " + "{:.2f}s".format(t_stop - t_start))
+        return connections
 
     def extract_packet_data(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting the start and end timestamps from the provided packet capture ...")
@@ -98,8 +108,6 @@ class PacketParser:
         http_payloads = []
         http_sessions = []
         unique_urls = set()
-        # TODO: store connections with their respective duration
-        connection_durations = {}
 
         for packet in self.packets:
 
@@ -142,15 +150,6 @@ class PacketParser:
                         connection_frequency[connection] += 1
                     else:
                         connection_frequency[connection] = 1
-
-                    # check if connection is in dictionary
-                    # if connection not in connection_durations:
-                    #     # add connection to dictionary with current time as start time
-                    #     connection_durations[connection] = packet.time
-                    # else:
-                    #     # calculate time duration of connection and store in dictionary
-                    #     duration = packet.time - connection_durations[connection]
-                    #     connection_durations[connection] = duration
 
             if packet.haslayer(DNS):
                 dns_packets.append(packet)
@@ -222,7 +221,7 @@ class PacketParser:
         start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
         end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, connection_durations, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.public_src_ip_list)

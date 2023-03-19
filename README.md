@@ -32,6 +32,7 @@
 ---
 ## :memo: Pre-requisites
 
+- install [Python](https://www.python.org/downloads/) version >= **3.8** < **3.11** (recommended 3.10)
 - clone this project with the following command
 
 ```
@@ -198,7 +199,7 @@ $ sudo apt-get install python-pip
 $ pip install virtualenv
 $ virtualenv --version
 $ cd C2Detective/
-[C2Detective]$ virtualenv --python=python3 venv
+[C2Detective]$ virtualenv --python=python3.10 venv
 [C2Detective]$ source venv/bin/activate
 [C2Detective]$ deactivate
 ```
