@@ -17,7 +17,13 @@ enrichment_services:
 arguments:
   quiet: False
   name: "analysis name"
+sniffing:
+ interface: eth0
+ filter:  # BPF filtering
+ timeout: 15  # seconds
+ filename: test.pcap # output file 
 thresholds:
   MAX_FREQUENCY: 10 # percentage
   MAX_DURATION: 14000 # seconds
   MAX_HTML_SIZE: 50000 # bytes
+  MAX_SUBDOMAIN_LENGTH: 30 # chars

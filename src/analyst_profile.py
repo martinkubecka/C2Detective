@@ -20,6 +20,11 @@ class AnalystProfile:
 
         self.arguments = config['arguments']
 
+        self.sniffing = config['sniffing'] 
+        self.interface = self.sniffing['interface']
+        self.filter = self.sniffing['filter']
+        self.timeout = self.sniffing['timeout']
+
         self.thresholds = config['thresholds']
         self.MAX_FREQUENCY = self.thresholds['MAX_FREQUENCY']
         self.MAX_DURATION = self.thresholds['MAX_DURATION']
@@ -34,6 +39,7 @@ class AnalystProfile:
         print(f"shodan: {self.shodan_api_key}")
         print(f"enrichment_services: {self.enrichment_services}")
         print(f"arguments: {self.arguments}")
+        print(f"sniffing: {self.sniffing}")
         print(f"MAX_FREQUENCY: {self.MAX_FREQUENCY}")
         print(f"MAX_DURATION: {self.MAX_DURATION}")
         print(f"MAX_HTML_SIZE: {self.MAX_HTML_SIZE}")

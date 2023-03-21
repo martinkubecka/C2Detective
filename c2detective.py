@@ -134,25 +134,27 @@ def parse_arguments():
 
     parser.add_argument(
         '-q', '--quiet', help="do not print banner", action='store_true')
-    parser.add_argument('input', metavar='FILENAME',
-                        help='input file (.cap OR .pcap)')
+
+    update_group = parser.add_argument_group('required options')
+    required_args = update_group.add_mutually_exclusive_group(required=True)
+    required_args.add_argument('-i', '--input', metavar='FILENAME', help='input file (.cap / .pcap / .pcapng)')
+    required_args.add_argument('-p', '--packet-capture', action='store_true', help='start packet capture (setup in the configuration file)')
+
     # parser.add_argument('-n', '--name', metavar="NAME",
     #                     help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
-    # parser.add_argument('-a', '--action', metavar="ACTION",
-    #                     help='action to execute [sniffer/...]')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help="configuration file (default: 'config/config.yml')")  # add option to load arguments config file
-    parser.add_argument('-o', '--output', metavar='PATH', default="reports",
-                        help="output directory file path for report files (default: 'reports/')")
-    parser.add_argument('-s', '--statistics', action='store_true',
-                        help='print packet capture statistics to the console')
-    parser.add_argument('-w', '--write-extracted', action='store_true',
-                        help='write extracted data to a JSON file')
     parser.add_argument('-d', '--dga-detection', action='store_true',
                         help="enable DGA domain detection")
     parser.add_argument('-e', '--enrich', action='store_true', 
                         help="enable data enrichment")
-    
+    parser.add_argument('-s', '--statistics', action='store_true',
+                        help='print packet capture statistics to the console')
+    parser.add_argument('-w', '--write-extracted', action='store_true',
+                        help='write extracted data to a JSON file')
+    parser.add_argument('-o', '--output', metavar='PATH', default="reports",
+                        help="output directory file path for report files (default: 'reports/')")
+
     update_group = parser.add_argument_group('update options')
     update_group.add_argument('-utn', '--update-tor-nodes', action='store_true',
                         help='update tor nodes list')   
@@ -244,10 +246,6 @@ def main():
     # if not args.name is None:
     #     analysis_name = args.name
 
-    # TODO
-    # print('-' * terminal_size.columns)
-    # action = args.action
-
     print('-' * terminal_size.columns)
     if not args.config is None:
         if is_valid_file(args.config, "yml"):
@@ -258,14 +256,17 @@ def main():
             # analyst_profile.print_config()
 
     print('-' * terminal_size.columns)
-    input_file = args.input
-    if is_valid_file(input_file, "pcap"):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
-        logging.info(f"Loading '{input_file}' file")
-        report_extracted_data_option = args.write_extracted
-        statistics_option = args.statistics
-        packet_parser = PacketParser(
-            input_file, output_dir, report_extracted_data_option, statistics_option)
+    report_extracted_data_option = args.write_extracted
+    statistics_option = args.statistics
+    if args.packet_capture:
+        sniffing_configuration = analyst_profile.sniffing
+        packet_parser = PacketParser(None, sniffing_configuration, output_dir, report_extracted_data_option, statistics_option)
+    else:
+        input_file = args.input
+        if is_valid_file(input_file, "pcap"):
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
+            logging.info(f"Loading '{input_file}' file")
+            packet_parser = PacketParser(input_file, None, output_dir, report_extracted_data_option, statistics_option)
 
     if args.enrich:
         print('-' * terminal_size.columns)

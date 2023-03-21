@@ -14,6 +14,7 @@
 - [:memo: Pre-requisites](#memo-pre-requisites)
   - [:package: Installing Required Packages](#package-installing-required-packages)
   - [:old\_key: API Keys](#old_key-api-keys)
+- [:rotating_light: Notice](#rotating_light-notice)
 - [:keyboard: Usage](#keyboard-usage)
 - [:placard: List of Features](#placard-list-of-features)
   - [:ballot\_box\_with\_check: Implemented Features](#ballot_box_with_check-implemented-features)
@@ -64,25 +65,54 @@ $ pip install -r requirements.txt
 > ***Warning:*** *Do not use SecurityTrails's enrichment on FREE subscription plan.*
 
 ---
+## :rotating_light: Notice
+
+- Scapy requires **root** privileges for sniffing
+- running *any* python application with root privileges is not recommended for security conserns
+- if you want to use provided sniffing option, you can assign `CAP_NET_RAW` and `CAP_NET_ADMIN` capabilities to the respective python binary
+  - use the following commands before selecting the sniffing option
+  - with the `getcap` command, we can verify assigned capabilities
+
+```
+$ which python3.10
+/usr/bin/python3.10
+$ sudo setcap 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip' /usr/bin/python3.10
+$ getcap /usr/bin/python3.10
+/usr/bin/python3.10 cap_net_admin,cap_net_raw=eip
+```
+
+> ***Note:*** *Assigning capabilities to the python binary in the virtual environment is not possible because capabilities can be assigned only to the non-symlink files.*
+
+- do not forget to remove added capabilities, if they are no longer needed
+- note that the following command will remove all assigned capabilities
+
+```
+$ sudo setcap -r /usr/bin/python3.10
+$ getcap /usr/bin/python3.10
+<no output>
+```
+
+---
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] [-c FILE] [-o PATH] [-s] [-w] [-d] [-e] [-utn] [-ucd] FILENAME
+usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-d] [-e] [-s] [-w] [-o PATH] [-utn] [-ucd]
 
 Application for detecting command and control (C2) communication through network traffic analysis.
-
-positional arguments:
-  FILENAME                       input file (.cap OR .pcap)
 
 options:
   -h, --help                     show this help message and exit
   -q, --quiet                    do not print banner
   -c FILE, --config FILE         configuration file (default: 'config/config.yml')
-  -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
-  -s, --statistics               print packet capture statistics to the console
-  -w, --write-extracted          write extracted data to a JSON file
   -d, --dga-detection            enable DGA domain detection
   -e, --enrich                   enable data enrichment
+  -s, --statistics               print packet capture statistics to the console
+  -w, --write-extracted          write extracted data to a JSON file
+  -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
+
+required options:
+  -i FILENAME, --input FILENAME  input file (.cap / .pcap / .pcapng)
+  -p, --packet-capture           start packet capture (setup in the configuration file)
 
 update options:
   -utn, --update-tor-nodes       update tor nodes list
@@ -103,6 +133,7 @@ update options:
   - [x] option for setting custom thresholds for detecion
 - [x] update options for Tor node list and crypto / cryptojacking based sites list
   - [x] notify the user if Tor node list or crypto / cryptojacking based sites list is out-of-date  
+- [x] option for packet capturing
 
 #### Packet Capture Analysis
 

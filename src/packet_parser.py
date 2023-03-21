@@ -29,22 +29,24 @@ http_requests :                             detailed HTTP requests              
 
 
 class PacketParser:
-    def __init__(self, filepath, output_dir, report_extracted_data_option, statistics_option):
+    def __init__(self, filepath, sniffing_configuration, output_dir, report_extracted_data_option, statistics_option):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
-        self.packets = self.get_packet_list()  # creates a list in memory
+        self.output_dir = output_dir
+        self.sniffing_configuration = sniffing_configuration
+
+        if self.filepath:
+            self.packets = self.get_packet_list()  # creates a list in memory
+        else:
+            self.packets = self.capture_packets()
+
         self.connections = self.get_connections()
-
         self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
-
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
-        
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
-
         self.certificates = self.extract_certificates()
 
         if report_extracted_data_option:
-            self.report_dir = output_dir
             self.extracted_data = self.correlate_extracted_data()
             self.extracted_data_to_file()
 
@@ -62,6 +64,24 @@ class PacketParser:
             "Packet capture '{self.filepath}' loaded in " + "{:.2f}s".format(t_stop - t_start))
         return packets
 
+    def capture_packets(self):
+        interface = self.sniffing_configuration.get('interface')
+        capture_filter = self.sniffing_configuration.get('filter')
+        timeout = self.sniffing_configuration.get('timeout')
+        filename = self.sniffing_configuration.get('filename')
+
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Capturing packets on the '{interface}' interface for {timeout} seconds ...")
+        logging.info(f"Capturing packets on the '{interface}' interface for {timeout} seconds ...")
+        packets = sniff(iface=interface, filter=capture_filter, timeout=timeout)
+
+        output_filepath = f"{self.output_dir}/{filename}"
+        self.filepath = output_filepath
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing captured packets to '{output_filepath}' ...")
+        logging.info(f"Writing captured packets to '{output_filepath}'")
+        wrpcap(output_filepath, packets)
+
+        return packets
+
     def get_connections(self):
         t_start = perf_counter()
         connections = self.packets.sessions()
@@ -73,8 +93,8 @@ class PacketParser:
         return connections
 
     def extract_packet_data(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting the start and end timestamps from the provided packet capture ...")
-        self.logger.info("Extracting the start and end timestamps from the provided packet capture")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting start and end timestamps from the provided packet capture ...")
+        self.logger.info("Extracting start and end timestamps from the provided packet capture")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting public source and destination IP addresses ...")
         self.logger.info("Extracting public source and destination IP addresses")
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Extracting unique connections ...")
@@ -484,7 +504,7 @@ class PacketParser:
         return json.dumps(extracted_data, indent=4)
 
     def extracted_data_to_file(self):
-        report_output_path = f"{self.report_dir}/extracted_data.json"
+        report_output_path = f"{self.output_dir}/extracted_data.json"
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing extracted data to '{report_output_path}'")
         self.logger.info(f"Writing extracted data to '{report_output_path}'")
 
