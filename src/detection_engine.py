@@ -41,6 +41,7 @@ class DetectionEngine:
         self.packet_parser = packet_parser
         self.enrichment_enchine = enrichment_enchine
 
+        self.whitelisted_domains = self.get_domain_whitelist()
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
         self.crypto_domains = self.get_crypto_domains()
         self.c2_http_headers = self.get_c2_http_headers()
@@ -103,6 +104,19 @@ class DetectionEngine:
             c2_tls_certificate_values = json.load(tls_values)
 
         return c2_tls_certificate_values
+
+    def get_domain_whitelist(self):
+        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/domain_whitelist.txt"
+        whitelisted_domains = []
+
+        if os.path.isfile(filepath):
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading whitelisted domains ...")
+            logging.info("Loading whitelisted domains")
+
+            with open(filepath, "r") as whitelist:
+                whitelisted_domains = whitelist.read().splitlines()
+
+        return whitelisted_domains
 
     # ----------------------------------------------------------------------------------------------------------------
     # ------------------------------------------- NETWORK TRAFFIC DETECTION ------------------------------------------
@@ -507,8 +521,19 @@ class DetectionEngine:
             if packet.haslayer(DNSQR):  # pkt.qr == 0 ; DNS query
                 query = packet[DNSQR].qname.decode('utf-8')
                 subdomain, domain, suffix = tldextract.extract(query)
-                
+
                 if "arpa" in suffix:    # provides namespaces for reverse DNS lookups
+                    continue
+                
+                if self.whitelisted_domains:   # user defined list whitelited domains
+                    detected_whitelisted_domain = False    
+                    for w_domain in self.whitelisted_domains:
+                        _, w_domain_name, _ = tldextract.extract(w_domain)
+                        if domain == w_domain_name:
+                            # continue the outermost for loop
+                            detected_whitelisted_domain = True
+
+                if detected_whitelisted_domain:
                     continue
 
                 if len(subdomain) > MAX_SUBDOMAIN_LENGTH:    # check for long domain names
