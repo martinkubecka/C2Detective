@@ -47,7 +47,7 @@ class PacketParser:
         self.certificates = self.extract_certificates()
 
         if report_extracted_data_option:
-            self.extracted_data = self.correlate_extracted_data()
+            self.extracted_data = self.combine_extracted_data()
             self.extracted_data_to_file()
 
         self.cli_statistics = statistics_option
@@ -451,10 +451,12 @@ class PacketParser:
 
         print(f">> Number of extracted TLS certificates : {len(self.certificates)}")
 
-    def correlate_extracted_data(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Correlating extracted data ...")
-        self.logger.info(f"Correlating extracted data")
+    def combine_extracted_data(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Preparing extracted data for output ...")
+        self.logger.info(f"Preparing extracted data for output")
         extracted_data = {}
+
+        extracted_data['filepath'] = self.filepath
 
         # start and end times of the processed packet capture
         extracted_data['capture_timestamps'] = dict(
@@ -510,3 +512,6 @@ class PacketParser:
 
         with open(report_output_path, "w") as output:
             output.write(self.extracted_data)
+
+    def get_filepath(self):
+        return self.filepath

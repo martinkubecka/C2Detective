@@ -13,8 +13,5 @@ class DetectionReporter:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing detected IOCs to '{report_output_path}'")
         self.logger.info(f"Writing detected IOCs '{report_output_path}'")
 
-        detected_iocs_json = json.dumps(self.detected_iocs, indent=4)
-
         with open(report_output_path, "w") as output:
-            output.write(detected_iocs_json)
-
+            output.write(json.dumps(self.detected_iocs, indent=4))
