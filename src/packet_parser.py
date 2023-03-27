@@ -23,7 +23,7 @@ dns_packets :                               extracted packets with DNS layer :  
 domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
+unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
 http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
@@ -240,6 +240,8 @@ class PacketParser:
         # process converted Unix timestamps with microseconds precision
         start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
         end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
+
+        unique_urls = list(unique_urls)
 
         return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 

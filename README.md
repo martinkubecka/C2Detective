@@ -96,23 +96,29 @@ $ getcap /usr/bin/python3.10
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-d] [-e] [-s] [-w] [-o PATH] [-utn] [-ucd]
+usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [-d] [-g] [-e]
+                   [-utn] [-ucd]
 
-Application for detecting command and control (C2) communication through network traffic analysis.
+Application for detecting command and control (C2) communication through network traffic
+analysis.
 
 options:
   -h, --help                     show this help message and exit
   -q, --quiet                    do not print banner
   -c FILE, --config FILE         configuration file (default: 'config/config.yml')
-  -d, --dga-detection            enable DGA domain detection
-  -e, --enrich                   enable data enrichment
   -s, --statistics               print packet capture statistics to the console
   -w, --write-extracted          write extracted data to a JSON file
-  -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
+  -o PATH, --output PATH         output directory file path for report files (default:
+                                 'reports/')
 
 required options:
   -i FILENAME, --input FILENAME  input file (.cap / .pcap / .pcapng)
   -p, --packet-capture           start packet capture (setup in the configuration file)
+
+enable options:
+  -d, --dga                      enable DGA domain detection
+  -g, --plugins                  enable plugins for extended detection capabilities
+  -e, --enrich                   enable data enrichment
 
 update options:
   -utn, --update-tor-nodes       update tor nodes list

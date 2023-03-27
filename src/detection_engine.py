@@ -4,6 +4,7 @@ import os
 import logging
 import pprint
 import time
+import sqlite3
 import requests
 from colorama import Fore
 from colorama import Back
@@ -12,7 +13,8 @@ from scapy.all import *
 from scapy.layers import http
 import tldextract
 from ipaddress import ip_address
-
+import itertools
+import re
 
 """
 start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
@@ -26,7 +28,7 @@ dns_packets :                               extracted packets with DNS layer :  
 domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-urls :                                      extracted URLs :                        set() :         [ url, url, ... ]
+unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
 http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
@@ -154,13 +156,13 @@ class DetectionEngine:
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected connections with excessive frequency{Fore.RESET}")
             logging.info(
                 f"Detected connections with excessive frequency. (detected_connections : {detected_connections})")
-            self.print_detected_connections_with_excessive_frequency(detected_connections)
+            self.print_connections_with_excessive_frequency(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with excessive frequency not detected{Fore.RESET}")
             logging.info(f"Connections with excessive frequency not detected")
 
-    def print_detected_connections_with_excessive_frequency(self, detected_connections):
+    def print_connections_with_excessive_frequency(self, detected_connections):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with excessive frequency")
         logging.info(f"Listing connections with excessive frequency")
@@ -214,13 +216,13 @@ class DetectionEngine:
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected {count_detected} connections with long duration{Fore.RESET}")
             logging.info(
                 f"Detected {count_detected} connections with long duration. (detected_connections : {detected_connections})")
-            self.print_detected_long_connections(detected_connections)
+            self.print_long_connections(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with long duration not detected{Fore.RESET}")
             logging.info(f"Connections with long duration not detected")
 
-    def print_detected_long_connections(self, detected_connections):
+    def print_long_connections(self, detected_connections):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected connections with long duration")
         logging.info(f"Listing detected connections with long duration")
 
@@ -309,12 +311,12 @@ class DetectionEngine:
             self.detected_iocs['malicious_HTTP_headers'] = detected_headers
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious HTTP headers{Fore.RESET}")
             logging.info(f"Detected known malicious HTTP headers. (detected_headers : {detected_headers})")
-            self.print_detected_malicious_headers(detected_headers)
+            self.print_malicious_HTTP_headers(detected_headers)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious HTTP headers not detected{Fore.RESET}")
             logging.info(f"Known malicious HTTP headers not detected")
 
-    def print_detected_malicious_headers(self, detected_headers):
+    def print_malicious_HTTP_headers(self, detected_headers):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected HTTP sessions which contain known malicious HTTP headers")
         logging.info(f"Listing detected HTTP sessions which contain known malicious HTTP headers")
    
@@ -356,12 +358,12 @@ class DetectionEngine:
             self.detected_iocs['malicious_TLS_certificates'] = detected_certificates
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious values in extracted data from TLS certificates{Fore.RESET}")
             logging.info(f"Detected known malicious values in extracted data from TLS certificates. (detected_certificates : {detected_certificates})")
-            self.print_detected_malicious_certificates(detected_certificates)
+            self.print_known_c2_tls_certificates(detected_certificates)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious values in extracted data from TLS certificates not detected{Fore.RESET}")
             logging.info(f"Known malicious values in extracted data from TLS certificates not detected")
 
-    def print_detected_malicious_certificates(self, detected_certificates):
+    def print_known_c2_tls_certificates(self, detected_certificates):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected malicious TLS certificates")
         logging.info(f"Listing detected malicious TLS certificates")
    
@@ -565,12 +567,12 @@ class DetectionEngine:
             self.detected_iocs['DNS_Tunneling'] = detected_queries
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected DNS Tunneling technique{Fore.RESET}")
             logging.info(f"Detected DNS Tunneling technique. (detected_queries : {detected_queries})")
-            self.print_detected_dns_tunneling(detected_queries)
+            self.print_dns_tunneling_indicators(detected_queries)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}DNS Tunneling technique not detected{Fore.RESET}")
             logging.info(f"DNS Tunneling technique not detected")
 
-    def print_detected_dns_tunneling(self, detected_queries):
+    def print_dns_tunneling_indicators(self, detected_queries):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected DNS Tunneling technique")
         logging.info(f"Listing information about detected DNS Tunneling technique")
 
@@ -579,54 +581,125 @@ class DetectionEngine:
             print(f">>>> DNS query example with frequency: '{Fore.RED}{values['queries'][0]}{Fore.RESET}'")
 
     # ----------------------------------------------------------------------------------------------------------------
-    # -------------------------------------------- THREAT FEEDS DETECTION --------------------------------------------
+    # -------------------------------------------- C2Hunter Plugin --------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------
 
-    def threat_feeds(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Using threat feeds for detection ...")
-        logging.info("Using threat feeds for detection")
-        c2_ips_detected, detected_ips = self.detect_malicious_ip_addresses()
-        c2_domains_detected, detected_domains = self.detect_malicious_domains()
+    # C2Hunter threat feed collection
+    # Feodo Tracker - IP addresses
+    # ThreatFox - IP addresses, IP:Port, URL, Domain
+    # Urlhaus - URLs which may contain IP address
 
+    def threat_feeds(self, c2hunter_db):
+
+        c2_ips_detected, detected_ips = self.detect_c2_ip_addresses(c2hunter_db)
+        
         if c2_ips_detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['malicious_IPs'] = detected_ips
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious IP addresses which received/initiated connections detected{Fore.RESET}")
-            logging.info(
-                f"Malicious IP addresses which received/initiated connections detected")
-            self.print_malicious_connections(detected_ips)
+            self.detected_iocs['c2_ip_address'] = detected_ips
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 IP addresses which received/initiated connections detected{Fore.RESET}")
+            logging.info(f"C2 IP addresses which received/initiated connections detected")
+            self.print_c2_connections(detected_ips)
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Malicious IP addresses which received/initiated connections not detected{Fore.RESET}")
-            logging.info(
-                f"Malicious IP addresses which received/initiated connections not detected")
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 IP addresses which received/initiated connections not detected{Fore.RESET}")
+            logging.info(f"C2 IP addresses which received/initiated connections not detected")
+
+        c2_domains_detected, detected_domains = self.detect_c2_domains(c2hunter_db)
 
         if c2_domains_detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['malicious_domains'] = detected_domains
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Malicious domains which received/initiated connections detected{Fore.RESET}")
-            logging.info(
-                f"Malicious domains which received/initiated connections detected")
-            self.print_malicious_domains(detected_domains)
+            self.detected_iocs['c2_domain'] = detected_domains
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 domains which received/initiated connections detected{Fore.RESET}")
+            logging.info(f"C2 domains which received/initiated connections detected")
+            self.print_c2_domains(detected_domains)
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Malicious domains which received/initiated connections not detected{Fore.RESET}")
-            logging.info(
-                f"Malicious domains which received/initiated connections not detected")
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 domains which received/initiated connections not detected{Fore.RESET}")
+            logging.info(f"C2 domains which received/initiated connections not detected")
 
-    def detect_malicious_ip_addresses(self):
+        c2_url_detected, detected_urls = self.detect_c2_urls(c2hunter_db)
+        if c2_url_detected:
+            self.c2_indicators_detected = True
+            self.detected_iocs['c2_url'] = detected_urls
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 related URLs detected{Fore.RESET}")
+            logging.info(f"C2 related URLs detected")
+            self.print_c2_urls(detected_urls)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 related URLs not detected{Fore.RESET}")
+            logging.info(f"C2 related URLs not detected")
+
+    def detect_c2_ip_addresses(self, c2hunter_db):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting malicious IP addresses which received/initiated connections ...")
         logging.info("Detecting malicious IP addresses which received/initiated connections")
+
+        connection = sqlite3.connect(c2hunter_db)
+        cursor = connection.cursor()
 
         detected_ips = []
         c2_detected = False
 
-        for ip, _ in self.packet_parser.all_ip_counter.most_common():
-            # NOTE: REWORKING THIS FEATURE ...
-            pass
+        chunk_size = 100 
+        ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+chunk_size] for i in range(0, len(self.packet_parser.combined_unique_ip_list), chunk_size)]
+
+        feodotracker_results = []
+        urlhaus_results = []
+        threatfox_results = []
+        cursor = connection.cursor()
+
+        for chunk in ip_chunks:
+            # print(chunk)
+
+            feodotracker_query='''
+                        SELECT ip_address FROM feodotracker 
+                        WHERE {}'''.format(' OR '.join(["ip_address='{}'".format(ip) for ip in chunk])) 
+            # print(feodotracker_query)
+            cursor.execute(feodotracker_query)
+            feodotracker_results += cursor.fetchall()
+
+            urlhaus_query = '''
+                        SELECT url FROM urlhaus
+                        WHERE {}'''.format(' OR '.join(["url LIKE '%{}%'".format(ip) for ip in chunk]))
+            # print(urlhaus_query)
+            cursor.execute(urlhaus_query)
+            urlhaus_results += cursor.fetchall()
+
+            threatfox_query = '''
+                        SELECT ioc FROM threatfox
+                        WHERE {}'''.format(' OR '.join(["ioc LIKE '%{}%'".format(ip) for ip in chunk]))
+            # print(threatfox_query)
+            cursor.execute(threatfox_query)
+            threatfox_results += cursor.fetchall()
+
+        connection.close()
+
+        if feodotracker_results:
+            c2_detected = True
+            feodotracker_results = [ip[0] for ip in feodotracker_results]
+
+        if urlhaus_results:
+            c2_detected = True
+            urls = urlhaus_results
+            urlhaus_results = []
+            for url in urls:
+                match = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', url[0])
+                if match:
+                    urlhaus_results.append(match.group(0))
+            
+        if threatfox_results:
+            c2_detected = True
+            urls = threatfox_results
+            threatfox_results = []
+            for url in urls:
+                match = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', url[0])
+                if match:
+                    threatfox_results.append(match.group(0))
+
+        detected_ips = list(set(itertools.chain(feodotracker_results, urlhaus_results, threatfox_results)))
+
+        # for ip in detected_ips:
+        #     print(ip)
 
         return c2_detected, detected_ips
 
-    def print_malicious_connections(self, detected_ip_iocs):
+    def print_c2_connections(self, detected_ip_iocs):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected external connections with C2 servers")
         logging.info(f"Listing detected external connections with C2 servers")
@@ -638,32 +711,52 @@ class DetectionEngine:
         #         table.add_row([src_ip, dst_ip])
         # print(table)
 
+        # TODO : REWORK all_connections/external_connections FROM PACKET PARSER TO INCLUDE PORTS
         for src_ip, dst_ip in self.packet_parser.external_connections:
             if src_ip in detected_ip_iocs:
                 print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
             if dst_ip in detected_ip_iocs:
                 print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
 
-    def detect_malicious_domains(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting malicious domains which received/initiated connections ...")
+    def detect_c2_domains(self, c2hunter_db):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 domains which received/initiated connections ...")
         logging.info(
-            "Detecting malicious domains which received/initiated connections")
+            "Detecting C2 domains which received/initiated connections")
 
         detected_domains = []
         c2_detected = False
 
-        for domain in self.packet_parser.domain_names:
-            # NOTE: REWORKING THIS FEATURE ...
-            pass
+        # TODO
 
         return c2_detected, detected_domains
 
-    def print_malicious_domains(self, detected_domains):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains for C2 servers")
+    def print_c2_domains(self, detected_domains):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected domains for C2 servers")
         logging.info(f"Listing detected domains for C2 servers")
         for domain in detected_domains:
             print(f">> {Fore.RED}{domain}{Fore.RESET}")
+
+    def detect_c2_urls(self, c2hunter_db):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 related URLs ...")
+        logging.info("Detecting C2 related URLs")
+
+        connection = sqlite3.connect(c2hunter_db)
+        cursor = connection.cursor()
+
+        detected_urls = []
+        c2_detected = False
+
+        # TODO
+
+        return c2_detected, detected_urls
+
+    def print_c2_urls(self, detected_urls):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected C2 related URLs")
+        logging.info(f"Listing detected C2 related URLs")
+        for url in detected_urls:
+            print(f">> {Fore.RED}{url}{Fore.RESET}")
+
+    # ----------------------------------------------------------------------------------------------------------------
 
     def detect_crypto_domains(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto / cryptojacking based sites ...")

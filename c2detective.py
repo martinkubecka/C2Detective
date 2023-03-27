@@ -144,16 +144,20 @@ def parse_arguments():
     #                     help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
                         help="configuration file (default: 'config/config.yml')")  # add option to load arguments config file
-    parser.add_argument('-d', '--dga-detection', action='store_true',
-                        help="enable DGA domain detection")
-    parser.add_argument('-e', '--enrich', action='store_true', 
-                        help="enable data enrichment")
     parser.add_argument('-s', '--statistics', action='store_true',
                         help='print packet capture statistics to the console')
     parser.add_argument('-w', '--write-extracted', action='store_true',
                         help='write extracted data to a JSON file')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
+
+    enable_group = parser.add_argument_group('enable options')
+    enable_group.add_argument('-d', '--dga', action='store_true',
+                        help="enable DGA domain detection")
+    enable_group.add_argument('-g', '--plugins', action='store_true',
+                        help="enable plugins for extended detection capabilities")
+    enable_group.add_argument('-e', '--enrich', action='store_true', 
+                        help="enable data enrichment")
 
     update_group = parser.add_argument_group('update options')
     update_group.add_argument('-utn', '--update-tor-nodes', action='store_true',
@@ -276,6 +280,19 @@ def main():
     else:
         enrichment_enchine = None
 
+    plugins = None
+    if args.plugins:
+        print('-' * terminal_size.columns)
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading configured plugins ...")
+        logging.info("Loading configured plugins")
+        
+        if analyst_profile.plugins:
+            plugins = analyst_profile.plugins
+            # NOTE: More plugins can be added in the future
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No plugins were added ...")
+            logging.warning("No plugins were added")
+
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
@@ -284,23 +301,34 @@ def main():
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
-    if args.dga_detection:
+    if args.dga:
         detection_engine.detect_dga()
     detection_engine.detect_dns_tunneling()
     detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_outgoing_traffic_to_tor()
-    detection_engine.detect_crypto_domains() 
+    detection_engine.detect_crypto_domains()
 
-    if not enrichment_enchine is None:
-        # using set() to remove duplicates and check for values count
-        no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
-        # do not use enrichment services when all services are set to 'False' even if enrichment is enavled
-        if no_enabled_services:
-            print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No enrichment services are enabled ...")
-            logging.warning("No enrichment services are enabled")
-        else:
-            detection_engine.threat_feeds()
+    if plugins:
+        if plugins.get('C2Hunter'):
+            c2hunter_db = plugins.get('C2Hunter')
+            if os.path.isfile(c2hunter_db):
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] Using plugin C2Hunter for detection via threat feeds ...")
+                logging.info("Using plugin C2Hunter for detection via threat feeds")
+                detection_engine.threat_feeds(c2hunter_db)
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Configured C2Hunter database path '{c2hunter_db}' does not exist ...")
+                logging.error(f"Configured C2Hunter database path '{c2hunter_db}' does not exist")
+
+    # if not enrichment_enchine is None:
+    #     # using set() to remove duplicates and check for values count
+    #     no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
+    #     # do not use enrichment services when all services are set to 'False' even if enrichment is enavled
+    #     if no_enabled_services:
+    #         print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No enrichment services are enabled ...")
+    #         logging.warning("No enrichment services are enabled")
+    #     else:
+    #         pass
     
     detection_engine.evaluate_detection()
 

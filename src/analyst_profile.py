@@ -31,6 +31,8 @@ class AnalystProfile:
         self.MAX_HTML_SIZE = self.thresholds['MAX_HTML_SIZE']
         self.MAX_SUBDOMAIN_LENGTH = self.thresholds['MAX_SUBDOMAIN_LENGTH']
 
+        self.plugins = config.get('plugins')
+
     def print_config(self):
         print(f"name: {self.name}")
         print(f"abuseipdb: {self.abuseipdb_api_key}")
@@ -44,4 +46,5 @@ class AnalystProfile:
         print(f"MAX_DURATION: {self.MAX_DURATION}")
         print(f"MAX_HTML_SIZE: {self.MAX_HTML_SIZE}")
         print(f"MAX_SUBDOMAIN_LENGTH: {self.MAX_SUBDOMAIN_LENGTH}")
+        print(f"plugins: {self.plugins}")
 
