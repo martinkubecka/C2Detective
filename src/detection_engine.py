@@ -746,7 +746,27 @@ class DetectionEngine:
         detected_urls = []
         c2_detected = False
 
-        # TODO
+        chunk_size = 100 
+        url_chunks = [self.packet_parser.unique_urls[i:i+chunk_size] for i in range(0, len(self.packet_parser.unique_urls), chunk_size)]
+
+        urlhaus_results = []
+        cursor = connection.cursor()
+
+        for chunk in url_chunks:
+            # print(chunk)
+
+            urlhaus_query = '''
+                        SELECT url FROM urlhaus
+                        WHERE {}'''.format(' OR '.join(["url LIKE '%{}%'".format(url) for url in chunk]))
+            # print(urlhaus_query)
+            cursor.execute(urlhaus_query)
+            urlhaus_results += cursor.fetchall()
+
+        connection.close()
+        
+        if urlhaus_results:
+            c2_detected = True
+            detected_urls = [url[0] for url in urlhaus_results]
 
         return c2_detected, detected_urls
 
