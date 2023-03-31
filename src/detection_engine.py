@@ -25,10 +25,10 @@ public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs : 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
-domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
+domain_names :                              extrcted domain names from DNS :        list() :        [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
+unique_urls :                               extracted URLs :                        list() :        [ url, url, ... ]
 http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
@@ -720,13 +720,35 @@ class DetectionEngine:
 
     def detect_c2_domains(self, c2hunter_db):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 domains which received/initiated connections ...")
-        logging.info(
-            "Detecting C2 domains which received/initiated connections")
+        logging.info("Detecting C2 domains which received/initiated connections")
+
+        connection = sqlite3.connect(c2hunter_db)
+        cursor = connection.cursor()
 
         detected_domains = []
         c2_detected = False
 
-        # TODO
+        chunk_size = 100 
+        domain_chunks = [self.packet_parser.domain_names[i:i+chunk_size] for i in range(0, len(self.packet_parser.domain_names), chunk_size)]
+
+        threatfox_results = []
+
+        for chunk in domain_chunks:
+            # print(chunk)
+
+            threatfox_query = '''
+                            SELECT ioc FROM threatfox 
+                            WHERE ioc_type='domain' 
+                            AND {}'''.format(' OR '.join(["ioc='{}'".format(domain) for domain in chunk])) 
+            # print(threatfox_query)
+            cursor.execute(threatfox_query)
+            threatfox_results += cursor.fetchall()
+
+        connection.close()
+        
+        if threatfox_results:
+            c2_detected = True
+            detected_domains = [domain[0] for domain in threatfox_results]
 
         return c2_detected, detected_domains
 
@@ -736,7 +758,7 @@ class DetectionEngine:
         for domain in detected_domains:
             print(f">> {Fore.RED}{domain}{Fore.RESET}")
 
-    def detect_c2_urls(self, c2hunter_db):
+    def detect_c2_urls(self, c2hunter_db):  
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 related URLs ...")
         logging.info("Detecting C2 related URLs")
 

@@ -20,10 +20,10 @@ public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs : 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
-domain_names :                              extrcted domain names from DNS :        set() :         [ domain, domain, ... ]
+domain_names :                              extrcted domain names from DNS :        list() :        [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
 http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
-unique_urls :                               extracted URLs :                        set() :         [ url, url, ... ]
+unique_urls :                               extracted URLs :                        list() :        [ url, url, ... ]
 http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
 """
 
@@ -242,6 +242,7 @@ class PacketParser:
         end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
 
         unique_urls = list(unique_urls)
+        domain_names = list(domain_names)
 
         return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
