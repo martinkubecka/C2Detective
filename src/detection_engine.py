@@ -19,7 +19,7 @@ import re
 """
 start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
-all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
+all_connections :                           connection src-dst IP pairs :           set() :         ((src_ip, src_port, dst_ip, dst_port), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
@@ -168,7 +168,7 @@ class DetectionEngine:
         logging.info(f"Listing connections with excessive frequency")
 
         for entry in detected_connections:
-            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['frequency']}/{len(self.packet_parser.packets)} connections")
+            print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET} = {entry.get('frequency')}/{len(self.packet_parser.packets)} connections")
 
     def detect_long_connection(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with long duration ...")
@@ -238,6 +238,7 @@ class DetectionEngine:
 
         connection_sizes = []
 
+        # TODO: REWORK to use http_sessions
         for packet in self.packet_parser.packets:
             # check if packet contains HTTP responses
             if packet.haslayer(http.HTTPResponse):
@@ -376,45 +377,48 @@ class DetectionEngine:
         logging.info("Looking for outgoing network traffic to TOR exit nodes")
 
         detected = False
-        detected_ips = []
+        detected_connections = []
         seen_ips = set()
 
-        for src_ip, dst_ip in self.packet_parser.external_connections:
+        for connection, _ in self.packet_parser.connection_frequency.items():
+            src_ip = connection[0]
+            src_port = connection[1]
+            dst_ip = connection[2]
+            dst_port = connection[3]
             if src_ip in self.tor_exit_nodes or dst_ip in self.tor_exit_nodes:
                 entry = dict(
                     src_ip=src_ip,
-                    dst_ip=dst_ip
+                    src_port=src_port,
+                    dst_ip=dst_ip,
+                    dst_port=dst_port
                 )
                 entry_frozenset = frozenset(entry.items())
                 if entry_frozenset not in seen_ips:
-                    detected_ips.append(entry)
+                    detected_connections.append(entry)
                     seen_ips.add(entry_frozenset)
                     detected = True
 
         if detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['outgoing_Tor_network_traffic'] = detected_ips
+            self.detected_iocs['outgoing_Tor_network_traffic'] = detected_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
             logging.info(
-                f"Detected outgoing network traffic to TOR exit nodes. (detected_ips : {detected_ips})")
-            self.print_detected_tor_exit_nodes(detected_ips)
+                f"Detected outgoing network traffic to TOR exit nodes. (detected_ips : {detected_connections})")
+            self.print_detected_tor_exit_nodes(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Outgoing network traffic to TOR exit nodes not detected{Fore.RESET}")
             logging.info(
                 f"Outgoing network traffic to TOR exit nodes not detected")
 
-    def print_detected_tor_exit_nodes(self, detected_ips):
+    def print_detected_tor_exit_nodes(self, detected_connections):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing network traffic to detected TOR exit nodes")
         logging.info(f"Listing network traffic to detected TOR exit nodes")
 
-        for src_ip, dst_ip in self.packet_parser.external_connections:
-            if src_ip in detected_ips:
-                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
-            if dst_ip in detected_ips:
-                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
     def detect_tor_traffic(self):
         print(
@@ -422,44 +426,47 @@ class DetectionEngine:
         logging.info("Looking for network traffic to public TOR nodes")
 
         detected = False
-        detected_ips = []
+        detected_connections = []
         seen_ips = set()
 
-        for src_ip, dst_ip in self.packet_parser.external_connections:
+        for connection, _ in self.packet_parser.connection_frequency.items():
+            src_ip = connection[0]
+            src_port = connection[1]
+            dst_ip = connection[2]
+            dst_port = connection[3]
             if src_ip in self.tor_nodes or dst_ip in self.tor_nodes:
                 entry = dict(
                     src_ip=src_ip,
-                    dst_ip=dst_ip
+                    src_port=src_port,
+                    dst_ip=dst_ip,
+                    dst_port=dst_port
                 )
                 entry_frozenset = frozenset(entry.items())
                 if entry_frozenset not in seen_ips:
-                    detected_ips.append(entry)
+                    detected_connections.append(entry)
                     seen_ips.add(entry_frozenset)
                     detected = True
 
         if detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['Tor_network_traffic'] = detected_ips
+            self.detected_iocs['Tor_network_traffic'] = detected_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected network traffic to public TOR nodes{Fore.RESET}")
             logging.info(
-                f"Detected network traffic to public TOR nodes. (detected_ips : {detected_ips})")
-            self.print_detected_tor_nodes(detected_ips)
+                f"Detected network traffic to public TOR nodes. (detected_ips : {detected_connections})")
+            self.print_detected_tor_nodes(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Network traffic to public TOR nodes not detected{Fore.RESET}")
             logging.info(f"Network traffic to public TOR nodes not detected")
 
-    def print_detected_tor_nodes(self, detected_ips):
+    def print_detected_tor_nodes(self, detected_connections):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing traffic to public TOR nodes")
         logging.info(f"Listing traffic to public TOR nodes")
 
-        for src_ip, dst_ip in self.packet_parser.external_connections:
-            if src_ip in detected_ips:
-                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
-            if dst_ip in detected_ips:
-                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
     # DGA Detective : https://cossas-project.org/portfolio/dgad/
     # source code: https://github.com/COSSAS/dgad
@@ -637,6 +644,8 @@ class DetectionEngine:
         c2_detected = False
 
         chunk_size = 100 
+        # TODO: check if proper list is being used
+        # TODO: add new strucutre which will includes C2 connection (src/dst IP and port)
         ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+chunk_size] for i in range(0, len(self.packet_parser.combined_unique_ip_list), chunk_size)]
 
         feodotracker_results = []
@@ -703,20 +712,10 @@ class DetectionEngine:
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected external connections with C2 servers")
         logging.info(f"Listing detected external connections with C2 servers")
-        # table = PrettyTable(["Source IP", "Destination IP"])
-        # for src_ip, dst_ip in self.packet_parser.external_connections:
-        #     if src_ip in detected_ip_iocs:
-        #         table.add_row([src_ip, dst_ip])
-        #     if dst_ip in detected_ip_iocs:
-        #         table.add_row([src_ip, dst_ip])
-        # print(table)
 
-        # TODO : REWORK all_connections/external_connections FROM PACKET PARSER TO INCLUDE PORTS
-        for src_ip, dst_ip in self.packet_parser.external_connections:
-            if src_ip in detected_ip_iocs:
-                print(f">> {Fore.RED}{src_ip}{Fore.RESET} -> {dst_ip}")
-            if dst_ip in detected_ip_iocs:
-                print(f">> {src_ip} -> {Fore.RED}{dst_ip}{Fore.RESET}")
+        # TODO : rework to print the whole connection
+        for ip_address in detected_ip_iocs:
+            print(f">> {Fore.RED}{ip_address}{Fore.RESET}")
 
     def detect_c2_domains(self, c2hunter_db):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 domains which received/initiated connections ...")

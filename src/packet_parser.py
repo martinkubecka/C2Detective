@@ -14,7 +14,7 @@ import base64
 """
 start_time :                                timestamp when packet capture stared    string :        %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended     string :        %Y-%m-%d %H:%M:%S
-all_connections/external_connections :      unique connection src-dst IP pairs :    set() :         ((src_ip, dst_ip), ...)
+all_connections :                           connection src-dst IP pairs :           set() :         ((src_ip, src_port, dst_ip, dst_port), ...)
 connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
@@ -41,7 +41,7 @@ class PacketParser:
             self.packets = self.capture_packets()
 
         self.connections = self.get_connections()
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
         self.certificates = self.extract_certificates()
@@ -119,7 +119,6 @@ class PacketParser:
         public_ip_list = []
         # store all and only external connections
         all_connections = set()
-        external_connections = set()
         # store filtered DNS packets
         dns_packets = []
         # store extracted domain names from DNS queries
@@ -148,17 +147,12 @@ class PacketParser:
                     public_dst_ip_list.append(dst_ip)
                     public_ip_list.append(dst_ip)
 
-                all_connections.add((src_ip, dst_ip))
-
-                # if src or dst ip is public add it to a separate set
-                if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
-                    external_connections.add((src_ip, dst_ip))
-
             if packet.haslayer(TCP):
 
                 src_port = packet[TCP].sport
                 dst_port = packet[TCP].dport
-                
+
+
                 # if src or dst ip is public, further process this connection
                 if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
 
@@ -170,6 +164,9 @@ class PacketParser:
                         connection_frequency[connection] += 1
                     else:
                         connection_frequency[connection] = 1
+                # if connection is local, add it to separate object
+                else:
+                    all_connections.add((src_ip, src_port, dst_ip, dst_port))
 
             if packet.haslayer(DNS):
                 dns_packets.append(packet)
@@ -244,7 +241,7 @@ class PacketParser:
         unique_urls = list(unique_urls)
         domain_names = list(domain_names)
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
         src_ip_list_set = set(self.public_src_ip_list)
@@ -430,7 +427,7 @@ class PacketParser:
         
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
-            f">> Number of external connections: {len(self.external_connections)}")
+            f">> Number of external connections: {len(self.connection_frequency)}")
         print(f">> Number of unique domain names: {len(self.domain_names)}")
         print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
 
