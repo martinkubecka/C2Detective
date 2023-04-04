@@ -12,19 +12,21 @@ import base64
 
 
 """
-start_time :                                timestamp when packet capture stared    string :        %Y-%m-%d %H:%M:%S
-end_time :                                  timestamp when packet capture ended     string :        %Y-%m-%d %H:%M:%S
-all_connections :                           connection src-dst IP pairs :           set() :         ((src_ip, src_port, dst_ip, dst_port), ...)
-connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+start_time :                                timestamp when packet capture stared :  string :        %Y-%m-%d %H:%M:%S
+end_time :                                  timestamp when packet capture ended :   string :        %Y-%m-%d %H:%M:%S
+all_connections :                           connection src-dst IP pairs :           set() :         ((time, src_ip, src_port, dst_ip, dst_port), ...)
+connection_frequency :                      grouped TCP connections frequencies :   {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+external_tcp_connections :                  all TCP connections :                   [] :            [ (packet_time, src_ip, src_port, dst_ip, dst_port), ... ]                  
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
 domain_names :                              extrcted domain names from DNS :        list() :        [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {time: ,src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
 unique_urls :                               extracted URLs :                        list() :        [ url, url, ... ]
-http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
+connections :                               gruped connections :                    tuple :         ( (PROTOCOL SRC_IP:SRC_PORT > DST_IP:DST_PORT), ... )
+certificates :                              selected TLS certificate fields :       [] :            [ {src_ip, dst_ip, src_port, dst_port, serialNumber, issuer:{organizationName, stateOrProvinceName, countryName, commonName}, subject:{} }, ...]
 """
 
 
@@ -41,7 +43,7 @@ class PacketParser:
             self.packets = self.capture_packets()
 
         self.connections = self.get_connections()
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_tcp_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
         self.certificates = self.extract_certificates()
@@ -119,6 +121,8 @@ class PacketParser:
         public_ip_list = []
         # store all and only external connections
         all_connections = set()
+        # store all TCP connections
+        external_tcp_connections = []
         # store filtered DNS packets
         dns_packets = []
         # store extracted domain names from DNS queries
@@ -130,9 +134,12 @@ class PacketParser:
 
         for packet in self.packets:
 
+            # convert Unix timestamp with microsecond precision
+            packet_time = datetime.fromtimestamp(round(float(packet.time), 6)).strftime('%Y-%m-%d %H:%M:%S')
+
             if start_time is None:
                 # the first packet arrival time (time of capture of the packet)
-                start_time = round(float(packet.time), 6) 
+                start_time = packet_time 
 
             if packet.haslayer(IP):
 
@@ -164,9 +171,10 @@ class PacketParser:
                         connection_frequency[connection] += 1
                     else:
                         connection_frequency[connection] = 1
-                # if connection is local, add it to separate object
-                else:
-                    all_connections.add((src_ip, src_port, dst_ip, dst_port))
+
+                    external_tcp_connections.append((packet_time, src_ip, src_port, dst_ip, dst_port))
+
+                all_connections.add((packet_time, src_ip, src_port, dst_ip, dst_port))
 
             if packet.haslayer(DNS):
                 dns_packets.append(packet)
@@ -215,6 +223,7 @@ class PacketParser:
                         url = ""
 
                 session = dict(
+                    timestamp=packet_time,
                     src_ip=src_ip,
                     src_port=src_port,
                     dst_ip=dst_ip,
@@ -232,26 +241,18 @@ class PacketParser:
                 http_sessions.append(session)
 
             # update the end time of capture with each packet
-            end_time = round(float(packet.time), 6)
+            end_time = packet_time
 
-        # process converted Unix timestamps with microseconds precision
-        start_time = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S')
-
+        all_connections = list(all_connections)
         unique_urls = list(unique_urls)
         domain_names = list(domain_names)
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_tcp_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
-        src_ip_list_set = set(self.public_src_ip_list)
-        src_unique_ip_list = (list(src_ip_list_set))
-
-        dst_unique_ip_list_set = set(self.public_dst_ip_list)
-        dst_unique_ip_list = (list(dst_unique_ip_list_set))
-
-        combined_ip_list_set = set(self.public_ip_list)
-        combined_unique_ip_list = (list(combined_ip_list_set))
+        src_unique_ip_list = list(set(self.public_src_ip_list))
+        dst_unique_ip_list = list(set(self.public_dst_ip_list))
+        combined_unique_ip_list = list(set(self.public_ip_list))
 
         return src_unique_ip_list, dst_unique_ip_list, combined_unique_ip_list
 
@@ -427,7 +428,7 @@ class PacketParser:
         
         print(f">> Number of all connections: {len(self.all_connections)}")
         print(
-            f">> Number of external connections: {len(self.connection_frequency)}")
+            f">> Number of external connections: {len(self.external_tcp_connections)}")
         print(f">> Number of unique domain names: {len(self.domain_names)}")
         print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
 
@@ -493,9 +494,6 @@ class PacketParser:
 
         # extracted URLs
         extracted_data['extracted_urls'] = list(self.unique_urls)
-
-        # extracted HTTP requests
-        # extracted_data['http_get_requests'] = self.http_requests
 
         # extracted HTTP sessions
         extracted_data['http_sessions'] = self.http_sessions

@@ -16,20 +16,23 @@ from ipaddress import ip_address
 import itertools
 import re
 
+
 """
-start_time :                                timestamp when packet capture stared    string          %Y-%m-%d %H:%M:%S
-end_time :                                  timestamp when packet capture ended     string          %Y-%m-%d %H:%M:%S
-all_connections :                           connection src-dst IP pairs :           set() :         ((src_ip, src_port, dst_ip, dst_port), ...)
-connection_frequency :                      all TCP connections with frequencies :  {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+start_time :                                timestamp when packet capture stared :  string :        %Y-%m-%d %H:%M:%S
+end_time :                                  timestamp when packet capture ended :   string :        %Y-%m-%d %H:%M:%S
+all_connections :                           connection src-dst IP pairs :           set() :         ((time, src_ip, src_port, dst_ip, dst_port), ...)
+connection_frequency :                      grouped TCP connections frequencies :   {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
+external_tcp_connections :                  all TCP connections :                   [] :            [ (packet_time, src_ip, src_port, dst_ip, dst_port), ... ]                  
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
 src_/dst_/combined_/unique_ip_list :        unique source/destination IPs :         [] :            [ ip, ip, ... ]
 src_ip_/dst_ip_/all_ip_/counter :           IP quantity :                           {} :            { ip:count, ip:count, ... }
 dns_packets :                               extracted packets with DNS layer :      [] :            [packet, packet, ...]
 domain_names :                              extrcted domain names from DNS :        list() :        [ domain, domain, ... ]
 http_payloads :                             HTTP payloads :                         [] :            [ payload, payload, ... ]
-http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
+http_sessions :                             HTTP sessions :                         [{}, {}, ...] : [ {time: ,src_ip:, src_port:, dst_ip:, dst_port:, http_payload:}, {}, ... ]  
 unique_urls :                               extracted URLs :                        list() :        [ url, url, ... ]
-http_requests :                             detailed HTTP requests                  [{}, {}, ...] : [ {src_ip:, src_port:, dst_ip:, dst_port:, method:, host:, path:, url:, user_agent:}, {}, ... ]
+connections :                               gruped connections :                    tuple :         ( (PROTOCOL SRC_IP:SRC_PORT > DST_IP:DST_PORT), ... )
+certificates :                              selected TLS certificate fields :       [] :            [ {src_ip, dst_ip, src_port, dst_port, serialNumber, issuer:{organizationName, stateOrProvinceName, countryName, commonName}, subject:{} }, ...]
 """
 
 
@@ -380,13 +383,16 @@ class DetectionEngine:
         detected_connections = []
         seen_ips = set()
 
-        for connection, _ in self.packet_parser.connection_frequency.items():
-            src_ip = connection[0]
-            src_port = connection[1]
-            dst_ip = connection[2]
-            dst_port = connection[3]
+        for connection in self.packet_parser.all_connections:
+            timestamp = connection[0] 
+            src_ip = connection[1]
+            src_port = connection[2]
+            dst_ip = connection[3]
+            dst_port = connection[4]
+
             if src_ip in self.tor_exit_nodes or dst_ip in self.tor_exit_nodes:
                 entry = dict(
+                    timestamp=timestamp,
                     src_ip=src_ip,
                     src_port=src_port,
                     dst_ip=dst_ip,
@@ -429,13 +435,17 @@ class DetectionEngine:
         detected_connections = []
         seen_ips = set()
 
-        for connection, _ in self.packet_parser.connection_frequency.items():
-            src_ip = connection[0]
-            src_port = connection[1]
-            dst_ip = connection[2]
-            dst_port = connection[3]
+        for connection in self.packet_parser.all_connections:
+
+            timestamp = connection[0] 
+            src_ip = connection[1]
+            src_port = connection[2]
+            dst_ip = connection[3]
+            dst_port = connection[4]
+
             if src_ip in self.tor_nodes or dst_ip in self.tor_nodes:
                 entry = dict(
+                    timestamp=timestamp,
                     src_ip=src_ip,
                     src_port=src_port,
                     dst_ip=dst_ip,
@@ -605,7 +615,9 @@ class DetectionEngine:
             self.detected_iocs['c2_ip_address'] = detected_ips
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 IP addresses which received/initiated connections detected{Fore.RESET}")
             logging.info(f"C2 IP addresses which received/initiated connections detected")
-            self.print_c2_connections(detected_ips)
+            detected_c2_ip_connections = self.build_c2_ip_connections(detected_ips)
+            self.detected_iocs['c2_ip_address_connection'] = detected_c2_ip_connections
+            self.print_c2_ip_addresses(detected_ips)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 IP addresses which received/initiated connections not detected{Fore.RESET}")
             logging.info(f"C2 IP addresses which received/initiated connections not detected")
@@ -644,8 +656,6 @@ class DetectionEngine:
         c2_detected = False
 
         chunk_size = 100 
-        # TODO: check if proper list is being used
-        # TODO: add new strucutre which will includes C2 connection (src/dst IP and port)
         ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+chunk_size] for i in range(0, len(self.packet_parser.combined_unique_ip_list), chunk_size)]
 
         feodotracker_results = []
@@ -708,14 +718,43 @@ class DetectionEngine:
 
         return c2_detected, detected_ips
 
-    def print_c2_connections(self, detected_ip_iocs):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected external connections with C2 servers")
-        logging.info(f"Listing detected external connections with C2 servers")
+    def build_c2_ip_connections(self, detected_ip_iocs):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Searching for C2 IPs in the grouped connections ...")
+        logging.info(f"Searching for C2 IPs in the grouped connections ...")
 
-        # TODO : rework to print the whole connection
-        for ip_address in detected_ip_iocs:
-            print(f">> {Fore.RED}{ip_address}{Fore.RESET}")
+        detected_c2_ip_connections = []
+        seen_ips = set()
+
+        for connection in self.packet_parser.all_connections:
+            timestamp = connection[0] 
+            src_ip = connection[1]
+            src_port = connection[2]
+            dst_ip = connection[3]
+            dst_port = connection[4]
+
+            for c2_ip_address in detected_ip_iocs:
+                if src_ip == c2_ip_address or dst_ip == c2_ip_address:
+                    entry = dict(
+                        timestamp=timestamp,   
+                        src_ip=src_ip,
+                        src_port=src_port,
+                        dst_ip=dst_ip,
+                        dst_port=dst_port)
+
+                    entry_frozenset = frozenset(entry.items())
+
+                    if entry_frozenset not in seen_ips:
+                        detected_c2_ip_connections.append(entry)
+                        seen_ips.add(entry_frozenset)
+        
+        return detected_c2_ip_connections
+
+    def print_c2_ip_addresses(self, detected_ips):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected C2 IP addresses")
+        logging.info(f"Listing detected C2 IP addresses")
+
+        for c2_ip_address in detected_ips:
+            print(f">> {Fore.RED}{c2_ip_address}{Fore.RESET}")
 
     def detect_c2_domains(self, c2hunter_db):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting C2 domains which received/initiated connections ...")
