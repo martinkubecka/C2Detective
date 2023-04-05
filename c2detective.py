@@ -150,7 +150,9 @@ def parse_arguments():
                         help='write extracted data to a JSON file')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
-    
+    parser.add_argument('--print-config', action='store_true',
+                        help='print loaded config to the console')
+
     enable_group = parser.add_argument_group('enable options')
     enable_group.add_argument('-d', '--dga', action='store_true',
                         help="enable DGA domain detection")
@@ -198,13 +200,13 @@ def main():
     check_required_structure(output_dir)
 
     print('-' * terminal_size.columns)
-    if not args.config is None:
-        if is_valid_file(args.config, "yml"):
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
-            logging.info(f"Loading config '{args.config}'")
-            config = load_config(args.config)
-            analyst_profile = AnalystProfile(config)
-            # analyst_profile.print_config()    # TODO: add argument to print config to the console
+    if is_valid_file(args.config, "yml"):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
+        logging.info(f"Loading config '{args.config}'")
+        config = load_config(args.config)
+        analyst_profile = AnalystProfile(config)
+        if args.print_config:
+            analyst_profile.print_config()
 
     print('-' * terminal_size.columns)
     if args.update_tor_nodes:
