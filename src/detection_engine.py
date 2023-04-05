@@ -725,7 +725,7 @@ class DetectionEngine:
         detected_c2_ip_connections = []
         seen_ips = set()
 
-        for connection in self.packet_parser.all_connections:
+        for connection in self.packet_parser.external_tcp_connections:
             timestamp = connection[0] 
             src_ip = connection[1]
             src_port = connection[2]

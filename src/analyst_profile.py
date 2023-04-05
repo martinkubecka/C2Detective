@@ -1,36 +1,50 @@
 class AnalystProfile:
     def __init__(self, config):
-        self.name = config['name']
+        # TODO: add checks
+        self.name = config.get('name')
 
-        self.api_keys = config['api_keys']
-        self.abuseipdb_api_key = self.api_keys['abuseipdb']
-        self.virustotal_api_key = self.api_keys['virustotal']
-        self.securitytrails_api_key = self.api_keys['securitytrails']
-        self.shodan_api_key = self.api_keys['shodan']
+        # TODO: add checks
+        self.api_keys = config.get('api_keys')
+        self.abuseipdb_api_key = self.api_keys.get('abuseipdb')
+        self.virustotal_api_key = self.api_keys.get('virustotal')
+        self.securitytrails_api_key = self.api_keys.get('securitytrails')
+        self.shodan_api_key = self.api_keys.get('shodan')
 
-        self.enrichment_services = config['enrichment_services']
-        self.abuseipdb = self.enrichment_services['abuseipdb']
-        self.threatfox = self.enrichment_services['threatfox']
-        self.securitytrails = self.enrichment_services['securitytrails']
-        self.virustotal = self.enrichment_services['virustotal']
-        self.shodan = self.enrichment_services['shodan']
-        self.alienvault = self.enrichment_services['alienvault']
-        self.bgp_ranking = self.enrichment_services['bgp_ranking']
-        self.urlhaus = self.enrichment_services['urlhaus']
+        # checks in place 
+        self.feeds = config.get('feeds')
+        self.tor_node_list = self.feeds.get('tor_node_list')
+        self.tor_exit_node_list = self.feeds.get('tor_exit_node_list')
+        self.crypto_domains = self.feeds.get('crypto_domains')
+        self.ja3_rules = self.feeds.get('ja3_rules')
 
-        self.arguments = config['arguments']
+        # TODO: add checks 
+        self.enrichment_services = config.get('enrichment_services')
+        self.abuseipdb = self.enrichment_services.get('abuseipdb')
+        self.threatfox = self.enrichment_services.get('threatfox')
+        self.securitytrails = self.enrichment_services.get('securitytrails')
+        self.virustotal = self.enrichment_services.get('virustotal')
+        self.shodan = self.enrichment_services.get('shodan')
+        self.alienvault = self.enrichment_services.get('alienvault')
+        self.bgp_ranking = self.enrichment_services.get('bgp_ranking')
+        self.urlhaus = self.enrichment_services.get('urlhaus')
 
-        self.sniffing = config['sniffing'] 
-        self.interface = self.sniffing['interface']
-        self.filter = self.sniffing['filter']
-        self.timeout = self.sniffing['timeout']
+        # TODO: add checks
+        self.arguments = config.get('arguments')
 
-        self.thresholds = config['thresholds']
-        self.MAX_FREQUENCY = self.thresholds['MAX_FREQUENCY']
-        self.MAX_DURATION = self.thresholds['MAX_DURATION']
-        self.MAX_HTML_SIZE = self.thresholds['MAX_HTML_SIZE']
-        self.MAX_SUBDOMAIN_LENGTH = self.thresholds['MAX_SUBDOMAIN_LENGTH']
+        # TODO: add checks
+        self.sniffing = config.get('sniffing') 
+        self.interface = self.sniffing.get('interface')
+        self.filter = self.sniffing.get('filter')
+        self.timeout = self.sniffing.get('timeout')
 
+        # TODO: add checks
+        self.thresholds = config.get('thresholds')
+        self.MAX_FREQUENCY = self.thresholds.get('MAX_FREQUENCY')
+        self.MAX_DURATION = self.thresholds.get('MAX_DURATION')
+        self.MAX_HTML_SIZE = self.thresholds.get('MAX_HTML_SIZE')
+        self.MAX_SUBDOMAIN_LENGTH = self.thresholds.get('MAX_SUBDOMAIN_LENGTH')
+
+        # check is not required, because plugins are optional
         self.plugins = config.get('plugins')
 
     def print_config(self):
@@ -39,6 +53,10 @@ class AnalystProfile:
         print(f"virustotal: {self.virustotal_api_key}")
         print(f"securitytrails: {self.securitytrails_api_key}")
         print(f"shodan: {self.shodan_api_key}")
+        print(f"tor_node_list: {self.tor_node_list}")
+        print(f"tor_exit_node_list: {self.tor_exit_node_list}")
+        print(f"crypto_domains: {self.crypto_domains}")
+        print(f"ja3_rules: {self.ja3_rules}")
         print(f"enrichment_services: {self.enrichment_services}")
         print(f"arguments: {self.arguments}")
         print(f"sniffing: {self.sniffing}")

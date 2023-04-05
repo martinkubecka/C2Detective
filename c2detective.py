@@ -150,7 +150,7 @@ def parse_arguments():
                         help='write extracted data to a JSON file')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
-
+    
     enable_group = parser.add_argument_group('enable options')
     enable_group.add_argument('-d', '--dga', action='store_true',
                         help="enable DGA domain detection")
@@ -198,9 +198,18 @@ def main():
     check_required_structure(output_dir)
 
     print('-' * terminal_size.columns)
+    if not args.config is None:
+        if is_valid_file(args.config, "yml"):
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
+            logging.info(f"Loading config '{args.config}'")
+            config = load_config(args.config)
+            analyst_profile = AnalystProfile(config)
+            # analyst_profile.print_config()    # TODO: add argument to print config to the console
+
+    print('-' * terminal_size.columns)
     if args.update_tor_nodes:
         from iocs.tor.update_tor_nodes import TorNodes
-        tor_nodes = TorNodes()
+        tor_nodes = TorNodes(analyst_profile.tor_node_list, analyst_profile.tor_exit_node_list)
         tor_nodes.update_tor_nodes()
     else:
         file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
@@ -224,7 +233,7 @@ def main():
 
     if args.update_crypto_domains:
         from iocs.crypto_domains.update_crypto_domains import CryptoDomains
-        crypto_domains = CryptoDomains()
+        crypto_domains = CryptoDomains(analyst_profile.crypto_domains)
         crypto_domains.update_crypto_domains()
     else:
         file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
@@ -249,15 +258,6 @@ def main():
     # use analysis name for example for output report naming
     # if not args.name is None:
     #     analysis_name = args.name
-
-    print('-' * terminal_size.columns)
-    if not args.config is None:
-        if is_valid_file(args.config, "yml"):
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
-            logging.info(f"Loading config '{args.config}'")
-            config = load_config(args.config)
-            analyst_profile = AnalystProfile(config)
-            # analyst_profile.print_config()
 
     print('-' * terminal_size.columns)
     report_extracted_data_option = args.write_extracted

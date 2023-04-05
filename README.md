@@ -205,14 +205,12 @@ update options:
 
 #### Data Enrichment & Correlation 
 
-- [ ] add [Feodo Tracker](https://feodotracker.abuse.ch/blocklist/) : sharing botnet C&C servers - lists generated every 5 minutes
 - [ ] add [SSL Blacklist](https://sslbl.abuse.ch/) : identifying and blacklisting SSL certificates used by botnet C&C servers
 - [ ] add [Botvrij.eu](https://www.botvrij.eu/) : provides different sets of open source IOCs
-- [ ] add [Binary Defense](https://www.binarydefense.com/banlist.txt) Systems Artillery Threat Intelligence Feed and Banlist Feed 
-- [ ] add [C&C Tracker](https://osint.bambenekconsulting.com/feeds/c2-ipmasterlist.txt) : active and non-sinkholed C&C IP addresses
 
 #### Detection
 
+- [ ] detect C2 communication based on the JA3 method (TLS negotiation fingerprint) 
 - [ ] detect signs of ICMP based covert channels (ICMP Tunneling)
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] implement detection confidence scoring system
