@@ -8,6 +8,7 @@ import time
 
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
+from src.packet_capture import PacketCapture
 from src.enrichment_engine import EnrichmentEngine
 from src.detection_engine import DetectionEngine
 from src.detection_reporter import DetectionReporter
@@ -262,17 +263,18 @@ def main():
     #     analysis_name = args.name
 
     print('-' * terminal_size.columns)
+    input_file = args.input
+    
+    if args.packet_capture:
+        packet_capture = PacketCapture(analyst_profile.sniffing, output_dir)
+        input_file = packet_capture.capture_packets()
+
     report_extracted_data_option = args.write_extracted
     statistics_option = args.statistics
-    if args.packet_capture:
-        sniffing_configuration = analyst_profile.sniffing
-        packet_parser = PacketParser(None, sniffing_configuration, output_dir, report_extracted_data_option, statistics_option)
-    else:
-        input_file = args.input
-        if is_valid_file(input_file, "pcap"):
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
-            logging.info(f"Loading '{input_file}' file")
-            packet_parser = PacketParser(input_file, None, output_dir, report_extracted_data_option, statistics_option)
+    if is_valid_file(input_file, "pcap"):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
+        logging.info(f"Loading '{input_file}' file")
+        packet_parser = PacketParser(input_file, output_dir, report_extracted_data_option, statistics_option)
 
     if args.enrich:
         print('-' * terminal_size.columns)
@@ -332,6 +334,7 @@ def main():
     #     else:
     #         pass
     
+    print('-' * terminal_size.columns)
     detection_engine.evaluate_detection()
 
     print('-' * terminal_size.columns)

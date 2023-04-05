@@ -5,6 +5,11 @@ api_keys:
   virustotal: "22222"
   securitytrails: "33333"
   shodan: "44444"
+feeds:
+  tor_node_list: "https://www.dan.me.uk/torlist/"
+  tor_exit_node_list: "https://www.dan.me.uk/torlist/?exit"
+  crypto_domains: "https://blocklistproject.github.io/Lists/alt-version/crypto-nl.txt"
+  ja3_rules: "https://rules.emergingthreats.net/open/suricata-5.0/rules/emerging-ja3.rules"
 enrichment_services:
   abuseipdb: True
   threatfox: False
@@ -27,3 +32,4 @@ thresholds:
   MAX_DURATION: 14000 # seconds
   MAX_HTML_SIZE: 50000 # bytes
   MAX_SUBDOMAIN_LENGTH: 30 # chars
+plugins:

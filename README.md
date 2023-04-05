@@ -96,11 +96,10 @@ $ getcap /usr/bin/python3.10
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [-d] [-g] [-e]
-                   [-utn] [-ucd]
+usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [--print-config] [-d] [-g] [-e] [-utn]
+                   [-ucd]
 
-Application for detecting command and control (C2) communication through network traffic
-analysis.
+Application for detecting command and control (C2) communication through network traffic analysis.
 
 options:
   -h, --help                     show this help message and exit
@@ -108,8 +107,8 @@ options:
   -c FILE, --config FILE         configuration file (default: 'config/config.yml')
   -s, --statistics               print packet capture statistics to the console
   -w, --write-extracted          write extracted data to a JSON file
-  -o PATH, --output PATH         output directory file path for report files (default:
-                                 'reports/')
+  -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
+  --print-config                 print loaded config to the console
 
 required options:
   -i FILENAME, --input FILENAME  input file (.cap / .pcap / .pcapng)

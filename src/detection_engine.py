@@ -35,6 +35,8 @@ connections :                               gruped connections :                
 certificates :                              selected TLS certificate fields :       [] :            [ {src_ip, dst_ip, src_port, dst_port, serialNumber, issuer:{organizationName, stateOrProvinceName, countryName, commonName}, subject:{} }, ...]
 """
 
+# TODO: check if using 'all_connections' is necassary
+# TODO: add check if loaded feed are present
 
 class DetectionEngine:
     def __init__(self, analyst_profile, packet_parser, enrichment_enchine):
@@ -598,13 +600,8 @@ class DetectionEngine:
             print(f">>>> DNS query example with frequency: '{Fore.RED}{values['queries'][0]}{Fore.RESET}'")
 
     # ----------------------------------------------------------------------------------------------------------------
-    # -------------------------------------------- C2Hunter Plugin --------------------------------------------
+    # ------------------------------------------------ C2Hunter Plugin -----------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------
-
-    # C2Hunter threat feed collection
-    # Feodo Tracker - IP addresses
-    # ThreatFox - IP addresses, IP:Port, URL, Domain
-    # Urlhaus - URLs which may contain IP address
 
     def threat_feeds(self, c2hunter_db):
 

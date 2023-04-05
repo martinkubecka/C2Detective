@@ -31,16 +31,13 @@ certificates :                              selected TLS certificate fields :   
 
 
 class PacketParser:
-    def __init__(self, filepath, sniffing_configuration, output_dir, report_extracted_data_option, statistics_option):
+    def __init__(self, filepath, output_dir, report_extracted_data_option, statistics_option):
         self.logger = logging.getLogger(__name__)
         self.filepath = filepath
         self.output_dir = output_dir
-        self.sniffing_configuration = sniffing_configuration
 
         if self.filepath:
             self.packets = self.get_packet_list()  # creates a list in memory
-        else:
-            self.packets = self.capture_packets()
 
         self.connections = self.get_connections()
         self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_tcp_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
@@ -64,24 +61,6 @@ class PacketParser:
               "{:.2f}s".format(t_stop - t_start))
         self.logger.info(
             "Packet capture '{self.filepath}' loaded in " + "{:.2f}s".format(t_stop - t_start))
-        return packets
-
-    def capture_packets(self):
-        interface = self.sniffing_configuration.get('interface')
-        capture_filter = self.sniffing_configuration.get('filter')
-        timeout = self.sniffing_configuration.get('timeout')
-        filename = self.sniffing_configuration.get('filename')
-
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Capturing packets on the '{interface}' interface for {timeout} seconds ...")
-        logging.info(f"Capturing packets on the '{interface}' interface for {timeout} seconds ...")
-        packets = sniff(iface=interface, filter=capture_filter, timeout=timeout)
-
-        output_filepath = f"{self.output_dir}/{filename}"
-        self.filepath = output_filepath
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing captured packets to '{output_filepath}' ...")
-        logging.info(f"Writing captured packets to '{output_filepath}'")
-        wrpcap(output_filepath, packets)
-
         return packets
 
     def get_connections(self):
