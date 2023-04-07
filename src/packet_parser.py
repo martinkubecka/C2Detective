@@ -31,13 +31,16 @@ certificates :                              selected TLS certificate fields :   
 
 
 class PacketParser:
-    def __init__(self, filepath, output_dir, report_extracted_data_option, statistics_option):
+    def __init__(self, analyst_profile, input_file, output_dir, report_extracted_data_option, statistics_option):
         self.logger = logging.getLogger(__name__)
-        self.filepath = filepath
+
+        self.analyst_profile = analyst_profile
+        self.STATISTICS_TOP_COUNT = self.analyst_profile.statistics_top_count
+
+        self.input_file = input_file
         self.output_dir = output_dir
 
-        if self.filepath:
-            self.packets = self.get_packet_list()  # creates a list in memory
+        self.packets = self.get_packet_list()  # creates a list in memory
 
         self.connections = self.get_connections()
         self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_tcp_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
@@ -49,18 +52,17 @@ class PacketParser:
             self.extracted_data = self.combine_extracted_data()
             self.extracted_data_to_file()
 
-        self.cli_statistics = statistics_option
-        if self.cli_statistics:
+        if statistics_option:
             self.print_statistics()
 
     def get_packet_list(self):
         t_start = perf_counter()
-        packets = rdpcap(self.filepath)
+        packets = rdpcap(self.input_file)
         t_stop = perf_counter()
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Packet capture '{self.filepath}' loaded in " +
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Packet capture '{self.input_file}' loaded in " +
               "{:.2f}s".format(t_stop - t_start))
         self.logger.info(
-            "Packet capture '{self.filepath}' loaded in " + "{:.2f}s".format(t_stop - t_start))
+            "Packet capture '{self.input_file}' loaded in " + "{:.2f}s".format(t_stop - t_start))
         return packets
 
     def get_connections(self):
@@ -272,7 +274,7 @@ class PacketParser:
             return data
 
     def extract_certificates(self):
-        cmd = f'tshark -nr {self.filepath} -Y "tls.handshake.certificate" -V'
+        cmd = f'tshark -nr {self.input_file} -Y "tls.handshake.certificate" -V'
         output = subprocess.check_output(cmd, shell=True)
         lines = output.decode().splitlines()
         # print(lines)
@@ -411,16 +413,15 @@ class PacketParser:
         print(f">> Number of unique domain names: {len(self.domain_names)}")
         print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
 
-        top_count = 3
-        print(f">> Top {top_count} most common public source IP address")
+        print(f">> Top {self.STATISTICS_TOP_COUNT} most common public source IP address")
         table = PrettyTable(["Source IP", "Count"])
-        for ip, count in self.src_ip_counter.most_common(top_count):
+        for ip, count in self.src_ip_counter.most_common(self.STATISTICS_TOP_COUNT):
             table.add_row([ip, count])
         print(table)
 
-        print(f">> Top {top_count} most common public destination IP address")
+        print(f">> Top {self.STATISTICS_TOP_COUNT} most common public destination IP address")
         table = PrettyTable(["Destination IP", "Count"])
-        for ip, count in self.dst_ip_counter.most_common(top_count):
+        for ip, count in self.dst_ip_counter.most_common(self.STATISTICS_TOP_COUNT):
             table.add_row([ip, count])
         print(table)
 
@@ -436,7 +437,7 @@ class PacketParser:
         self.logger.info(f"Preparing extracted data for output")
         extracted_data = {}
 
-        extracted_data['filepath'] = self.filepath
+        extracted_data['filepath'] = self.input_file
 
         # start and end times of the processed packet capture
         extracted_data['capture_timestamps'] = dict(
@@ -491,4 +492,4 @@ class PacketParser:
             output.write(self.extracted_data)
 
     def get_filepath(self):
-        return self.filepath
+        return self.input_file

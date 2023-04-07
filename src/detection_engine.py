@@ -44,9 +44,14 @@ class DetectionEngine:
         self.c2_indicators_detected = False
         self.detected_iocs = {}
 
-        self.analyst_profile = analyst_profile
         self.packet_parser = packet_parser
         self.enrichment_enchine = enrichment_enchine
+
+        self.CHUNK_SIZE = analyst_profile.chunk_size
+        self.MAX_FREQUENCY = len(self.packet_parser.packets) * (analyst_profile.MAX_FREQUENCY / 100)
+        self.MAX_DURATION = analyst_profile.MAX_DURATION    # 14000 set for testing 'Qakbot.pcap'
+        self.MAX_HTML_SIZE = analyst_profile.MAX_HTML_SIZE
+        self.MAX_SUBDOMAIN_LENGTH = analyst_profile.MAX_SUBDOMAIN_LENGTH
 
         self.whitelisted_domains = self.get_domain_whitelist()
         self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
@@ -135,14 +140,12 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for connections with excessive frequency ...")
         logging.info("Looking for connections with excessive frequency")
 
-        MAX_FREQUENCY = len(self.packet_parser.packets) * (self.analyst_profile.MAX_FREQUENCY / 100)
-
         detected = False
         detected_connections = []
 
         # find connections with excessive frequency
         for connection, count in self.packet_parser.connection_frequency.items():
-            if count > MAX_FREQUENCY:
+            if count > self.MAX_FREQUENCY:
                 detected = True
                 entry = dict(
                     src_ip=connection[0],
@@ -180,8 +183,6 @@ class DetectionEngine:
         logging.info("Looking for connections with long duration")
 
         detected = False
-        MAX_DURATION = self.analyst_profile.MAX_DURATION    # 14000 set for testing 'Qakbot.pcap'
-        
         detected_connections = []
 
         for connection in self.packet_parser.connections:
@@ -200,7 +201,7 @@ class DetectionEngine:
                     last_packet = packets[-1]
                     duration = last_packet.time - first_packet.time
 
-                    if duration > MAX_DURATION:
+                    if duration > self.MAX_DURATION:
                         detected = True
                         entry = dict(
                             src_ip=src_ip,
@@ -239,8 +240,6 @@ class DetectionEngine:
         logging.info("Looking for unusual big HTML response size")
 
         detected = False
-        MAX_HTML_SIZE = self.analyst_profile.MAX_HTML_SIZE
-
         connection_sizes = []
 
         # TODO: REWORK to use http_sessions
@@ -250,7 +249,7 @@ class DetectionEngine:
                 response = packet.getlayer(http.HTTPResponse)
                 
                 # if packet has respone and Content Length, check if it is larger than the threshold
-                if response and response.Content_Length and int(response.Content_Length) > MAX_HTML_SIZE:
+                if response and response.Content_Length and int(response.Content_Length) > self.MAX_HTML_SIZE:
                     detected = True
                     connection = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
                     
@@ -279,13 +278,13 @@ class DetectionEngine:
             self.detected_iocs['big_HTML_response_size'] = connection_sizes
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTML response size{Fore.RESET}")
             logging.info(f"Detected unusual big HTML response size")
-            self.print_connections_with_big_HTML_response_size(connection_sizes, MAX_HTML_SIZE)
+            self.print_connections_with_big_HTML_response_size(connection_sizes)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTML response size not detected{Fore.RESET}")
             logging.info(f"Unusual big HTML response size not detected")
 
-    def print_connections_with_big_HTML_response_size(self, connection_sizes, MAX_HTML_SIZE):
+    def print_connections_with_big_HTML_response_size(self, connection_sizes):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTML response size")
         logging.info(f"Listing connections with unusual big HTML response size")
 
@@ -538,8 +537,6 @@ class DetectionEngine:
 
         # TODO : ADD DETECTION BASED ON THE DNS FREQUENCY
 
-        MAX_SUBDOMAIN_LENGTH = self.analyst_profile.MAX_SUBDOMAIN_LENGTH
-
         for packet in self.packet_parser.dns_packets:
             if packet.haslayer(DNSQR):  # pkt.qr == 0 ; DNS query
                 query = packet[DNSQR].qname.decode('utf-8')
@@ -559,7 +556,7 @@ class DetectionEngine:
                 if detected_whitelisted_domain:
                     continue
 
-                if len(subdomain) > MAX_SUBDOMAIN_LENGTH:    # check for long domain names
+                if len(subdomain) > self.MAX_SUBDOMAIN_LENGTH:    # check for long domain names
                     detected = True
                     domain = f"{domain}.{suffix}"   # build domain with TLD
 
@@ -652,8 +649,8 @@ class DetectionEngine:
         detected_ips = []
         c2_detected = False
 
-        chunk_size = 100 
-        ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+chunk_size] for i in range(0, len(self.packet_parser.combined_unique_ip_list), chunk_size)]
+        self.CHUNK_SIZE = 100 
+        ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+self.CHUNK_SIZE] for i in range(0, len(self.packet_parser.combined_unique_ip_list), self.CHUNK_SIZE)]
 
         feodotracker_results = []
         urlhaus_results = []
@@ -763,8 +760,8 @@ class DetectionEngine:
         detected_domains = []
         c2_detected = False
 
-        chunk_size = 100 
-        domain_chunks = [self.packet_parser.domain_names[i:i+chunk_size] for i in range(0, len(self.packet_parser.domain_names), chunk_size)]
+        self.CHUNK_SIZE = 100 
+        domain_chunks = [self.packet_parser.domain_names[i:i+self.CHUNK_SIZE] for i in range(0, len(self.packet_parser.domain_names), self.CHUNK_SIZE)]
 
         threatfox_results = []
 
@@ -803,8 +800,8 @@ class DetectionEngine:
         detected_urls = []
         c2_detected = False
 
-        chunk_size = 100 
-        url_chunks = [self.packet_parser.unique_urls[i:i+chunk_size] for i in range(0, len(self.packet_parser.unique_urls), chunk_size)]
+        self.CHUNK_SIZE = 100 
+        url_chunks = [self.packet_parser.unique_urls[i:i+self.CHUNK_SIZE] for i in range(0, len(self.packet_parser.unique_urls), self.CHUNK_SIZE)]
 
         urlhaus_results = []
         cursor = connection.cursor()

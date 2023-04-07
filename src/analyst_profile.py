@@ -10,6 +10,11 @@ class AnalystProfile:
         self.securitytrails_api_key = self.api_keys.get('securitytrails')
         self.shodan_api_key = self.api_keys.get('shodan')
 
+        # TODO: add checks
+        self.settings = config.get('settings')
+        self.statistics_top_count = self.settings.get('statistics_top_count')
+        self.chunk_size = self.settings.get('chunk_size')
+
         # checks in place 
         self.feeds = config.get('feeds')
         self.tor_node_list = self.feeds.get('tor_node_list')

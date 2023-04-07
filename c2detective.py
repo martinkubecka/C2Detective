@@ -128,7 +128,7 @@ def arg_formatter():
     return formatter
 
 
-def parse_arguments():
+def parse_arguments():  
     parser = argparse.ArgumentParser(formatter_class=arg_formatter(), prog='c2detective',
                                      description='Application for detecting command and control (C2) '
                                                  'communication through network traffic analysis.')
@@ -164,7 +164,7 @@ def parse_arguments():
 
     update_group = parser.add_argument_group('update options')
     update_group.add_argument('-utn', '--update-tor-nodes', action='store_true',
-                        help='update tor nodes list')   
+                        help='update tor node lists')   
     update_group.add_argument('-ucd', '--update-crypto-domains', action='store_true',
                         help='update crypto / cryptojacking based sites list')   
 
@@ -269,12 +269,12 @@ def main():
         packet_capture = PacketCapture(analyst_profile.sniffing, output_dir)
         input_file = packet_capture.capture_packets()
 
-    report_extracted_data_option = args.write_extracted
-    statistics_option = args.statistics
     if is_valid_file(input_file, "pcap"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading '{input_file}' file ...")
         logging.info(f"Loading '{input_file}' file")
-        packet_parser = PacketParser(input_file, output_dir, report_extracted_data_option, statistics_option)
+        report_extracted_data_option = args.write_extracted
+        statistics_option = args.statistics
+        packet_parser = PacketParser(analyst_profile, input_file, output_dir, report_extracted_data_option, statistics_option)
 
     if args.enrich:
         print('-' * terminal_size.columns)

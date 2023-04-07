@@ -120,7 +120,7 @@ enable options:
   -e, --enrich                   enable data enrichment
 
 update options:
-  -utn, --update-tor-nodes       update tor nodes list
+  -utn, --update-tor-nodes       update tor node lists
   -ucd, --update-crypto-domains  update crypto / cryptojacking based sites list
 ```
 
