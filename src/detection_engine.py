@@ -53,11 +53,12 @@ class DetectionEngine:
         self.MAX_HTML_SIZE = analyst_profile.MAX_HTML_SIZE
         self.MAX_SUBDOMAIN_LENGTH = analyst_profile.MAX_SUBDOMAIN_LENGTH
 
-        self.whitelisted_domains = self.get_domain_whitelist()
-        self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes()
-        self.crypto_domains = self.get_crypto_domains()
-        self.c2_http_headers = self.get_c2_http_headers()
-        self.c2_tls_certificate_values = self.get_c2_tls_certificate_values()
+        self.whitelisted_domains = self.get_domain_whitelist(analyst_profile.domain_whitelist_path)
+        self.tor_nodes, self.tor_exit_nodes = self.get_tor_nodes(analyst_profile.tor_node_list_path)
+        self.crypto_domains = self.get_crypto_domains(analyst_profile.crypto_domain_list_path)
+        self.c2_http_headers = self.get_c2_http_headers(analyst_profile.c2_http_headers_path)
+        self.c2_tls_certificate_values = self.get_c2_tls_certificate_values(analyst_profile.c2_tls_certificate_values_path)
+        self.ja3_rules = self.get_ja3_rules(analyst_profile.ja3_rules_path)
 
         self.detected_iocs['filepath'] =  self.packet_parser.get_filepath()
 
@@ -71,64 +72,54 @@ class DetectionEngine:
             logging.info(
                 f"Command & Control communication indicators not detected")
 
-    def get_c2_http_headers(self):
+    def get_c2_http_headers(self, c2_http_headers_path):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading known C2 HTTP headers ...")
         logging.info("Loading known C2 HTTP headers")
         
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/c2_http_headers.json"
-
-        with open(filepath, 'r') as http_headers:
+        with open(c2_http_headers_path, 'r') as http_headers:
             c2_http_headers = json.load(http_headers)
 
         return c2_http_headers
 
-    def get_tor_nodes(self):
+    def get_tor_nodes(self, tor_node_list_path):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Loading cached TOR node list ...")
         logging.info("Loading cached TOR node list")
 
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
-
-        with open(filepath, 'r') as tor_nodes_iocs:
+        with open(tor_node_list_path, 'r') as tor_nodes_iocs:
             data = json.load(tor_nodes_iocs)
             tor_nodes = data['all_nodes']
             exit_nodes = data['exit_nodes']
 
         return tor_nodes, exit_nodes
 
-    def get_crypto_domains(self):
+    def get_crypto_domains(self, crypto_domain_list_path):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading cached crypto / cryptojacking based sites list ...")
         logging.info("Loading cached crypto / cryptojacking based sites list")
 
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
-
-        with open(filepath, 'r') as crypto_domains_iocs:
+        with open(crypto_domain_list_path, 'r') as crypto_domains_iocs:
             data = json.load(crypto_domains_iocs)
             crypto_domains = data['crypto_domains']
 
         return crypto_domains
 
-    def get_c2_tls_certificate_values(self):
+    def get_c2_tls_certificate_values(self, c2_tls_certificate_values_path):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading known C2 values in TLS certificates ...")
         logging.info("Loading known C2 values in TLS certificates")
         
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/c2_tls_certificate_values.json"
-
-        with open(filepath, 'r') as tls_values:
+        with open(c2_tls_certificate_values_path, 'r') as tls_values:
             c2_tls_certificate_values = json.load(tls_values)
 
         return c2_tls_certificate_values
 
-    def get_domain_whitelist(self):
-        filepath = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/config/domain_whitelist.txt"
+    def get_domain_whitelist(self, domain_whitelist_path):
         whitelisted_domains = []
 
-        if os.path.isfile(filepath):
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading whitelisted domains ...")
-            logging.info("Loading whitelisted domains")
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading whitelisted domains ...")
+        logging.info("Loading whitelisted domains")
 
-            with open(filepath, "r") as whitelist:
-                whitelisted_domains = whitelist.read().splitlines()
+        with open(domain_whitelist_path, "r") as whitelist:
+            whitelisted_domains = whitelist.read().splitlines()
 
         return whitelisted_domains
 

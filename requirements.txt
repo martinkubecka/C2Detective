@@ -6,3 +6,4 @@ shodan
 prettytable
 colorama
 dgad
+pyja3

@@ -6,12 +6,14 @@ import requests
 import logging
 
 class TorNodes:
-    def __init__(self, tor_node_list, tor_exit_node_list):
+    def __init__(self, tor_node_list, tor_exit_node_list, tor_node_list_path):
         self.logger = logging.getLogger(__name__)
         # you can only fetch data every 30 minutes
         self.url_tor_node_list = tor_node_list
         self.url_tor_exit_nodes = tor_exit_node_list
-        self.tor_iocs_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
+
+        base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.tor_iocs_path = os.path.join(base_relative_path, tor_node_list_path)
         
     def update_tor_nodes(self):
         # fetching all nodes
@@ -37,6 +39,7 @@ class TorNodes:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while fetching Tor node list")
             logging.error(f"Error ocurred while fetching Tor node list", exc_info=True)
             exit_nodes = []
+        
         # caching fetched Tor nodes
         if not all_nodes or not exit_nodes:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Retrieving Tor IOCs was not successful")

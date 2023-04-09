@@ -6,10 +6,12 @@ import requests
 import logging
 
 class CryptoDomains:
-    def __init__(self, crypto_domains):
+    def __init__(self, crypto_domains, crypto_domain_list_path):
         self.logger = logging.getLogger(__name__)
         self.url_crypto_domains = crypto_domains
-        self.crypto_domains_iocs_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
+
+        base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.crypto_domains_iocs_path = os.path.join(base_relative_path, crypto_domain_list_path)
 
     def update_crypto_domains(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Fetching the most up-to-date crypto / cryptojacking based sites list ...")

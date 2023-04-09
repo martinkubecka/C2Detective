@@ -59,13 +59,18 @@ def is_valid_file(filename, filetype):
     return True
 
 
-def check_required_structure(output_dir):
-    base_relative_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}"
-    report_dir = f"{base_relative_path}/reports"
-    iocs_dir = f"{base_relative_path}/iocs"
-    tor_iocs_dir = f"{base_relative_path}/iocs/tor"
-    cypto_iocs_dir = f"{base_relative_path}/iocs/crypto_domains"
-    config_dir = f"{base_relative_path}/config"
+def check_required_structure(analyst_profile, output_dir):
+    base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+    report_dir = os.path.join(base_relative_path, "reports")
+    iocs_dir = os.path.join(base_relative_path, "iocs")
+    tor_iocs_dir = os.path.join(iocs_dir, "tor")
+    cypto_iocs_dir = os.path.join(iocs_dir, "crypto_domains")
+    jar3_iocs_dir = os.path.join(iocs_dir, "ja3")
+    config_dir = os.path.join(base_relative_path, "config")
+
+    domain_whitelist_path = os.path.join(base_relative_path, analyst_profile.domain_whitelist_path)
+    c2_http_headers_path = os.path.join(base_relative_path, analyst_profile.c2_http_headers_path)
+    c2_tls_certificate_values_path = os.path.join(base_relative_path, analyst_profile.c2_tls_certificate_values_path)
 
     if not output_dir == "reports":
         report_dir = output_dir
@@ -78,6 +83,8 @@ def check_required_structure(output_dir):
 
     missing_update_script = False
     missing_config_files = False
+    missing_files = False
+
     if not os.path.isdir(config_dir):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{config_dir}' for storing config files ...")
         logging.info(f"Creating '{config_dir}' for config files")
@@ -102,6 +109,33 @@ def check_required_structure(output_dir):
         os.mkdir(cypto_iocs_dir)
         missing_update_script = True
 
+    if not os.path.isdir(jar3_iocs_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{jar3_iocs_dir}' for JA3 method rules ...")
+        logging.info(f"Creating '{jar3_iocs_dir}' for JA3 method rules")
+        os.mkdir(jar3_iocs_dir)
+        missing_update_script = True
+
+    if not os.path.isfile(domain_whitelist_path):
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{domain_whitelist_path}' is missing")
+        logging.error(f"Requiered file '{domain_whitelist_path}' is missing")
+        missing_files = True
+
+    if not os.path.isfile(c2_http_headers_path):
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{c2_http_headers_path}' is missing")
+        logging.error(f"Requiered file '{c2_http_headers_path}' is missing")
+        missing_files = True
+
+    if not os.path.isfile(c2_tls_certificate_values_path):
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{c2_tls_certificate_values_path}' is missing")
+        logging.error(f"Requiered file '{c2_tls_certificate_values_path}' is missing")
+        missing_files = True
+
+    if missing_files:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
+        logging.error(f"Requiered files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
+        print("\nExiting program ...\n")
+        sys.exit(1)
+
     if missing_update_script:
         print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Download the missing update scripts from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
         logging.error(f"Download the missing update scripts from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
@@ -109,16 +143,22 @@ def check_required_structure(output_dir):
         sys.exit(1)
 
     if missing_config_files:
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
-        logging.error(f"Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/iocs'")
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/config'")
+        logging.error(f"Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/config'")
         print("\nExiting program ...\n")
         sys.exit(1)
         
 
 def load_config(filename):
-    with open(filename, "r") as ymlfile:
-        config = yaml.safe_load(ymlfile)
-    return config
+    try:
+        with open(filename, "r") as ymlfile:
+            config = yaml.safe_load(ymlfile)
+            return config
+    except yaml.parser.ParserError as e:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occured while parsing the configuration file")
+        logging.error(f"Error occured while parsing the configuration file ({e})")
+        print("\nExiting program ...\n")
+        sys.exit(1)
 
 
 def arg_formatter():
@@ -167,6 +207,8 @@ def parse_arguments():
                         help='update tor node lists')   
     update_group.add_argument('-ucd', '--update-crypto-domains', action='store_true',
                         help='update crypto / cryptojacking based sites list')   
+    update_group.add_argument('-ujr', '--update-ja3-rules', action='store_true',
+                        help='update JA3 rules')   
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -195,12 +237,6 @@ def main():
     terminal_size = os.get_terminal_size()
 
     print('-' * terminal_size.columns)
-    print(f"[{time.strftime('%H:%M:%S')}] [INFO] Verifying required directory structure ...")
-    logging.info("Verifying required directory structure")
-    output_dir = args.output
-    check_required_structure(output_dir)
-
-    print('-' * terminal_size.columns)
     if is_valid_file(args.config, "yml"):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading config '{args.config}' ...")
         logging.info(f"Loading config '{args.config}'")
@@ -210,12 +246,19 @@ def main():
             analyst_profile.print_config()
 
     print('-' * terminal_size.columns)
+    print(f"[{time.strftime('%H:%M:%S')}] [INFO] Verifying required directory structure ...")
+    logging.info("Verifying required directory structure")
+    output_dir = args.output
+    check_required_structure(analyst_profile, output_dir)
+
+    print('-' * terminal_size.columns)
     if args.update_tor_nodes:
         from iocs.tor.update_tor_nodes import TorNodes
-        tor_nodes = TorNodes(analyst_profile.tor_node_list, analyst_profile.tor_exit_node_list)
+        tor_nodes = TorNodes(analyst_profile.tor_node_list, analyst_profile.tor_exit_node_list, analyst_profile.tor_node_list_path)
         tor_nodes.update_tor_nodes()
     else:
-        file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/tor/tor_nodes.json"
+        base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        file_path = os.path.join(base_relative_path, analyst_profile.tor_node_list_path)
         if os.path.exists(file_path):
             modified_time = os.path.getmtime(file_path)
             current_time = time.time()
@@ -229,17 +272,18 @@ def main():
                 print(f"[{time.strftime('%H:%M:%S')}] [INFO] Tor node list is up-to-date")
                 logging.info(f"Tor node list is up-to-date")
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/tor/tor_nodes.json' does not exist (use '-utn' next time)")
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{file_path}' does not exist (use '-utn' next time)")
             logging.error(f"Required file '{file_path}' does not exist (use '-utn' next time)")
             print("\nExiting program ...\n")
             sys.exit(1)
 
     if args.update_crypto_domains:
         from iocs.crypto_domains.update_crypto_domains import CryptoDomains
-        crypto_domains = CryptoDomains(analyst_profile.crypto_domains)
+        crypto_domains = CryptoDomains(analyst_profile.crypto_domains, analyst_profile.crypto_domain_list_path)
         crypto_domains.update_crypto_domains()
     else:
-        file_path = f"{os.path.dirname(os.path.realpath(sys.argv[0]))}/iocs/crypto_domains/crypto_domains.json"
+        base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        file_path = os.path.join(base_relative_path, analyst_profile.crypto_domain_list_path)
         if os.path.exists(file_path):
             modified_time = os.path.getmtime(file_path)
             current_time = time.time()
@@ -253,8 +297,33 @@ def main():
                 print(f"[{time.strftime('%H:%M:%S')}] [INFO] Crypto / cryptojacking based sites list is up-to-date")
                 logging.info(f"Crypto / cryptojacking based sites list is up-to-date")
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '/iocs/crypto_domains/crypto_domains.json' does not exist (use '-ucd' next time)")
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{file_path}' does not exist (use '-ucd' next time)")
             logging.error(f"Required file '{file_path}' does not exist (use '-ucd' next time)")
+            print("\nExiting program ...\n")
+            sys.exit(1)
+
+    if args.update_ja3_rules:
+        from iocs.ja3.update_ja3_rules import JA3Rules
+        ja3_rules = JA3Rules(analyst_profile.ja3_rules, analyst_profile.ja3_rules_path)
+        ja3_rules.update_ja3_rules()
+    else:
+        base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        file_path = os.path.join(base_relative_path, analyst_profile.ja3_rules_path)
+        if os.path.exists(file_path):
+            modified_time = os.path.getmtime(file_path)
+            current_time = time.time()
+            time_diff = current_time - modified_time
+
+            # JA3 rules were not updated in the last 24 hours
+            if not time_diff < 24 * 60 * 60: 
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] It is recommended to update the Proofpoint Emerging Threats JA3 rules every 24 hours (use '-ujr' next time)")
+                logging.info(f"It is recommended to update the Proofpoint Emerging Threats JA3 rules every 24 hours (use '-ujr' next time)")
+            else:
+                print(f"[{time.strftime('%H:%M:%S')}] [INFO] Proofpoint Emerging Threats JA3 rules are up-to-date")
+                logging.info(f"Proofpoint Emerging Threats JA3 rules are up-to-date")
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{file_path}' does not exist (use '-ujr' next time)")
+            logging.error(f"Required file '{file_path}' does not exist (use '-ujr' next time)")
             print("\nExiting program ...\n")
             sys.exit(1)
 
@@ -305,6 +374,7 @@ def main():
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
+    # detection_engine.detect_malicious_ja3_digest()
     if args.dga:
         detection_engine.detect_dga()
     detection_engine.detect_dns_tunneling()

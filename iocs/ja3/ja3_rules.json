@@ -1,0 +1,508 @@
+{
+    "ja3_rules": [
+        {
+            "type": "Suspected Cobalt Strike Malleable C2 M1 (set)",
+            "hash": "eb88d0b3e1961a0562f006e5ce2a0b87"
+        },
+        {
+            "type": "Suspected Meterpreter Reverse Shell M1 (set)",
+            "hash": "8916410db85077a5460817142dcbc8de"
+        },
+        {
+            "type": "Suspected Meterpreter Reverse Shell M2 (set)",
+            "hash": "72a589da586844d7f0818ce684948eea"
+        },
+        {
+            "type": "Metaploit http scanner (tested: 4.11.5 Kali)",
+            "hash": "16f17c896273d1d098314a02e87dd4cb"
+        },
+        {
+            "type": "Metasploit CCS Scanner",
+            "hash": "950ccdd64d360a7b24c70678ac116a44"
+        },
+        {
+            "type": "Metasploit HeartBleed Scanner",
+            "hash": "ee031b874122d97ab269e0d8740be31a"
+        },
+        {
+            "type": "Metasploit SSL Scanner",
+            "hash": "6825b330bf9de50ccc8745553cb61b2f"
+        },
+        {
+            "type": "mitmproxy",
+            "hash": "4d01f8b1afc22e138127611b62f1e6ec"
+        },
+        {
+            "type": "mitmproxy",
+            "hash": "8ef6a005eae3d51b652ffe41984f8869"
+        },
+        {
+            "type": "Kali)",
+            "hash": "5eeeafdbc41e5ca7b81c92dbefa03ab7"
+        },
+        {
+            "type": "Kali)",
+            "hash": "f4262963691a8f123d4434c7308ad7fe"
+        },
+        {
+            "type": "Nikto (tested v2.1.6)",
+            "hash": "a563bb123396e545f5704a9a2d16bcb0"
+        },
+        {
+            "type": "AnglerEK",
+            "hash": "96eba628dcb2b47607192ba74a3b55ba"
+        },
+        {
+            "type": "AnglerEK",
+            "hash": "d55e755245ac118f2b1847c1c57b5e03"
+        },
+        {
+            "type": "Boleto Malspam",
+            "hash": "4f635262ad3fb6e634daee798082c788"
+        },
+        {
+            "type": "Boleto Malspam",
+            "hash": "e9273590c7875d6367325f8714890790"
+        },
+        {
+            "type": "Dridex",
+            "hash": "67f762b0ffe3aad00dfdb0e4b1acd8b5"
+        },
+        {
+            "type": "Dridex",
+            "hash": "85bedfc1914da556aab4518390798003"
+        },
+        {
+            "type": "Eitest Chrome Popup",
+            "hash": "098f55e27d8c4b0a590102cbdb3a5f3a"
+        },
+        {
+            "type": "Eitest/AnglerEK",
+            "hash": "ff94b48f555edc2f0a4c8256eb0d81de"
+        },
+        {
+            "type": "Fake Firefox Font Update",
+            "hash": "2efb07037a97b06201ab4fe7ec0c326e"
+        },
+        {
+            "type": "Fake Firefox Font Update",
+            "hash": "df5c30e670dba99f9270ed36060cf054"
+        },
+        {
+            "type": "Fake Firefox Font Update",
+            "hash": "a0e9f5d64349fb13191bc781f81f42e1"
+        },
+        {
+            "type": "FiestaEK",
+            "hash": "c1fbfd09bd0bab610be60dd6819688f4"
+        },
+        {
+            "type": "Gootkit",
+            "hash": "a34e8a810b5f390fc7aa5ed711fa6993"
+        },
+        {
+            "type": "Gootkit",
+            "hash": "c6e36d272db78ba559429e3d845606d1"
+        },
+        {
+            "type": "Java Based RAT",
+            "hash": "187dfde7edc8ceddccd3deeccc21daeb"
+        },
+        {
+            "type": "Malspam",
+            "hash": "243a279e5aaae8841edf46d00c05195e"
+        },
+        {
+            "type": "Malspam",
+            "hash": "e7d705a3286e19ea42f587b344ee6865"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "51b5c918558a4bfb50ce1ab1d5fddff7"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "852e7534b3f722d893a7750afb5ecdcc"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "aeae3901ecde8396b2f5648c02aeb37f"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "e107ef8ec0296e17c3f82de949b4066c"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "fd6bbdf835788b3c7d33372127470a06"
+        },
+        {
+            "type": "NuclearEK",
+            "hash": "fd2273056f386e0ba8004e897c337037"
+        },
+        {
+            "type": "RigEK",
+            "hash": "1848357994c2851c809cb01bae7d631c"
+        },
+        {
+            "type": "RigEK",
+            "hash": "2d44457ca7a1e0e754664c8469ce62a8"
+        },
+        {
+            "type": "Various Malfams",
+            "hash": "bafc6b01eae6f4350f5db6805ace208e"
+        },
+        {
+            "type": "TBot / Skynet Tor Botnet",
+            "hash": "b50f81ae37fb467713e167137cf14540"
+        },
+        {
+            "type": "Trickbot",
+            "hash": "294b2f1dc22c6e6c3231d2fe311d504b"
+        },
+        {
+            "type": "Unknown traffic associated with Dridex",
+            "hash": "b9103d9d134e0c59cafbe4ae0a8299a8"
+        },
+        {
+            "type": "USPS Malspam",
+            "hash": "3fab5d0fe3b2408c8b2251b46d3895de"
+        },
+        {
+            "type": "USPS Malspam",
+            "hash": "6f702efe6480d2a1c9f85b73b8a4794a"
+        },
+        {
+            "type": "USPS Malspam",
+            "hash": "92579701f145605e9edc0b01a901c6d5"
+        },
+        {
+            "type": "Various Eitest",
+            "hash": "1074895078955b2db60423ed2bf8ac23"
+        },
+        {
+            "type": "Various EK",
+            "hash": "51a7ad14509fd614c7bb3a50c4982b8c"
+        },
+        {
+            "type": "Various Malspam/RigEK",
+            "hash": "3b483d0b34894548b602e8d18cdc24c5"
+        },
+        {
+            "type": "Various Malspam/RigEK/Dreambot",
+            "hash": "c201b92f8b483fa388be174d6689f534"
+        },
+        {
+            "type": "Various RigEK/Cryptowall/Dridex",
+            "hash": "2d8794cb7b52b777bee2695e79c15760"
+        },
+        {
+            "type": "Possible Superfish",
+            "hash": "1b5a75e6d0f679aa312edb060ea8d932"
+        },
+        {
+            "type": "Possible Superfish",
+            "hash": "cfaa6f79904b33fdca83dbb5d4b537d4"
+        },
+        {
+            "type": "Rapid7 Nexpose",
+            "hash": "c22dea495cef869edbeb3458adaf497f"
+        },
+        {
+            "type": "sqlmap (tested: v1.0-dev kali)",
+            "hash": "615788655a0e65b71e47c3ebe2302564"
+        },
+        {
+            "type": "sqlmap (tested: v1.0.7.0 OS X)",
+            "hash": "1ab5d0f756e0692a975fda9a6474969f"
+        },
+        {
+            "type": "WPScan (tested: 2.9 Kali)",
+            "hash": "4c8ff2ddb1890482e5989b80e48b54d4"
+        },
+        {
+            "type": "[Abuse.ch] Possible Trickbot",
+            "hash": "1aa7bf8b97e540ca5edd75f7b8384bfa"
+        },
+        {
+            "type": "[Abuse.ch] Possible Quakbot",
+            "hash": "3cda52da4ade09f1f781ad2e82dcfa20"
+        },
+        {
+            "type": "[Abuse.ch] Possible Quakbot",
+            "hash": "7dd50e112cd23734a310b90f6f44a7cd"
+        },
+        {
+            "type": "[Abuse.ch] Possible Troldesh Ransomware",
+            "hash": "1be3ecebe5aa9d3654e6e703d81f6928"
+        },
+        {
+            "type": "[Abuse.ch] Possible Gootkit",
+            "hash": "c5235d3a8b9934b7fbbd204d50bc058d"
+        },
+        {
+            "type": "[Abuse.ch] Possible Trickbot",
+            "hash": "e62a5f4d538cbf169c2af71bec2399b4"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adwind",
+            "hash": "d2935c58fe676744fecc8614ee5356c7"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adwind",
+            "hash": "decfb48a53789ebe081b88aabb58ee34"
+        },
+        {
+            "type": "[Abuse.ch] Possible Dridex",
+            "hash": "51c64c77e60f3980eea90869b68c58a8"
+        },
+        {
+            "type": "[Abuse.ch] Possible Dridex",
+            "hash": "cb98a24ee4b9134448ffb5714fd870ac"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "f22bdd57e3a52de86cda40da2d84e83b"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "fb58831f892190644fe44e25bc830b45"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "0cc1e84568e471aa1d62ad4158ade6b5"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "2092e1fffb45d7e4a19a57f9bc5e203a"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "d18a4da84af59e1108862a39bae7c9d4"
+        },
+        {
+            "type": "[Abuse.ch] Possible Dridex",
+            "hash": "b386946a5a44d1ddcc843bc75336dfce"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "8498fe4268764dbf926a38283e9d3d8f"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "20dd18bdd3209ea718989030a6f93364"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "8991a387e4cc841740f25d6f5139f92d"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "e330bca99c8a5256ae126a55c4c725c5"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "83e04bc58d402f9633983cbf22724b02"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "b8f81673c0e1d29908346f3bab892b9b"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "d551fafc4f40f1dec2bb45980bfa9492"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "29085f03f8e8a03f0b399c5c7cf0b0b8"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "bc6c386f480ee97b9d9e52d472b772d8"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "b13d01846ad7a14a70bf030a16775c78"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "698e36219f3979420fa2581b21dac7ec"
+        },
+        {
+            "type": "[Abuse.ch] Possible Torrentlocker",
+            "hash": "1712287800ac91b34cadd5884ce85568"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "550dce18de1bb143e69d6dd9413b8355"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "d7150af4514b868defb854db0f62a441"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "df5c30e670dba99f9270ed36060cf054"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "7dcce5b76c8b17472d024758970a406b"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "911479ac8a0813ed1241b3686ccdade9"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "03e186a7f83285e93341de478334006e"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "17fd49722f8d11f3d76dce84f8e099a7"
+        },
+        {
+            "type": "[Abuse.ch] Possible Trickbot",
+            "hash": "fb00055a1196aeea8d1bc609885ba953"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "098f55e27d8c4b0a590102cbdb3a5f3a"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "e3b2ab1f9a56f2fb4c9248f2f41631fa"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "46efd49abcca8ea9baa932da68fdb529"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "b2b61db7b9490a60d270ccb20b462826"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "92579701f145605e9edc0b01a901c6d5"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "7691297bcb20a41233fd0a0baa0a3628"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "1543a7c46633acf71e8401baccbd0568"
+        },
+        {
+            "type": "[Abuse.ch] Possible Dridex",
+            "hash": "d6f04b5a910115f4b50ecec09d40a1df"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "93d056782d649deb51cda44ecb714bb0"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "5e573c9c9f8ba720ef9b18e9fce2e2f7"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "590a232d04d56409fab72e752a8a2634"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "849b04bdbd1d2b983f6e8a457e0632a8"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "9c2589e1c0e9f533a022c6205f9719e1"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "96eba628dcb2b47607192ba74a3b55ba"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "7c410ce832e848a3321432c9a82e972b"
+        },
+        {
+            "type": "[Abuse.ch] Possible Adware",
+            "hash": "f6fd83a21f9f3c5f9ff7b5c63bbc179d"
+        },
+        {
+            "type": "[Abuse.ch] Possible Ransomware",
+            "hash": "2d8794cb7b52b777bee2695e79c15760"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "fd80fa9c6120cdeea8520510f3c644ac"
+        },
+        {
+            "type": "[Abuse.ch] Possible Gozi",
+            "hash": "57f3642b4e37e28f5cbe3020c9331b4c"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "906004246f3ba5e755b043c057254a29"
+        },
+        {
+            "type": "[Abuse.ch] Possible Trickbot",
+            "hash": "c50f6a8b9173676b47ba6085bd0c6cee"
+        },
+        {
+            "type": "[Abuse.ch] Possible Gozi",
+            "hash": "c201b92f8b483fa388be174d6689f534"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "b90bdbe961a648f0427db21aaa6ccb59"
+        },
+        {
+            "type": "[Abuse.ch] Possible Tofsee",
+            "hash": "9f62c4f26b90d3d757bea609e82f2eaf"
+        },
+        {
+            "type": "Trojan.AndroidOS.Jocker.snt 1",
+            "hash": "2f514a024266e9e8d11f10e779168579"
+        },
+        {
+            "type": "Possible BAZAR Backdoor CnC",
+            "hash": "f5e62b5a2ed9467df09fae7a8a54dda6"
+        },
+        {
+            "type": "Possible POSHC2 Client CnC",
+            "hash": "c12f54a3f91dc7bafd92cb59fe009a35"
+        },
+        {
+            "type": "Possible InnocenceBot CnC",
+            "hash": "9551e38f83daab8bcbc283ec0806cf65"
+        },
+        {
+            "type": "Remcos 3.x TLS Connection",
+            "hash": "a85be79f7b569f1df5e6087b69deb493"
+        },
+        {
+            "type": "Possible RustyBuer Client Activity",
+            "hash": "6cc312d5b10bcbc97c4619603a24131b"
+        },
+        {
+            "type": "Possible Rclone Client Activity",
+            "hash": "d0ee3237a14bbd89ca4d2b5356ab20ba"
+        },
+        {
+            "type": "Possible Nessus Client",
+            "hash": "9598288c48f0a784d8e153b0df2b3bd1"
+        },
+        {
+            "type": "Possible AnchorMail CnC Traffic",
+            "hash": "c216e752cae6f8755fd27f561d031636"
+        },
+        {
+            "type": "DeimosC2 Agent Activity (set)",
+            "hash": "e564ee1b7bcae4467d8c759df910ed9c"
+        },
+        {
+            "type": "Neutrino",
+            "hash": "a7dfa1673bb090cab6b6658861f43473"
+        }
+    ]
+}

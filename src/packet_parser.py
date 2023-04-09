@@ -140,7 +140,6 @@ class PacketParser:
                 src_port = packet[TCP].sport
                 dst_port = packet[TCP].dport
 
-
                 # if src or dst ip is public, further process this connection
                 if not ip_address(src_ip).is_private or not ip_address(dst_ip).is_private:
 
