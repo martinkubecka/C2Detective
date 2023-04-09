@@ -123,6 +123,16 @@ class DetectionEngine:
 
         return whitelisted_domains
 
+    def get_ja3_rules(self, ja3_rules_path):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Loading Proofpoint Emerging Threats JA3 rules ...")
+        logging.info("Loading Proofpoint Emerging Threats JA3 rules")
+
+        with open(ja3_rules_path, 'r') as ja3_iocs:
+            data = json.load(ja3_iocs)
+            ja3_rules = data['ja3_rules']
+
+        return ja3_rules
+
     # ----------------------------------------------------------------------------------------------------------------
     # ------------------------------------------- NETWORK TRAFFIC DETECTION ------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------
@@ -586,6 +596,48 @@ class DetectionEngine:
         for domain, values in detected_queries.items():
             print(f">> Domain '{Fore.RED}{domain}{Fore.RESET}' queried '{values['frequency']}' times")
             print(f">>>> DNS query example with frequency: '{Fore.RED}{values['queries'][0]}{Fore.RESET}'")
+
+    def detect_malicious_ja3_digest(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious JA3 fingerprints ...")
+        logging.info("Looking for known malicious JA3 fingerprints")
+
+        detected = False
+        detected_connections = []
+
+        for ja3_dict in self.packet_parser.ja3_digests:
+            for ja3_rule in self.ja3_rules:
+                    # print(f"Comparing {ja3_dict.get('ja3_digest')} and {ja3_rule.get('hash')}")
+
+                    if ja3_dict.get('ja3_digest') == ja3_rule.get('hash'):
+                        detected = True
+                        entry = dict(
+                            timestamp=ja3_dict.get('timestamp'),
+                            ja3=ja3_dict.get('ja3'),
+                            ja3_digest=ja3_dict.get('ja3_digest'),
+                            type=ja3_rule.get('type'),
+                            src_ip=ja3_dict.get('source_ip'),
+                            src_port=ja3_dict.get('source_port'),
+                            dst_ip=ja3_dict.get('destination_ip'),
+                            dst_port=ja3_dict.get('destination_port')
+                        )
+                        detected_connections.append(entry)
+
+        if detected:
+            self.c2_indicators_detected = True
+            self.detected_iocs['JA3'] = detected_connections
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious JA3 fingerprints{Fore.RESET}")
+            logging.info(f"Detected known malicious JA3 fingerprints. (detected_connections : {detected_connections})")
+            self.print_detected_ja3_digists(detected_connections)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious JA3 fingerprints not detected{Fore.RESET}")
+            logging.info(f"Known malicious JA3 fingerprints not detected")
+
+    def print_detected_ja3_digists(self, detected_connections):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected JA3 fingerprints")
+        logging.info(f"Listing information about detected JA3 fingerprints")
+
+        for entry in detected_connections:
+            print(f">> '{entry.get('type')}' : {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
     # ----------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------ C2Hunter Plugin -----------------------------------------------

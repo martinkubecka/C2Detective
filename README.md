@@ -185,6 +185,7 @@ update options:
 - [x] detect known C2 default HTTP headers
 - [x] detect known C2 values in TLS certificates
 - [x] detect signs of DNS based covert channels (DNS Tunneling)
+- [x] detect know malicious JA3 (TLS negotiation) fingerprints
 
 > *currently working on detection features*
 
@@ -209,7 +210,6 @@ update options:
 
 #### Detection
 
-- [ ] detect C2 communication based on the JA3 method (TLS negotiation fingerprint) 
 - [ ] detect signs of ICMP based covert channels (ICMP Tunneling)
 - [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] implement detection confidence scoring system

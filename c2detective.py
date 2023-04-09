@@ -374,7 +374,7 @@ def main():
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTML_response_size()
     detection_engine.detect_known_c2_tls_values()
-    # detection_engine.detect_malicious_ja3_digest()
+    detection_engine.detect_malicious_ja3_digest()
     if args.dga:
         detection_engine.detect_dga()
     detection_engine.detect_dns_tunneling()

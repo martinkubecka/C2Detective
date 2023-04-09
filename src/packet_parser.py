@@ -47,6 +47,7 @@ class PacketParser:
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
         self.certificates = self.extract_certificates()
+        self.ja3_digests = self.get_ja3_digests()
 
         if report_extracted_data_option:
             self.extracted_data = self.combine_extracted_data()
@@ -399,6 +400,27 @@ class PacketParser:
 
         return certificates
 
+    def get_ja3_digests(self):
+
+        ja3_digests = []
+        try:
+            cmd = f'ja3 --json --any_port {self.input_file}'
+            output = subprocess.check_output(cmd, shell=True)
+
+            # parse the JSON output
+            ja3_digests = json.loads(output)
+
+            # iterate through each dictionary in the list and convert the timestamp value
+            for item in ja3_digests:
+                timestamp = datetime.fromtimestamp(round(item['timestamp'], 6)).strftime('%Y-%m-%d %H:%M:%S') 
+                item['timestamp'] = timestamp
+        
+        except Exception as e:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occured while running the 'ja3' application ({e})")
+            logging.error(f"Error occured while running the 'ja3' application ({e})")
+
+        return ja3_digests
+
     # -------------------------------------------------------------------------------------------
 
     def print_statistics(self): 
@@ -479,6 +501,9 @@ class PacketParser:
 
         # extracted data from TLS certificates
         extracted_data['tls_certificates'] = self.certificates
+
+        # generated ja3 fingerprint
+        extracted_data['ja3_fingerprints'] = self.ja3_digests
 
         return json.dumps(extracted_data, indent=4)
 
