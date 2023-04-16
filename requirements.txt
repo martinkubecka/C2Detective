@@ -7,3 +7,4 @@ prettytable
 colorama
 dgad
 pyja3
+Jinja2

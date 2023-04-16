@@ -68,6 +68,7 @@ def check_required_structure(analyst_profile, output_dir):
     jar3_iocs_dir = os.path.join(iocs_dir, "ja3")
     config_dir = os.path.join(base_relative_path, "config")
 
+    # TODO: check 'templates' dir and file
     domain_whitelist_path = os.path.join(base_relative_path, analyst_profile.domain_whitelist_path)
     c2_http_headers_path = os.path.join(base_relative_path, analyst_profile.c2_http_headers_path)
     c2_tls_certificate_values_path = os.path.join(base_relative_path, analyst_profile.c2_tls_certificate_values_path)
@@ -408,9 +409,15 @@ def main():
     detection_engine.evaluate_detection()
 
     print('-' * terminal_size.columns)
-    detected_iocs = detection_engine.get_detected_iocs() 
-    detection_reporter = DetectionReporter(output_dir, detected_iocs)
-    detection_reporter.write_detected_iocs_to_file()
+    extracted_data = packet_parser.get_extracted_data()
+    detected_iocs = detection_engine.get_detected_iocs()
+    if extracted_data and detected_iocs:
+        detection_reporter = DetectionReporter(output_dir, extracted_data, detected_iocs)
+        detection_reporter.write_detected_iocs_to_file()
+        detection_reporter.create_html_analysis_report()
+    else:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] The provided data is incomplete, therefore, exporting detected IOCs is not possible ...")
+        logging.error(f"The provided data is incomplete, therefore, exporting detected IOCs is not possible")
 
     print('-' * terminal_size.columns)
     print(f"\n[{time.strftime('%H:%M:%S')}] [INFO] All done. Exiting program ...\n")

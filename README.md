@@ -97,7 +97,7 @@ $ getcap /usr/bin/python3.10
 
 ```
 usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [--print-config] [-d] [-g] [-e] [-utn]
-                   [-ucd]
+                   [-ucd] [-ujr]
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
@@ -122,6 +122,7 @@ enable options:
 update options:
   -utn, --update-tor-nodes       update tor node lists
   -ucd, --update-crypto-domains  update crypto / cryptojacking based sites list
+  -ujr, --update-ja3-rules       update JA3 rules
 ```
 
 ---
@@ -136,8 +137,8 @@ update options:
 - [x] load configurations from config file
   - [x] enrichment services enabling and their API keys
   - [x] option for setting custom thresholds for detecion
-- [x] update options for Tor node list and crypto / cryptojacking based sites list
-  - [x] notify the user if Tor node list or crypto / cryptojacking based sites list is out-of-date  
+- [x] update options for Tor node list, crypto based sites list and Proofpoint ET JA3 rules
+  - [x] notify the user if Tor node list, crypto based sites list or Proofpoint ET JA3 rules is out-of-date
 - [x] option for packet capturing
 
 #### Packet Capture Analysis

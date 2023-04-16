@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>C2Detective Analysis Report</title>
+    <style>
+        .report-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .report-table th,
+        .report-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .report-table th {
+            background-color: #f2f2f2;
+        }
+
+        .general-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .general-table td:first-child {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .general-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        hr {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>C2Detective Analysis Report</h1>
+
+    <hr>
+    <h2>General information</h2>
+    <table class="general-table">
+        <tr>
+            <td>Capture file path</td>
+            <td>{{ extracted_data.get("filepath") }}</td>
+        </tr>
+        <tr>
+            <td>Capture file path</td>
+            <td>{{ extracted_data.get("filepath") }}</td>
+        </tr>
+        <tr>
+            <td>Analysis timestamp</td>
+            <td>{{ extracted_data.get("analysis_timestamp") }}</td>
+        </tr>
+        <tr>
+            <td>Capture file SHA256</td>
+            <td>{{ extracted_data.get("capture_sha256") }}</td>
+        </tr>
+        <tr>
+            <td>Capture start time</td>
+            <td>{{ extracted_data.get("capture_timestamps").get("start_time") }}</td>
+        </tr>
+        <tr>
+            <td>Capture end time</td>
+            <td>{{ extracted_data.get("capture_timestamps").get("end_time") }}</td>
+        </tr>
+        <tr>
+            <td>Number of all connections</td>
+            <td>{{ extracted_data.get("number_of_all_connections") }}</td>
+        </tr>
+        <tr>
+            <td>Number of external connections</td>
+            <td>{{ extracted_data.get("number_of_external_connections") }}</td>
+        </tr>
+        <tr>
+            <td>Number of unique domain names</td>
+            <td>{{ extracted_data.get("number_of_unique_domain_names") }}</td>
+        </tr>
+        <tr>
+            <td>Number of unique public IP addresses</td>
+            <td>{{ extracted_data.get("number_of_unique_public_IP_addresses") }}</td>
+        </tr>
+        <tr>
+            <td>Number of HTTP sessions</td>
+            <td>{{ extracted_data.get("number_of_HTTP_sessions") }}</td>
+        </tr>
+        <tr>
+            <td>Number of extracted URLs</td>
+            <td>{{ extracted_data.get("number_of_extracted_URLs") }}</td>
+        </tr>
+        <tr>
+            <td>Number of extracted TLS certificates</td>
+            <td>{{ extracted_data.get("number_of_extracted_TLS_certificates") }}</td>
+        </tr>
+    </table>
+
+    <hr>
+    <h2>Connections with excessive frequency</h2>
+    <table class="report-table">
+        <tr>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+            <th>Frequency</th>
+        </tr>
+        {% for entry in detected_iocs["excessive_frequency"] %}
+        <tr>
+            <td>{{ entry["src_ip"] }}</td>
+            <td>{{ entry["src_port"] }}</td>
+            <td>{{ entry["dst_ip"] }}</td>
+            <td>{{ entry["dst_port"] }}</td>
+            <td>{{ entry["frequency"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <hr>
+    <h2>Long connections</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Unusual big HTML response size</h2>
+    <table class="report-table">
+        <tr>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+            <th>Response Size</th>
+        </tr>
+        {% for entry in detected_iocs["big_HTML_response_size"] %}
+        <tr>
+            <td>{{ entry["src_ip"] }}</td>
+            <td>{{ entry["src_port"] }}</td>
+            <td>{{ entry["dst_ip"] }}</td>
+            <td>{{ entry["dst_port"] }}</td>
+            <td>{{ entry["response_size"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <hr>
+    <h2>Malicious HTTP headers</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Malicious TLS certificate values</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Outgoing traffic to Tor</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Tor traffic</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Detected DGA Domains</h2>
+    <!-- <ul>
+        {% for domain in detected_iocs["DGA_domains"] %}
+            <li>{{ domain }}</li>
+        {% endfor %}
+    </ul> -->
+
+    <hr>
+    <h2>DNS Tunneling</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>JA3</h2>
+    <table class="report-table">
+        <tr>
+            <th>Timestamp</th>
+            <th>JA3</th>
+            <th>JA3 Digest</th>
+            <th>Type</th>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+        </tr>
+        {% for entry in detected_iocs["JA3"] %}
+        <tr>
+            <td>{{ entry["timestamp"] }}</td>
+            <td>{{ entry["ja3"] }}</td>
+            <td>{{ entry["ja3_digest"] }}</td>
+            <td>{{ entry["type"] }}</td>
+            <td>{{ entry["src_ip"] }}</td>
+            <td>{{ entry["src_port"] }}</td>
+            <td>{{ entry["dst_ip"] }}</td>
+            <td>{{ entry["dst_port"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <hr>
+    <h2>C2 IP addresses</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>C2 domains</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>C2 URLs</h2>
+    <!-- TODO -->
+
+    <hr>
+    <h2>Requested crypto / cryptojacking domains</h2>
+    <!-- TODO -->
+
+</body>
+
+</html>

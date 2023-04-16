@@ -9,6 +9,7 @@ import time
 from prettytable import PrettyTable
 from collections import Counter
 import base64
+import hashlib
 
 
 """
@@ -459,6 +460,21 @@ class PacketParser:
         extracted_data = {}
 
         extracted_data['filepath'] = self.input_file
+        extracted_data['analysis_timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        with open(self.input_file, 'rb') as f:
+            input_file_sha256 = hashlib.sha256()
+            for chunk in iter(lambda: f.read(4096), b''):
+                input_file_sha256.update(chunk)
+        extracted_data['capture_sha256'] = input_file_sha256.hexdigest()
+
+        extracted_data['number_of_all_connections'] = len(self.all_connections)
+        extracted_data['number_of_external_connections'] = len(self.external_tcp_connections)
+        extracted_data['number_of_unique_domain_names'] = len(self.domain_names)
+        extracted_data['number_of_unique_public_IP_addresses'] = len(self.combined_unique_ip_list)
+        extracted_data['number_of_HTTP_sessions'] = len(self.http_sessions)
+        extracted_data['number_of_extracted_URLs'] = len(self.unique_urls)
+        extracted_data['number_of_extracted_TLS_certificates'] = len(self.certificates)
 
         # start and end times of the processed packet capture
         extracted_data['capture_timestamps'] = dict(
@@ -505,7 +521,7 @@ class PacketParser:
         # generated ja3 fingerprint
         extracted_data['ja3_fingerprints'] = self.ja3_digests
 
-        return json.dumps(extracted_data, indent=4)
+        return extracted_data
 
     def extracted_data_to_file(self):
         report_output_path = f"{self.output_dir}/extracted_data.json"
@@ -513,7 +529,10 @@ class PacketParser:
         self.logger.info(f"Writing extracted data to '{report_output_path}'")
 
         with open(report_output_path, "w") as output:
-            output.write(self.extracted_data)
+            output.write(json.dumps(self.extracted_data, indent=4))
+
+    def get_extracted_data(self):
+        return self.extracted_data
 
     def get_filepath(self):
         return self.input_file
