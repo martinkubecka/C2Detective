@@ -342,21 +342,27 @@ class DetectionEngine:
 
             for c2_framework, malicious_tls_values in self.c2_tls_certificate_values.items():
                 detected_value = False
+                detected_malicious_value = ""
 
                 for malicious_value in malicious_tls_values:
 
                     if malicious_value in entry.get('serialNumber'):
                         detected_value = True
+                        detected_malicious_value = malicious_value
 
                     for value in issuer_values:
                         if malicious_value in value:
                             detected_value = True
+                            detected_malicious_value = malicious_value
 
                     for value in subject_values:
                         if malicious_value in value:
                             detected_value = True
+                            detected_malicious_value = malicious_value
 
             if detected_value:
+                entry['c2_framework'] = c2_framework
+                entry['malicious_value'] = detected_malicious_value
                 detected_certificates.append(entry)
 
         if detected_certificates:
