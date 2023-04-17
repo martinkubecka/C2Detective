@@ -271,7 +271,7 @@ class DetectionEngine:
                             'src_port': packet[TCP].sport,
                             'dst_ip': packet[IP].dst,
                             'dst_port': packet[TCP].dport,
-                            'respone_size': int(response.Content_Length)
+                            'response_size': int(response.Content_Length)
                         })
 
         if detected:
@@ -290,7 +290,7 @@ class DetectionEngine:
         logging.info(f"Listing connections with unusual big HTML response size")
 
         for entry in connection_sizes:
-            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['respone_size']} bytes")
+            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['response_size']} bytes")
 
     def detect_known_malicious_HTTP_headers(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious HTTP headers ...")

@@ -39,6 +39,12 @@
         hr {
             border: 1px solid black;
         }
+
+        .not-detected {
+            color: rgb(34, 158, 23);
+            font-size: 16px;
+            font-weight: bold,
+        }
     </style>
 </head>
 
@@ -49,10 +55,6 @@
     <hr>
     <h2>General information</h2>
     <table class="general-table">
-        <tr>
-            <td>Capture file path</td>
-            <td>{{ extracted_data.get("filepath") }}</td>
-        </tr>
         <tr>
             <td>Capture file path</td>
             <td>{{ extracted_data.get("filepath") }}</td>
@@ -105,6 +107,7 @@
 
     <hr>
     <h2>Connections with excessive frequency</h2>
+    {% if detected_iocs.get("excessive_frequency") %}
     <table class="report-table">
         <tr>
             <th>Source IP</th>
@@ -113,23 +116,32 @@
             <th>Destination Port</th>
             <th>Frequency</th>
         </tr>
-        {% for entry in detected_iocs["excessive_frequency"] %}
+        {% for entry in detected_iocs.get("excessive_frequency") %}
         <tr>
-            <td>{{ entry["src_ip"] }}</td>
-            <td>{{ entry["src_port"] }}</td>
-            <td>{{ entry["dst_ip"] }}</td>
-            <td>{{ entry["dst_port"] }}</td>
-            <td>{{ entry["frequency"] }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
+            <td>{{ entry.get("frequency") }}</td>
         </tr>
         {% endfor %}
     </table>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Long connections</h2>
+    {% if detected_iocs.get("long_connection") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Unusual big HTML response size</h2>
+    {% if detected_iocs.get("big_HTML_response_size") %}
     <table class="report-table">
         <tr>
             <th>Source IP</th>
@@ -140,45 +152,78 @@
         </tr>
         {% for entry in detected_iocs["big_HTML_response_size"] %}
         <tr>
-            <td>{{ entry["src_ip"] }}</td>
-            <td>{{ entry["src_port"] }}</td>
-            <td>{{ entry["dst_ip"] }}</td>
-            <td>{{ entry["dst_port"] }}</td>
-            <td>{{ entry["response_size"] }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
+            <td>{{ entry.get("response_size") }}</td>
         </tr>
         {% endfor %}
     </table>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Malicious HTTP headers</h2>
+    {% if detected_iocs.get("malicious_HTTP_headers") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Malicious TLS certificate values</h2>
+    {% if detected_iocs.get("malicious_TLS_certificates") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>Outgoing traffic to Tor</h2>
+    <h2>Outgoing traffic to Tor exit nodes</h2>
+    {% if detected_iocs.get("outgoing_Tor_network_traffic") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Tor traffic</h2>
+    {% if detected_iocs.get("Tor_network_traffic") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>Detected DGA Domains</h2>
-    <!-- <ul>
+    <h2>Detected DGA domain names</h2>
+    {% if detected_iocs.get("DGA_domains") %}
+    <ul>
         {% for domain in detected_iocs["DGA_domains"] %}
-            <li>{{ domain }}</li>
+        <li>{{ domain }}</li>
         {% endfor %}
-    </ul> -->
+    </ul>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>DNS Tunneling</h2>
+    {% if detected_iocs.get("DNS_Tunneling") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>JA3</h2>
+    <h2>JA3 matches</h2>
+    {% if detected_iocs.get("DNS_Tunneling") %}
     <table class="report-table">
         <tr>
             <th>Timestamp</th>
@@ -203,22 +248,51 @@
         </tr>
         {% endfor %}
     </table>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>C2 IP addresses</h2>
+    <h2>Connections with C2 IP addresses</h2>
+    {% if detected_iocs.get("c2_ip_address_connection") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>C2 domains</h2>
+    <h2>Queried C2 domain names</h2>
+    {% if detected_iocs.get("c2_domain") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
-    <h2>C2 URLs</h2>
+    <h2>Requested C2 URLs</h2>
+    {% if detected_iocs.get("c2_url") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
 
     <hr>
     <h2>Requested crypto / cryptojacking domains</h2>
+    {% if detected_iocs.get("crypto_domains") %}
+    <p>DETECTED</p>
     <!-- TODO -->
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
+
+    <hr>
+    <div style="text-align: right;">
+        <p>Generated by <a href="https://github.com/martinkubecka/C2Detective" target="_blank">C2Detective</a> on {{ current_datetime }}</p>
+        <p></p>>
+    </div>
 
 </body>
 

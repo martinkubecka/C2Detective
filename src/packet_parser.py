@@ -50,6 +50,8 @@ class PacketParser:
         self.certificates = self.extract_certificates()
         self.ja3_digests = self.get_ja3_digests()
 
+        self.statistics = self.get_statistics()
+        
         if report_extracted_data_option:
             self.extracted_data = self.combine_extracted_data()
             self.extracted_data_to_file()
@@ -424,16 +426,38 @@ class PacketParser:
 
     # -------------------------------------------------------------------------------------------
 
+    def get_statistics(self):
+        statistics = {}
+
+        statistics["analysis_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        with open(self.input_file, 'rb') as f:
+            input_file_sha256 = hashlib.sha256()
+            for chunk in iter(lambda: f.read(4096), b''):
+                input_file_sha256.update(chunk)
+        statistics["capture_sha256"] = input_file_sha256.hexdigest()
+        
+        statistics["capture_start_time"] = self.start_time
+        statistics["capture_end_time"] = self.end_time
+        statistics["number_of_all_connections"] = len(self.all_connections)
+        statistics["number_of_external_connections"] = len(self.external_tcp_connections)
+        statistics["number_of_unique_domain_names"] = len(self.domain_names)
+        statistics["number_of_unique_public_IP_addresses"] = len(self.combined_unique_ip_list)
+        statistics["number_of_HTTP_sessions"] = len(self.http_sessions)
+        statistics["number_of_extracted_URLs"] = len(self.unique_urls)
+        statistics["number_of_extracted_TLS_certificates"] = len(self.certificates)
+
+        return statistics
+
     def print_statistics(self): 
         print('-' * os.get_terminal_size().columns)
-        print(f">> Packet capture stared at: {self.start_time}")
-        print(f">> Packet capture ended at: {self.end_time}")
-        
-        print(f">> Number of all connections: {len(self.all_connections)}")
-        print(
-            f">> Number of external connections: {len(self.external_tcp_connections)}")
-        print(f">> Number of unique domain names: {len(self.domain_names)}")
-        print(f">> Number of unique public IP addresses: {len(self.combined_unique_ip_list)}")
+        print(f">> Packet capture SHA256: {self.statistics.get('capture_sha256')}")
+        print(f">> Packet capture stared at: {self.statistics.get('capture_start_time')}")
+        print(f">> Packet capture ended at: {self.statistics.get('capture_end_time')}")
+        print(f">> Number of all connections: {self.statistics.get('number_of_all_connections')}")
+        print(f">> Number of external connections: {self.statistics.get('number_of_external_connections')}")
+        print(f">> Number of unique domain names: {self.statistics.get('number_of_unique_domain_names')}")
+        print(f">> Number of unique public IP addresses: {self.statistics.get('number_of_unique_public_IP_addresses')}")
 
         print(f">> Top {self.STATISTICS_TOP_COUNT} most common public source IP address")
         table = PrettyTable(["Source IP", "Count"])
@@ -447,12 +471,9 @@ class PacketParser:
             table.add_row([ip, count])
         print(table)
 
-        print(f">> Number of HTTP sessions: {len(self.http_sessions)}")
-        # print(f">> Number of HTTP payloads: {len(self.http_payloads)}")   # compare number with sessions
-        # print(f">> Number of HTTP GET requests : {len(self.http_get_requests)}") # compare number with urls
-        print(f">> Number of extracted URLs : {len(self.unique_urls)}")
-
-        print(f">> Number of extracted TLS certificates : {len(self.certificates)}")
+        print(f">> Number of HTTP sessions: {self.statistics.get('number_of_HTTP_sessions')}")
+        print(f">> Number of extracted URLs : {self.statistics.get('number_of_extracted_URLs')}")
+        print(f">> Number of extracted TLS certificates : {self.statistics.get('number_of_extracted_TLS_certificates')}")
 
     def combine_extracted_data(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Preparing extracted data for output ...")
@@ -460,27 +481,19 @@ class PacketParser:
         extracted_data = {}
 
         extracted_data['filepath'] = self.input_file
-        extracted_data['analysis_timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        with open(self.input_file, 'rb') as f:
-            input_file_sha256 = hashlib.sha256()
-            for chunk in iter(lambda: f.read(4096), b''):
-                input_file_sha256.update(chunk)
-        extracted_data['capture_sha256'] = input_file_sha256.hexdigest()
-
-        extracted_data['number_of_all_connections'] = len(self.all_connections)
-        extracted_data['number_of_external_connections'] = len(self.external_tcp_connections)
-        extracted_data['number_of_unique_domain_names'] = len(self.domain_names)
-        extracted_data['number_of_unique_public_IP_addresses'] = len(self.combined_unique_ip_list)
-        extracted_data['number_of_HTTP_sessions'] = len(self.http_sessions)
-        extracted_data['number_of_extracted_URLs'] = len(self.unique_urls)
-        extracted_data['number_of_extracted_TLS_certificates'] = len(self.certificates)
-
-        # start and end times of the processed packet capture
+        extracted_data['analysis_timestamp'] = self.statistics.get("analysis_timestamp")
+        extracted_data['capture_sha256'] = self.statistics.get("capture_sha256")
         extracted_data['capture_timestamps'] = dict(
-            start_time=self.start_time,
-            end_time=self.end_time
+            start_time=self.statistics.get("capture_start_time"),
+            end_time=self.statistics.get("capture_end_time")
         )
+        extracted_data['number_of_all_connections'] = self.statistics.get("number_of_all_connections")
+        extracted_data['number_of_external_connections'] = self.statistics.get("number_of_external_connections")
+        extracted_data['number_of_unique_domain_names'] = self.statistics.get("number_of_unique_domain_names")
+        extracted_data['number_of_unique_public_IP_addresses'] = self.statistics.get("number_of_unique_public_IP_addresses")
+        extracted_data['number_of_HTTP_sessions'] = self.statistics.get("number_of_HTTP_sessions")
+        extracted_data['number_of_extracted_URLs'] = self.statistics.get("number_of_extracted_URLs")
+        extracted_data['number_of_extracted_TLS_certificates'] = self.statistics.get("number_of_extracted_TLS_certificates")
 
         # domain names from DNS queries
         extracted_data['extracted_domains'] = list(self.domain_names)

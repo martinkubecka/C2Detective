@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from jinja2 import Environment, FileSystemLoader
-
+import datetime
 
 class DetectionReporter:
 
@@ -33,8 +33,10 @@ class DetectionReporter:
         env = Environment(loader=FileSystemLoader(self.template_dir_path))
         template = env.get_template("report_template.html")
 
+        current_datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         # render the template with the detected_iocs data
-        rendered_html = template.render(extracted_data=self.extracted_data, detected_iocs=self.detected_iocs)
+        rendered_html = template.render(current_datetime=current_datetime, extracted_data=self.extracted_data, detected_iocs=self.detected_iocs)
 
         # write the report to a file
         with open(self.analysis_report_path, 'w') as f:
