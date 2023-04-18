@@ -389,16 +389,26 @@ class DetectionEngine:
 
         detected = False
         detected_connections = []
+        detected_tor_exit_nodes = set()
         seen_ips = set()
 
         for connection in self.packet_parser.all_connections:
+            detected_node = False
+
             timestamp = connection[0] 
             src_ip = connection[1]
             src_port = connection[2]
             dst_ip = connection[3]
             dst_port = connection[4]
 
-            if src_ip in self.tor_exit_nodes or dst_ip in self.tor_exit_nodes:
+            if src_ip in self.tor_exit_nodes:
+                detected_node = True
+                detected_tor_exit_nodes.add(src_ip)
+            elif dst_ip in self.tor_exit_nodes:
+                detected_node = True
+                detected_tor_exit_nodes.add(dst_ip)
+
+            if detected_node:
                 entry = dict(
                     timestamp=timestamp,
                     src_ip=src_ip,
@@ -406,7 +416,7 @@ class DetectionEngine:
                     dst_ip=dst_ip,
                     dst_port=dst_port
                 )
-                entry_frozenset = frozenset(entry.items())
+
                 if entry_frozenset not in seen_ips:
                     detected_connections.append(entry)
                     seen_ips.add(entry_frozenset)
@@ -414,7 +424,8 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['outgoing_Tor_network_traffic'] = detected_connections
+            self.detected_iocs['Tor_exit_nodes'] = list(detected_tor_exit_nodes)
+            self.detected_iocs['Tor_exit_network_traffic'] = detected_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
             logging.info(
@@ -441,9 +452,11 @@ class DetectionEngine:
 
         detected = False
         detected_connections = []
+        detected_tor_nodes = set()
         seen_ips = set()
 
         for connection in self.packet_parser.all_connections:
+            detected_node = False
 
             timestamp = connection[0] 
             src_ip = connection[1]
@@ -451,7 +464,14 @@ class DetectionEngine:
             dst_ip = connection[3]
             dst_port = connection[4]
 
-            if src_ip in self.tor_nodes or dst_ip in self.tor_nodes:
+            if src_ip in self.tor_nodes:
+                detected_node = True
+                detected_tor_nodes.add(src_ip)
+            elif dst_ip in self.tor_nodes:
+                detected_node = True
+                detected_tor_nodes.add(dst_ip)
+            
+            if detected_node:
                 entry = dict(
                     timestamp=timestamp,
                     src_ip=src_ip,
@@ -459,7 +479,11 @@ class DetectionEngine:
                     dst_ip=dst_ip,
                     dst_port=dst_port
                 )
-                entry_frozenset = frozenset(entry.items())
+
+                keys_to_keep = ['src_ip', 'src_port', 'dst_ip', 'dst_port']
+                entry_filtered = {k: v for k, v in entry.items() if k in keys_to_keep}
+                entry_frozenset = frozenset(entry_filtered.items())
+
                 if entry_frozenset not in seen_ips:
                     detected_connections.append(entry)
                     seen_ips.add(entry_frozenset)
@@ -467,6 +491,7 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
+            self.detected_iocs['Tor_nodes'] = list(detected_tor_nodes)
             self.detected_iocs['Tor_network_traffic'] = detected_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected network traffic to public TOR nodes{Fore.RESET}")
@@ -681,6 +706,7 @@ class DetectionEngine:
         if c2_url_detected:
             self.c2_indicators_detected = True
             self.detected_iocs['c2_url'] = detected_urls
+            self.detected_iocs['c2_http_sessions'] = self.get_c2_http_sessions(detected_urls)
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 related URLs detected{Fore.RESET}")
             logging.info(f"C2 related URLs detected")
             self.print_c2_urls(detected_urls)
@@ -872,6 +898,16 @@ class DetectionEngine:
             detected_urls = [url[0] for url in urlhaus_results]
 
         return c2_detected, detected_urls
+
+    def get_c2_http_sessions(self, detected_urls):
+        c2_http_sessions = []
+
+        for session in self.packet_parser.http_sessions:
+            for c2_url in detected_urls:
+                if session.get('url') == c2_url: 
+                    c2_http_sessions.append(session)
+
+        return c2_http_sessions
 
     def print_c2_urls(self, detected_urls):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected C2 related URLs")

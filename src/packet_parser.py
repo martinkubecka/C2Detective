@@ -188,6 +188,11 @@ class PacketParser:
                 # scapy.layers.http.HTTPRequest : https://scapy.readthedocs.io/en/latest/api/scapy.layers.http.html
                 http_request = packet.getlayer(http.HTTPRequest)
                 if http_request:
+
+                    method = http_request.fields.get('Method')
+                    if method and isinstance(method, bytes):
+                        method = method.decode() # decode bytes
+
                     host = http_request.fields.get('Host')
                     if host and isinstance(host, bytes):
                         host = host.decode() # decode bytes
@@ -212,6 +217,7 @@ class PacketParser:
                     src_port=src_port,
                     dst_ip=dst_ip,
                     dst_port=dst_port,
+                    method=method,
                     url=url,
                     path=path,
                     user_agent=user_agent,

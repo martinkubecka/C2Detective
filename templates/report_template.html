@@ -182,7 +182,7 @@
             <th>Destination Port</th>
             <th>Response Size</th>
         </tr>
-        {% for entry in detected_iocs["big_HTML_response_size"] %}
+        {% for entry in detected_iocs.get("big_HTML_response_size") %}
         <tr>
             <td>{{ entry.get("src_ip") }}</td>
             <td>{{ entry.get("src_port") }}</td>
@@ -227,25 +227,25 @@
             </tr>
         </thead>
         <tbody>
-            {% for header in detected_iocs["malicious_HTTP_headers"] %}
+            {% for header in detected_iocs.get("malicious_HTTP_headers") %}
             <tr>
-                <td>{{ header["c2_framework"] }}</td>
-                <td>{{ header["malicious_header"] }}</td>
-                <td>{{ header["session"]["timestamp"] }}</td>
-                <td>{{ header["session"]["src_ip"] }}</td>
-                <td>{{ header["session"]["src_port"] }}</td>
-                <td>{{ header["session"]["dst_ip"] }}</td>
-                <td>{{ header["session"]["dst_port"] }}</td>
-                <td>{{ header["session"]["url"] }}</td>
-                <td>{{ header["session"]["user_agent"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Connection"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Content_Length"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Content_Type"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Date"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Server"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Http_Version"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Status_Code"]|default("N/A") }}</td>
-                <td>{{ header["session"]["http_headers"]["Reason_Phrase"]|default("N/A") }}</td>
+                <td>{{ header.get("c2_framework") }}</td>
+                <td>{{ header.get("malicious_header") }}</td>
+                <td>{{ header.get("session").get("timestamp") }}</td>
+                <td>{{ header.get("session").get("src_ip") }}</td>
+                <td>{{ header.get("session").get("src_port") }}</td>
+                <td>{{ header.get("session").get("dst_ip") }}</td>
+                <td>{{ header.get("session").get("dst_port") }}</td>
+                <td>{{ header.get("session").get("url") }}</td>
+                <td>{{ header.get("session").get("user_agent")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Connection")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Content_Length")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Content_Type")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Date")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Server")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Http_Version")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Status_Code")|default("N/A") }}</td>
+                <td>{{ header.get("session").get("http_headers").get("Reason_Phrase")|default("N/A") }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -285,24 +285,24 @@
             </tr>
         </thead>
         <tbody>
-            {% for cert in detected_iocs["malicious_TLS_certificates"] %}
+            {% for cert in detected_iocs.get("malicious_TLS_certificates") %}
             <tr>
-                <td>{{ cert["c2_framework"] }}</td>
-                <td>{{ cert["malicious_value"] }}</td>
-                <td>{{ cert["src_ip"] }}</td>
-                <td>{{ cert["src_port"] }}</td>
-                <td>{{ cert["dst_ip"] }}</td>
-                <td>{{ cert["dst_port"] }}</td>
-                <td>{{ cert["issuer"]["commonName"] }}</td>
-                <td>{{ cert["issuer"]["organizationName"] }}</td>
-                <td>{{ cert["issuer"]["localityName"] }}</td>
-                <td>{{ cert["issuer"]["stateOrProvinceName"] }}</td>
-                <td>{{ cert["issuer"]["countryName"] }}</td>
-                <td>{{ cert["subject"]["commonName"] }}</td>
-                <td>{{ cert["subject"]["organizationName"] }}</td>
-                <td>{{ cert["subject"]["localityName"] }}</td>
-                <td>{{ cert["subject"]["stateOrProvinceName"] }}</td>
-                <td>{{ cert["subject"]["countryName"] }}</td>
+                <td>{{ cert.get("c2_framework") }}</td>
+                <td>{{ cert.get("malicious_value") }}</td>
+                <td>{{ cert.get("src_ip") }}</td>
+                <td>{{ cert.get("src_port") }}</td>
+                <td>{{ cert.get("dst_ip") }}</td>
+                <td>{{ cert.get("dst_port") }}</td>
+                <td>{{ cert.get("issuer").get("commonName") }}</td>
+                <td>{{ cert.get("issuer").get("organizationName") }}</td>
+                <td>{{ cert.get("issuer").get("localityName") }}</td>
+                <td>{{ cert.get("issuer").get("stateOrProvinceName") }}</td>
+                <td>{{ cert.get("issuer").get("countryName") }}</td>
+                <td>{{ cert.get("subject").get("commonName") }}</td>
+                <td>{{ cert.get("subject").get("organizationName") }}</td>
+                <td>{{ cert.get("subject").get("localityName") }}</td>
+                <td>{{ cert.get("subject").get("stateOrProvinceName") }}</td>
+                <td>{{ cert.get("subject").get("countryName") }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -313,18 +313,86 @@
 
     <hr>
     <h2>Outgoing traffic to Tor exit nodes</h2>
-    {% if detected_iocs.get("outgoing_Tor_network_traffic") %}
-    <p>DETECTED</p>
-    <!-- TODO -->
+    {% if detected_iocs.get("Tor_exit_nodes") %}
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Tor Exit Node IP Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ip_address in detected_iocs.get("Tor_exit_nodes") %}
+                <tr>
+                    <td>{{ ip_address }}</td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+    <br />
+    {% endif %}
+
+    {% if detected_iocs.get("Tor_exit_network_traffic") %}
+    <table class="report-table">
+        <tr>
+            <th>Timestamp</th>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+        </tr>
+        {% for entry in detected_iocs.get("Tor_exit_network_traffic") %}
+        <tr>
+            <td>{{ entry.get("timestamp") }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
+        </tr>
+        {% endfor %}
+    </table>
     {% else %}
     <p class="not-detected">NOT DETECTED</p>
     {% endif %}
 
     <hr>
     <h2>Tor traffic</h2>
+    {% if detected_iocs.get("Tor_nodes") %}
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Tor Node IP Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ip_address in detected_iocs.get("Tor_nodes") %}
+                <tr>
+                    <td>{{ ip_address }}</td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+    <br />
+    {% endif %}
+
     {% if detected_iocs.get("Tor_network_traffic") %}
-    <p>DETECTED</p>
-    <!-- TODO -->
+    <table class="report-table">
+        <tr>
+            <th>Timestamp</th>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+        </tr>
+        {% for entry in detected_iocs.get("Tor_network_traffic") %}
+        <tr>
+            <td>{{ entry.get("timestamp") }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
+        </tr>
+        {% endfor %}
+    </table>
     {% else %}
     <p class="not-detected">NOT DETECTED</p>
     {% endif %}
@@ -333,7 +401,7 @@
     <h2>Detected DGA domain names</h2>
     {% if detected_iocs.get("DGA_domains") %}
     <table class="one-column-table">
-        {% for domain in detected_iocs["DGA_domains"] %}
+        {% for domain in detected_iocs.get("DGA_domains") %}
         <tr>
             <td>{{ domain }}</td>
         </tr>
@@ -355,8 +423,8 @@
             </tr>
         </thead>
         <tbody>
-            {% for domain, data in detected_iocs["DNS_Tunneling"].items() %}
-            {% for query_dict in data["queries"] %}
+            {% for domain, data in detected_iocs.get("DNS_Tunneling").items() %}
+            {% for query_dict in data.get("queries") %}
             {% for query, frequency in query_dict.items() %}
             <tr>
                 <td>{{ domain }}</td>
@@ -386,16 +454,16 @@
             <th>Destination IP</th>
             <th>Destination Port</th>
         </tr>
-        {% for entry in detected_iocs["JA3"] %}
+        {% for entry in detected_iocs.get("JA3") %}
         <tr>
-            <td>{{ entry["timestamp"] }}</td>
-            <td>{{ entry["ja3"] }}</td>
-            <td>{{ entry["ja3_digest"] }}</td>
-            <td>{{ entry["type"] }}</td>
-            <td>{{ entry["src_ip"] }}</td>
-            <td>{{ entry["src_port"] }}</td>
-            <td>{{ entry["dst_ip"] }}</td>
-            <td>{{ entry["dst_port"] }}</td>
+            <td>{{ entry.get("timestamp") }}</td>
+            <td>{{ entry.get("ja3") }}</td>
+            <td>{{ entry.get("ja3_digest") }}</td>
+            <td>{{ entry.get("type") }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -405,6 +473,22 @@
 
     <hr>
     <h2>Connections with C2 IP addresses</h2>
+    {% if detected_iocs.get("c2_ip_address") %}
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>C2 IP address</th>
+                </tr>
+            </thead>
+            {% for ip_address in detected_iocs.get("c2_ip_address") %}
+            <tr>
+                <td>{{ ip_address }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br />
+    {% endif %}
+    
     {% if detected_iocs.get("c2_ip_address_connection") %}
     <table class="report-table">
         <tr>
@@ -431,8 +515,13 @@
     <hr>
     <h2>Queried C2 domain names</h2>
     {% if detected_iocs.get("c2_domain") %}
-    <table class="one-column-table">
-        {% for domain in detected_iocs["c2_domain"] %}
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>C2 domain name</th>
+            </tr>
+        </thead>
+        {% for domain in detected_iocs.get("c2_domain") %}
         <tr>
             <td>{{ domain }}</td>
         </tr>
@@ -445,22 +534,87 @@
     <hr>
     <h2>Requested C2 URLs</h2>
     {% if detected_iocs.get("c2_url") %}
-    <table class="one-column-table">
-        {% for url in detected_iocs["c2_url"] %}
-        <tr>
-            <td>{{ url }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>C2 URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for url in detected_iocs.get("c2_url") %}
+                    <tr>
+                        <td>{{ url }}</td>
+                    </tr>
+                    {% endfor %}
+            </tbody>
+        </table>
+        <br />
     {% else %}
     <p class="not-detected">NOT DETECTED</p>
     {% endif %}
 
+    {% if detected_iocs.get("c2_http_sessions") %}
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th colspan="5">Session Information</th>
+                    <th colspan="3">Parsed Data</th>
+                    <th colspan="9">HTTP Headers</th>
+                </tr>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Source IP</th>
+                    <th>Source Port</th>
+                    <th>Destination IP</th>
+                    <th>Destination Port</th>
+
+                    <th>Method</th>
+                    <th>URL</th>
+                    <th>Path</th>
+
+                    <th>User-agent</th>
+                    <th>Connection</th>
+                    <th>Content Length</th>
+                    <th>Content Type</th>
+                    <th>Date</th>
+                    <th>Server</th>
+                    <th>HTTP Version</th>
+                    <th>Status Code</th>
+                    <th>Reason Phrase</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in detected_iocs.get("c2_http_sessions") %}
+                <tr>
+                    <td>{{ session.get("timestamp") }}</td>
+                    <td>{{ session.get("src_ip") }}</td>
+                    <td>{{ session.get("src_port") }}</td>
+                    <td>{{ session.get("dst_ip") }}</td>
+                    <td>{{ session.get("dst_port") }}</td>
+                    <td>{{ session.get("method")|default("N/A") }}</td>
+                    <td>{{ session.get("url")|default("N/A") }}</td>
+                    <td>{{ session.get("path")|default("N/A") }}</td>
+                    <td>{{ session.get("user_agent")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Connection")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Content_Length")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Content_Type")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Date")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Server")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Http_Version")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Status_Code")|default("N/A") }}</td>
+                    <td>{{ session.get("http_headers").get("Reason_Phrase")|default("N/A") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    
     <hr>
     <h2>Requested crypto / cryptojacking domains</h2>
     {% if detected_iocs.get("crypto_domains") %}
     <table class="one-column-table">
-        {% for domain in detected_iocs["crypto_domains"] %}
+        {% for domain in detected_iocs.get("crypto_domains") %}
         <tr>
             <td>{{ domain }}</td>
         </tr>
