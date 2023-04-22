@@ -197,8 +197,8 @@ update options:
 
 #### General
 
-- implement cashing (e.g. database) for enriched data and IOCs
-- create final HTML report file containg the detected IOCs 
+- [ ] implement cashing (e.g. database) for enriched data and IOCs
+- [ ] create final HTML report file containg the detected IOCs 
 
 #### Packet Capture Analysis
 
@@ -206,13 +206,10 @@ update options:
 
 #### Data Enrichment & Correlation 
 
-- [ ] add [SSL Blacklist](https://sslbl.abuse.ch/) : identifying and blacklisting SSL certificates used by botnet C&C servers
-- [ ] add [Botvrij.eu](https://www.botvrij.eu/) : provides different sets of open source IOCs
+- [ ] revise the IOC enrichment for implementation at the conclusion of the analysis process 
 
 #### Detection
 
-- [ ] detect signs of ICMP based covert channels (ICMP Tunneling)
-- [ ] detect signs of beaconing behavior coming in and out of the network
 - [ ] implement detection confidence scoring system
 
 ---

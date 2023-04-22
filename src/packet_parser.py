@@ -51,9 +51,9 @@ class PacketParser:
         self.ja3_digests = self.get_ja3_digests()
 
         self.statistics = self.get_statistics()
-        
+        self.extracted_data = self.combine_extracted_data()
+
         if report_extracted_data_option:
-            self.extracted_data = self.combine_extracted_data()
             self.extracted_data_to_file()
 
         if statistics_option:
