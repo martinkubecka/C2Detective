@@ -133,10 +133,10 @@ class AnalystProfile:
         if self.thresholds:
             self.MAX_FREQUENCY = self.thresholds.get('MAX_FREQUENCY')
             self.MAX_DURATION = self.thresholds.get('MAX_DURATION')
-            self.MAX_HTML_SIZE = self.thresholds.get('MAX_HTML_SIZE')
+            self.MAX_HTTP_SIZE = self.thresholds.get('MAX_HTTP_SIZE')
             self.MAX_SUBDOMAIN_LENGTH = self.thresholds.get('MAX_SUBDOMAIN_LENGTH')
 
-            if any(thresholds is None for thresholds in (self.MAX_FREQUENCY, self.MAX_DURATION, self.MAX_HTML_SIZE, self.MAX_SUBDOMAIN_LENGTH)):
+            if any(thresholds is None for thresholds in (self.MAX_FREQUENCY, self.MAX_DURATION, self.MAX_HTTP_SIZE, self.MAX_SUBDOMAIN_LENGTH)):
                 print(f"[{time.strftime('%H:%M:%S')}] [ERROR] The configuration file does not contain complete threshold settings ...")
                 logging.error(f"The configuration file does not contain complete threshold settings")
                 print("\nExiting program ...\n")
@@ -165,6 +165,6 @@ class AnalystProfile:
         print(f"sniffing: {self.sniffing}")
         print(f"MAX_FREQUENCY: {self.MAX_FREQUENCY}")
         print(f"MAX_DURATION: {self.MAX_DURATION}")
-        print(f"MAX_HTML_SIZE: {self.MAX_HTML_SIZE}")
+        print(f"MAX_HTTP_SIZE: {self.MAX_HTTP_SIZE}")
         print(f"MAX_SUBDOMAIN_LENGTH: {self.MAX_SUBDOMAIN_LENGTH}")
         print(f"plugins: {self.plugins}")

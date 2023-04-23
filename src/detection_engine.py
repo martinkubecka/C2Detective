@@ -50,7 +50,7 @@ class DetectionEngine:
         self.CHUNK_SIZE = analyst_profile.chunk_size
         self.MAX_FREQUENCY = len(self.packet_parser.packets) * (analyst_profile.MAX_FREQUENCY / 100)
         self.MAX_DURATION = analyst_profile.MAX_DURATION    # 14000 set for testing 'Qakbot.pcap'
-        self.MAX_HTML_SIZE = analyst_profile.MAX_HTML_SIZE
+        self.MAX_HTTP_SIZE = analyst_profile.MAX_HTTP_SIZE
         self.MAX_SUBDOMAIN_LENGTH = analyst_profile.MAX_SUBDOMAIN_LENGTH
 
         self.whitelisted_domains = self.get_domain_whitelist(analyst_profile.domain_whitelist_path)
@@ -236,9 +236,9 @@ class DetectionEngine:
         for entry in detected_connections:
             print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['duration']} seconds")
 
-    def detect_big_HTML_response_size(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTML response size ...")
-        logging.info("Looking for unusual big HTML response size")
+    def detect_big_HTTP_response_size(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTTP response size ...")
+        logging.info("Looking for unusual big HTTP response size")
 
         detected = False
         connection_sizes = []
@@ -250,7 +250,7 @@ class DetectionEngine:
                 response = packet.getlayer(http.HTTPResponse)
                 
                 # if packet has respone and Content Length, check if it is larger than the threshold
-                if response and response.Content_Length and int(response.Content_Length) > self.MAX_HTML_SIZE:
+                if response and response.Content_Length and int(response.Content_Length) > self.MAX_HTTP_SIZE:
                     detected = True
                     connection = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
                     
@@ -276,18 +276,18 @@ class DetectionEngine:
 
         if detected:
             self.c2_indicators_detected = True
-            self.detected_iocs['big_HTML_response_size'] = connection_sizes
-            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTML response size{Fore.RESET}")
-            logging.info(f"Detected unusual big HTML response size")
-            self.print_connections_with_big_HTML_response_size(connection_sizes)
+            self.detected_iocs['big_HTTP_response_size'] = connection_sizes
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTTP response size{Fore.RESET}")
+            logging.info(f"Detected unusual big HTTP response size")
+            self.print_connections_with_big_HTTP_response_size(connection_sizes)
         else:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTML response size not detected{Fore.RESET}")
-            logging.info(f"Unusual big HTML response size not detected")
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTTP response size not detected{Fore.RESET}")
+            logging.info(f"Unusual big HTTP response size not detected")
 
-    def print_connections_with_big_HTML_response_size(self, connection_sizes):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTML response size")
-        logging.info(f"Listing connections with unusual big HTML response size")
+    def print_connections_with_big_HTTP_response_size(self, connection_sizes):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTTP response size")
+        logging.info(f"Listing connections with unusual big HTTP response size")
 
         for entry in connection_sizes:
             print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['response_size']} bytes")
@@ -566,8 +566,6 @@ class DetectionEngine:
         
         detected = False
         detected_queries = {}
-
-        # TODO : ADD DETECTION BASED ON THE DNS FREQUENCY
 
         for packet in self.packet_parser.dns_packets:
             if packet.haslayer(DNSQR):  # pkt.qr == 0 ; DNS query
@@ -902,6 +900,7 @@ class DetectionEngine:
     def get_c2_http_sessions(self, detected_urls):
         c2_http_sessions = []
 
+        # TODO: use frozenset for duplicate filtering
         for session in self.packet_parser.http_sessions:
             for c2_url in detected_urls:
                 if session.get('url') == c2_url: 

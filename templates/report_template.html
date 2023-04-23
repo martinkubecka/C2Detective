@@ -172,8 +172,8 @@
     {% endif %}
 
     <hr>
-    <h2>Unusual big HTML response size</h2>
-    {% if detected_iocs.get("big_HTML_response_size") %}
+    <h2>Unusual big HTTP response size</h2>
+    {% if detected_iocs.get("big_HTTP_response_size") %}
     <table class="report-table">
         <tr>
             <th>Source IP</th>
@@ -182,7 +182,7 @@
             <th>Destination Port</th>
             <th>Response Size</th>
         </tr>
-        {% for entry in detected_iocs.get("big_HTML_response_size") %}
+        {% for entry in detected_iocs.get("big_HTTP_response_size") %}
         <tr>
             <td>{{ entry.get("src_ip") }}</td>
             <td>{{ entry.get("src_port") }}</td>

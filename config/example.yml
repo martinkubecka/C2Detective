@@ -30,6 +30,6 @@ sniffing:
 thresholds:
   MAX_FREQUENCY: 10 # percentage
   MAX_DURATION: 14000 # seconds
-  MAX_HTML_SIZE: 50000 # bytes
+  MAX_HTTP_SIZE: 50000 # bytes
   MAX_SUBDOMAIN_LENGTH: 30 # chars
 plugins:

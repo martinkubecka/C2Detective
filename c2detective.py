@@ -373,7 +373,7 @@ def main():
     detection_engine = DetectionEngine(analyst_profile, packet_parser, enrichment_enchine)
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
-    detection_engine.detect_big_HTML_response_size()
+    detection_engine.detect_big_HTTP_response_size()
     detection_engine.detect_known_c2_tls_values()
     detection_engine.detect_malicious_ja3_digest()
     if args.dga:

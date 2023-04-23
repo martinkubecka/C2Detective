@@ -182,7 +182,7 @@ update options:
 - [x] detect outgoing traffic to crypto / cryptojacking based sites
 - [x] detect connections with excessive frequency
 - [x] detect long connection
-- [x] detect unusual big HTML response size 
+- [x] detect unusual big HTTP response size 
 - [x] detect known C2 default HTTP headers
 - [x] detect known C2 values in TLS certificates
 - [x] detect signs of DNS based covert channels (DNS Tunneling)
