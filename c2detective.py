@@ -67,11 +67,12 @@ def check_required_structure(analyst_profile, output_dir):
     cypto_iocs_dir = os.path.join(iocs_dir, "crypto_domains")
     jar3_iocs_dir = os.path.join(iocs_dir, "ja3")
     config_dir = os.path.join(base_relative_path, "config")
+    templates_dir = os.path.join(base_relative_path, "templates")
 
-    # TODO: check 'templates' dir and file
     domain_whitelist_path = os.path.join(base_relative_path, analyst_profile.domain_whitelist_path)
     c2_http_headers_path = os.path.join(base_relative_path, analyst_profile.c2_http_headers_path)
     c2_tls_certificate_values_path = os.path.join(base_relative_path, analyst_profile.c2_tls_certificate_values_path)
+    report_template_path = os.path.join(base_relative_path, analyst_profile.report_template_path)
 
     if not output_dir == "reports":
         report_dir = output_dir
@@ -84,6 +85,7 @@ def check_required_structure(analyst_profile, output_dir):
 
     missing_update_script = False
     missing_config_files = False
+    missing_report_template = False
     missing_files = False
 
     if not os.path.isdir(config_dir):
@@ -116,24 +118,35 @@ def check_required_structure(analyst_profile, output_dir):
         os.mkdir(jar3_iocs_dir)
         missing_update_script = True
 
+    if not os.path.isdir(templates_dir):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating '{templates_dir}' for analysis report template ...")
+        logging.info(f"Creating '{templates_dir}' for analysis report template")
+        os.mkdir(templates_dir)
+        missing_report_template = True
+
+    if not os.path.isfile(report_template_path):
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{report_template_path}' is missing")
+        logging.error(f"Required file '{report_template_path}' is missing")
+        missing_files = True
+
     if not os.path.isfile(domain_whitelist_path):
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{domain_whitelist_path}' is missing")
-        logging.error(f"Requiered file '{domain_whitelist_path}' is missing")
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{domain_whitelist_path}' is missing")
+        logging.error(f"Required file '{domain_whitelist_path}' is missing")
         missing_files = True
 
     if not os.path.isfile(c2_http_headers_path):
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{c2_http_headers_path}' is missing")
-        logging.error(f"Requiered file '{c2_http_headers_path}' is missing")
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{c2_http_headers_path}' is missing")
+        logging.error(f"Required file '{c2_http_headers_path}' is missing")
         missing_files = True
 
     if not os.path.isfile(c2_tls_certificate_values_path):
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered file '{c2_tls_certificate_values_path}' is missing")
-        logging.error(f"Requiered file '{c2_tls_certificate_values_path}' is missing")
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{c2_tls_certificate_values_path}' is missing")
+        logging.error(f"Required file '{c2_tls_certificate_values_path}' is missing")
         missing_files = True
 
     if missing_files:
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Requiered files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
-        logging.error(f"Requiered files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
+        logging.error(f"Required files are missing, please reference 'https://github.com/martinkubecka/C2Detective'")
         print("\nExiting program ...\n")
         sys.exit(1)
 
@@ -148,7 +161,12 @@ def check_required_structure(analyst_profile, output_dir):
         logging.error(f"Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/config'")
         print("\nExiting program ...\n")
         sys.exit(1)
-        
+
+    if missing_report_template:
+        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Create the missing analysis report temlapte or download it from 'https://github.com/martinkubecka/C2Detective/tree/main/templates'")
+        logging.error(f"Create the missing config files or download them from 'https://github.com/martinkubecka/C2Detective/tree/main/templates'")
+        print("\nExiting program ...\n")
+        sys.exit(1)
 
 def load_config(filename):
     try:
@@ -367,10 +385,19 @@ def main():
             print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No plugins were added ...")
             logging.warning("No plugins were added")
 
+    # set the total count of C2 indicators 
+    if plugins:
+        if plugins.get('C2Hunter'):
+            c2_indicators_total_count = 14
+            plugin_c2_hunter = True
+    else:
+        c2_indicators_total_count = 11
+        plugin_c2_hunter = False
+
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
-    detection_engine = DetectionEngine(analyst_profile, packet_parser, enrichment_enchine)
+    detection_engine = DetectionEngine(c2_indicators_total_count, analyst_profile, packet_parser, enrichment_enchine)
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTTP_response_size()
@@ -384,16 +411,15 @@ def main():
     detection_engine.detect_outgoing_traffic_to_tor()
     detection_engine.detect_crypto_domains()
 
-    if plugins:
-        if plugins.get('C2Hunter'):
-            c2hunter_db = plugins.get('C2Hunter')
-            if os.path.isfile(c2hunter_db):
-                print(f"[{time.strftime('%H:%M:%S')}] [INFO] Using plugin C2Hunter for detection via threat feeds ...")
-                logging.info("Using plugin C2Hunter for detection via threat feeds")
-                detection_engine.threat_feeds(c2hunter_db)
-            else:
-                print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Configured C2Hunter database path '{c2hunter_db}' does not exist ...")
-                logging.error(f"Configured C2Hunter database path '{c2hunter_db}' does not exist")
+    if plugin_c2_hunter:
+        c2hunter_db = plugins.get('C2Hunter')
+        if os.path.isfile(c2hunter_db):
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Using plugin C2Hunter for detection via threat feeds ...")
+            logging.info("Using plugin C2Hunter for detection via threat feeds")
+            detection_engine.threat_feeds(c2hunter_db)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Configured C2Hunter database path '{c2hunter_db}' does not exist ...")
+            logging.error(f"Configured C2Hunter database path '{c2hunter_db}' does not exist")
 
     # if not enrichment_enchine is None:
     #     # using set() to remove duplicates and check for values count
@@ -411,8 +437,9 @@ def main():
     print('-' * terminal_size.columns)
     extracted_data = packet_parser.get_extracted_data()
     detected_iocs = detection_engine.get_detected_iocs()
+    c2_indicators_count = detection_engine.get_c2_indicators_count()
     if extracted_data and detected_iocs:
-        detection_reporter = DetectionReporter(output_dir, extracted_data, detected_iocs)
+        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count ,c2_indicators_count, extracted_data, detected_iocs)
         detection_reporter.write_detected_iocs_to_file()
         detection_reporter.create_html_analysis_report()
     else:

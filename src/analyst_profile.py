@@ -72,8 +72,9 @@ class AnalystProfile:
             self.domain_whitelist_path = self.file_paths.get('domain_whitelist_path')
             self.c2_http_headers_path = self.file_paths.get('c2_http_headers_path')
             self.c2_tls_certificate_values_path = self.file_paths.get('c2_tls_certificate_values_path')
+            self.report_template_path = self.file_paths.get('report_template_path')
 
-            if any(file_path is None for file_path in (self.tor_node_list_path, self.crypto_domain_list_path, self.ja3_rules_path, self.domain_whitelist_path, self.c2_http_headers_path, self.c2_tls_certificate_values_path)):
+            if any(file_path is None for file_path in (self.tor_node_list_path, self.crypto_domain_list_path, self.ja3_rules_path, self.domain_whitelist_path, self.c2_http_headers_path, self.c2_tls_certificate_values_path, self.report_template_path)):
                 print(f"[{time.strftime('%H:%M:%S')}] [ERROR] The configuration file does not contain required file paths ...")
                 logging.error(f"The configuration file does not contain required file paths")
                 print("\nExiting program ...\n")
@@ -83,8 +84,6 @@ class AnalystProfile:
             logging.error(f"File paths are not present in the configuration file")
             print("\nExiting program ...\n")
             sys.exit(1)
-
-
 
         self.enrichment_services = config.get('enrichment_services')
         if self.enrichment_services:

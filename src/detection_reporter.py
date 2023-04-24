@@ -8,7 +8,7 @@ import datetime
 
 class DetectionReporter:
 
-    def __init__(self, output_dir, extracted_data, detected_iocs):
+    def __init__(self, output_dir, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs):
         self.logger = logging.getLogger(__name__)
         self.base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.template_dir_path = os.path.join(self.base_relative_path, "templates")
@@ -17,6 +17,8 @@ class DetectionReporter:
         self.report_output_path = os.path.join(self.report_dir, "detected_iocs.json")
         self.extracted_data = extracted_data
         self.detected_iocs = detected_iocs
+        self.c2_indicators_total_count = c2_indicators_total_count
+        self.c2_indicators_count = c2_indicators_count 
 
     def write_detected_iocs_to_file(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing detected IOCs to '{self.report_output_path}'")
@@ -36,7 +38,7 @@ class DetectionReporter:
         current_datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # render the template with the detected_iocs data
-        rendered_html = template.render(current_datetime=current_datetime, extracted_data=self.extracted_data, detected_iocs=self.detected_iocs)
+        rendered_html = template.render(current_datetime=current_datetime, c2_indicators_total_count=self.c2_indicators_total_count, c2_indicators_count=self.c2_indicators_count, extracted_data=self.extracted_data, detected_iocs=self.detected_iocs)
 
         # write the report to a file
         with open(self.analysis_report_path, 'w') as f:
