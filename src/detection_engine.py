@@ -575,25 +575,15 @@ class DetectionEngine:
 
                 if len(subdomain) > self.MAX_SUBDOMAIN_LENGTH:    # check for long domain names
                     detected = True
-                    domain = f"{domain}.{suffix}"   # build domain with TLD
-
+                    domain = f"{domain}.{suffix}"   # rebuild domain with TLD
+                
                     if domain in detected_queries:
-                        queries = detected_queries[domain]['queries']
-                        found = False
-                        
-                        for entry in queries:
-                            if query in entry:
-                                entry[query] += 1
-                                found = True
-                                break
-                        
-                        if not found:
-                            queries.append({query: 1})
-                     
-                        detected_queries[domain]['frequency'] += 1
-                    
+                        detected_queries[domain]['queries'].add(query)
                     else:
-                        detected_queries[domain] = {'queries': [{query: 1}], 'frequency': 1}
+                        detected_queries[domain] = {'queries': {query}}
+
+        for domain in detected_queries:
+            detected_queries[domain]['queries'] = list(detected_queries[domain]['queries'])
 
         if detected:
             self.c2_indicators_detected = True
@@ -610,9 +600,8 @@ class DetectionEngine:
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected DNS Tunneling technique")
         logging.info(f"Listing information about detected DNS Tunneling technique")
 
-        for domain, values in detected_queries.items():
-            print(f">> Domain '{Fore.RED}{domain}{Fore.RESET}' queried '{values['frequency']}' times")
-            print(f">>>> DNS query example with frequency: '{Fore.RED}{values['queries'][0]}{Fore.RESET}'")
+        for domain, data in detected_queries.items():
+            print(f">> Queried {len(data['queries'])} unique subdomains for '{Fore.RED}{domain}{Fore.RESET}'")
 
     def detect_malicious_ja3_digest(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious JA3 fingerprints ...")

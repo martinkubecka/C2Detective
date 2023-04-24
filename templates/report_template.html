@@ -478,20 +478,19 @@
             <tr>
                 <th>Domain</th>
                 <th>Query</th>
-                <th>Frequency</th>
             </tr>
         </thead>
         <tbody>
             {% for domain, data in detected_iocs.get("DNS_Tunneling").items() %}
-            {% for query_dict in data.get("queries") %}
-            {% for query, frequency in query_dict.items() %}
+            {% for query in data.get("queries") %}
             <tr>
                 <td>{{ domain }}</td>
                 <td>{{ query }}</td>
-                <td>{{ frequency }}</td>
             </tr>
             {% endfor %}
-            {% endfor %}
+            <tr>
+                <td colspan="2"><b>Queried {{ data.get("queries") | length }} unique subdomains for '{{ domain }}'</b></td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
