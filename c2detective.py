@@ -439,7 +439,7 @@ def main():
     detected_iocs = detection_engine.get_detected_iocs()
     c2_indicators_count = detection_engine.get_c2_indicators_count()
     if extracted_data and detected_iocs:
-        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count ,c2_indicators_count, extracted_data, detected_iocs)
+        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count ,c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
         detection_reporter.write_detected_iocs_to_file()
         detection_reporter.create_html_analysis_report()
     else:

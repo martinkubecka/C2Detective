@@ -459,7 +459,10 @@
     <hr>
     <h2>Detected DGA domain names</h2>
     {% if detected_iocs.get("DGA_domains") %}
-    <table class="one-column-table">
+    <table class="report-table">
+        <tr>
+            <th>Domain Name</th>
+        </tr>
         {% for domain in detected_iocs.get("DGA_domains") %}
         <tr>
             <td>{{ domain }}</td>
@@ -476,7 +479,7 @@
     <table class="report-table">
         <thead>
             <tr>
-                <th>Domain</th>
+                <th>Domain Name</th>
                 <th>Query</th>
             </tr>
         </thead>
@@ -489,7 +492,16 @@
             </tr>
             {% endfor %}
             <tr>
-                <td colspan="2"><b>Queried {{ data.get("queries") | length }} unique subdomains for '{{ domain }}'</b></td>
+                <td colspan="2">
+                    <b>Queried {{ data.get("queries") | length }} unique
+                        {% if data.get("queries") | length == 1 %}
+                            subdomain
+                        {% else %}
+                            subdomains
+                        {% endif %}
+                        for '{{ domain }}'
+                    </b>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -530,7 +542,27 @@
     {% endif %}
 
     <hr>
+    <h2>Requested crypto / cryptojacking domain names</h2>
+    {% if detected_iocs.get("crypto_domains") %}
+    <table class="report-table">
+        <tr>
+            <th>Domain Name</th>
+        </tr>
+        {% for domain in detected_iocs.get("crypto_domains") %}
+        <tr>
+            <td>{{ domain }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
+
+    {% if plugin_c2_hunter %}
+
+    <hr>
     <h2>Connections with C2 IP addresses</h2>
+    <p style="text-align: right;"><i>(IoCs Sources: Feodo Tracker, URLhaus, ThreatFox)</i></p>
     {% if detected_iocs.get("c2_ip_address") %}
         <table class="report-table">
             <thead>
@@ -572,6 +604,7 @@
 
     <hr>
     <h2>Queried C2 domain names</h2>
+    <p style="text-align: right;"><i>(IoCs Source: ThreatFox)</i></p>
     {% if detected_iocs.get("c2_domain") %}
     <table class="report-table">
         <thead>
@@ -591,6 +624,7 @@
 
     <hr>
     <h2>Requested C2 URLs</h2>
+    <p style="text-align: right;"><i>(IoCs Source: URLhaus)</i></p>
     {% if detected_iocs.get("c2_url") %}
         <table class="report-table">
             <thead>
@@ -668,18 +702,6 @@
         </table>
     {% endif %}
     
-    <hr>
-    <h2>Requested crypto / cryptojacking domains</h2>
-    {% if detected_iocs.get("crypto_domains") %}
-    <table class="one-column-table">
-        {% for domain in detected_iocs.get("crypto_domains") %}
-        <tr>
-            <td>{{ domain }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-    <p class="not-detected">NOT DETECTED</p>
     {% endif %}
 
     <hr>

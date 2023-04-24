@@ -209,7 +209,7 @@ class DetectionEngine:
                             src_port=src_port,
                             dst_ip=dst_ip,
                             dst_port=dst_port,
-                            duration=float(duration)
+                            duration=int(duration)
                         )
                         detected_connections.append(entry)
                 else:
