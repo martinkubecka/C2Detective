@@ -397,7 +397,7 @@ class DetectionEngine:
         detected_tor_exit_nodes = set()
         seen_ips = set()
 
-        for connection in self.packet_parser.all_connections:
+        for connection in self.packet_parser.external_tcp_connections:
             detected_node = False
 
             timestamp = connection[0] 
@@ -461,7 +461,7 @@ class DetectionEngine:
         detected_tor_nodes = set()
         seen_ips = set()
 
-        for connection in self.packet_parser.all_connections:
+        for connection in self.packet_parser.external_tcp_connections:
             detected_node = False
 
             timestamp = connection[0] 
