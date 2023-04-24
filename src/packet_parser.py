@@ -201,10 +201,6 @@ class PacketParser:
                     if path and isinstance(path, bytes):
                         path = path.decode() # decode bytes
                     
-                    user_agent = http_request.fields.get('User_Agent')
-                    if user_agent and isinstance(user_agent, bytes):
-                        user_agent = user_agent.decode() # decode bytes
-
                     if host:
                         url = f"{host}{path}"
                         unique_urls.add(url)
@@ -220,7 +216,6 @@ class PacketParser:
                     method=method,
                     url=url,
                     path=path,
-                    user_agent=user_agent,
                     http_headers=http_headers
                 )
 

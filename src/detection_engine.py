@@ -243,57 +243,37 @@ class DetectionEngine:
         logging.info("Looking for unusual big HTTP response size")
 
         detected = False
-        connection_sizes = []
+        detected_connections = []
 
-        # TODO: REWORK to use http_sessions
-        for packet in self.packet_parser.packets:
-            # check if packet contains HTTP responses
-            if packet.haslayer(http.HTTPResponse):
-                response = packet.getlayer(http.HTTPResponse)
-                
-                # if packet has respone and Content Length, check if it is larger than the threshold
-                if response and response.Content_Length and int(response.Content_Length) > self.MAX_HTTP_SIZE:
-                    detected = True
-                    connection = (packet[IP].src, packet[TCP].sport, packet[IP].dst, packet[TCP].dport)
-                    
-                    # check if connection is already in list of dictionaries
-                    index = None
-                    for i, conn in enumerate(connection_sizes):
-                        if connection == (conn['src_ip'], conn['src_port'], conn['dst_ip'], conn['dst_port']):
-                            index = i
-                            break
-                            
-                    # if connection is already in list of dictionaries, update the size
-                    if index is not None:
-                        connection_sizes[index]['size'] += int(response.Content_Length)
-                    # otherwise, add a new dictionary to the list
-                    else:
-                        connection_sizes.append({
-                            'src_ip': packet[IP].src,
-                            'src_port': packet[TCP].sport,
-                            'dst_ip': packet[IP].dst,
-                            'dst_port': packet[TCP].dport,
-                            'response_size': int(response.Content_Length)
-                        })
+        for session in self.packet_parser.http_sessions:
+            if session.get('http_headers'):
+                http_headers = session.get('http_headers')
+
+                if http_headers.get('Content_Length'):
+                    content_length = http_headers.get('Content_Length')
+
+                    if int(content_length) > self.MAX_HTTP_SIZE:
+                        detected = True
+                        detected_connections.append(session)
 
         if detected:
             self.c2_indicators_detected = True
             self.c2_indicators_count += 1
-            self.detected_iocs['big_HTTP_response_size'] = connection_sizes
+            self.detected_iocs['big_HTTP_response_size'] = detected_connections
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTTP response size{Fore.RESET}")
             logging.info(f"Detected unusual big HTTP response size")
-            self.print_connections_with_big_HTTP_response_size(connection_sizes)
+            self.print_connections_with_big_HTTP_response_size(detected_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTTP response size not detected{Fore.RESET}")
             logging.info(f"Unusual big HTTP response size not detected")
 
-    def print_connections_with_big_HTTP_response_size(self, connection_sizes):
+    def print_connections_with_big_HTTP_response_size(self, detected_connections):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTTP response size")
         logging.info(f"Listing connections with unusual big HTTP response size")
 
-        for entry in connection_sizes:
-            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['response_size']} bytes")
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['http_headers']['Content_Length']} bytes")
 
     def detect_known_malicious_HTTP_headers(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious HTTP headers ...")
