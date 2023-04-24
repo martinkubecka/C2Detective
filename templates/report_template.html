@@ -122,12 +122,8 @@
             <td>{{ extracted_data.get("capture_timestamps").get("end_time") }}</td>
         </tr>
         <tr>
-            <td>Number of all connections</td>
-            <td>{{ extracted_data.get("number_of_all_connections") }}</td>
-        </tr>
-        <tr>
-            <td>Number of external connections</td>
-            <td>{{ extracted_data.get("number_of_external_connections") }}</td>
+            <td>Number of external TCP connections</td>
+            <td>{{ extracted_data.get("number_of_external_tcp_connections") }}</td>
         </tr>
         <tr>
             <td>Number of unique domain names</td>
@@ -153,7 +149,7 @@
 
     <hr>
     <div class="flex-container">
-      <h2>Number of detected potential indicators of Command and Control communication</h2>
+      <h2>Number of detected potential Command and Control (C2) communication indicators:</h2>
       <div class="circle{% if c2_indicators_count == 0 %} green{% elif c2_indicators_count < c2_indicators_total_count / 2 %} orange{% else %} red{% endif %}">
         {{ c2_indicators_count }} / {{ c2_indicators_total_count }}
       </div>

@@ -15,7 +15,6 @@ import hashlib
 """
 start_time :                                timestamp when packet capture stared :  string :        %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended :   string :        %Y-%m-%d %H:%M:%S
-all_connections :                           connection src-dst IP pairs :           set() :         ((time, src_ip, src_port, dst_ip, dst_port), ...)
 connection_frequency :                      grouped TCP connections frequencies :   {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 external_tcp_connections :                  all TCP connections :                   [] :            [ (packet_time, src_ip, src_port, dst_ip, dst_port), ... ]                  
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
@@ -44,7 +43,7 @@ class PacketParser:
         self.packets = self.get_packet_list()  # creates a list in memory
 
         self.connections = self.get_connections()
-        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.all_connections, self.external_tcp_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
+        self.start_time, self.end_time, self.public_src_ip_list, self.public_dst_ip_list, self.public_ip_list, self.external_tcp_connections, self.connection_frequency, self.dns_packets, self.domain_names, self.http_sessions, self.http_payloads, self.unique_urls = self.extract_packet_data()
         self.src_unique_ip_list, self.dst_unique_ip_list, self.combined_unique_ip_list = self.get_unique_public_addresses()
         self.src_ip_counter, self.dst_ip_counter, self.all_ip_counter = self.count_public_ip_addresses()
         self.certificates = self.extract_certificates()
@@ -104,8 +103,6 @@ class PacketParser:
         public_src_ip_list = []
         public_dst_ip_list = []
         public_ip_list = []
-        # store all and only external connections
-        all_connections = set()
         # store all TCP connections
         external_tcp_connections = []
         # store filtered DNS packets
@@ -157,8 +154,6 @@ class PacketParser:
                         connection_frequency[connection] = 1
 
                     external_tcp_connections.append((packet_time, src_ip, src_port, dst_ip, dst_port))
-
-                all_connections.add((packet_time, src_ip, src_port, dst_ip, dst_port))
 
             if packet.haslayer(DNS):
                 dns_packets.append(packet)
@@ -228,11 +223,10 @@ class PacketParser:
             # update the end time of capture with each packet
             end_time = packet_time
 
-        all_connections = list(all_connections)
         unique_urls = list(unique_urls)
         domain_names = list(domain_names)
 
-        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, all_connections, external_tcp_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
+        return start_time, end_time, public_src_ip_list, public_dst_ip_list, public_ip_list, external_tcp_connections, connection_frequency, dns_packets, domain_names, http_sessions, http_payloads, unique_urls
 
     def get_unique_public_addresses(self):
         src_unique_ip_list = list(set(self.public_src_ip_list))
@@ -440,8 +434,7 @@ class PacketParser:
         
         statistics["capture_start_time"] = self.start_time
         statistics["capture_end_time"] = self.end_time
-        statistics["number_of_all_connections"] = len(self.all_connections)
-        statistics["number_of_external_connections"] = len(self.external_tcp_connections)
+        statistics["number_of_external_tcp_connections"] = len(self.external_tcp_connections)
         statistics["number_of_unique_domain_names"] = len(self.domain_names)
         statistics["number_of_unique_public_IP_addresses"] = len(self.combined_unique_ip_list)
         statistics["number_of_HTTP_sessions"] = len(self.http_sessions)
@@ -455,8 +448,7 @@ class PacketParser:
         print(f">> Packet capture SHA256: {self.statistics.get('capture_sha256')}")
         print(f">> Packet capture stared at: {self.statistics.get('capture_start_time')}")
         print(f">> Packet capture ended at: {self.statistics.get('capture_end_time')}")
-        print(f">> Number of all connections: {self.statistics.get('number_of_all_connections')}")
-        print(f">> Number of external connections: {self.statistics.get('number_of_external_connections')}")
+        print(f">> Number of external TCP connections: {self.statistics.get('number_of_external_tcp_connections')}")
         print(f">> Number of unique domain names: {self.statistics.get('number_of_unique_domain_names')}")
         print(f">> Number of unique public IP addresses: {self.statistics.get('number_of_unique_public_IP_addresses')}")
 
@@ -488,8 +480,7 @@ class PacketParser:
             start_time=self.statistics.get("capture_start_time"),
             end_time=self.statistics.get("capture_end_time")
         )
-        extracted_data['number_of_all_connections'] = self.statistics.get("number_of_all_connections")
-        extracted_data['number_of_external_connections'] = self.statistics.get("number_of_external_connections")
+        extracted_data['number_of_external_tcp_connections'] = self.statistics.get("number_of_external_tcp_connections")
         extracted_data['number_of_unique_domain_names'] = self.statistics.get("number_of_unique_domain_names")
         extracted_data['number_of_unique_public_IP_addresses'] = self.statistics.get("number_of_unique_public_IP_addresses")
         extracted_data['number_of_HTTP_sessions'] = self.statistics.get("number_of_HTTP_sessions")

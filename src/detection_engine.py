@@ -20,7 +20,6 @@ import re
 """
 start_time :                                timestamp when packet capture stared :  string :        %Y-%m-%d %H:%M:%S
 end_time :                                  timestamp when packet capture ended :   string :        %Y-%m-%d %H:%M:%S
-all_connections :                           connection src-dst IP pairs :           set() :         ((time, src_ip, src_port, dst_ip, dst_port), ...)
 connection_frequency :                      grouped TCP connections frequencies :   {} :            {(src_ip, src_port, dst_ip, dst_port):count, ...} 
 external_tcp_connections :                  all TCP connections :                   [] :            [ (packet_time, src_ip, src_port, dst_ip, dst_port), ... ]                  
 public_src_ip_list/_dst_ip_list/_ip_list :  all public source/destination IPs :     [] :            [ ip, ip, ... ] 
