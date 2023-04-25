@@ -398,6 +398,7 @@ def main():
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
     detection_engine = DetectionEngine(c2_indicators_total_count, analyst_profile, packet_parser, enrichment_enchine)
+    print(('- ' * (terminal_size.columns // 2)) + ('-' * (terminal_size.columns % 2)))
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
     detection_engine.detect_big_HTTP_response_size()
@@ -412,6 +413,7 @@ def main():
     detection_engine.detect_crypto_domains()
 
     if plugin_c2_hunter:
+        print(('- ' * (terminal_size.columns // 2)) + ('-' * (terminal_size.columns % 2)))
         c2hunter_db = plugins.get('C2Hunter')
         if os.path.isfile(c2hunter_db):
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] Using plugin C2Hunter for detection via threat feeds ...")
@@ -439,7 +441,7 @@ def main():
     detected_iocs = detection_engine.get_detected_iocs()
     c2_indicators_count = detection_engine.get_c2_indicators_count()
     if extracted_data and detected_iocs:
-        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count ,c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
+        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
         detection_reporter.write_detected_iocs_to_file()
         detection_reporter.create_html_analysis_report()
     else:

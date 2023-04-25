@@ -5,6 +5,8 @@ import os
 import sys
 from jinja2 import Environment, FileSystemLoader
 import datetime
+from ipaddress import ip_address
+
 
 class DetectionReporter:
 
@@ -22,6 +24,16 @@ class DetectionReporter:
         self.plugin_c2_hunter = plugin_c2_hunter
 
     def write_detected_iocs_to_file(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Preparing detected IOCs for writing to the output file ...")
+        self.logger.info(f"Preparing detected IOCs for writing to the output file")
+        self.detected_iocs['aggregated_ip_addresses'] = list(self.detected_iocs['aggregated_ip_addresses'])
+        self.detected_iocs['aggregated_domain_names'] = list(self.detected_iocs['aggregated_domain_names'])
+        self.detected_iocs['aggregated_urls'] = list(self.detected_iocs['aggregated_urls'])
+
+        ip_list = self.detected_iocs['aggregated_ip_addresses']
+        public_ips = [ip for ip in ip_list if not ip_address(ip).is_private]
+        self.detected_iocs['aggregated_ip_addresses'] = public_ips 
+
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing detected IOCs to '{self.report_output_path}'")
         self.logger.info(f"Writing detected IOCs '{self.report_output_path}'")
 
