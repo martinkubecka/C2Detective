@@ -789,7 +789,9 @@ class DetectionEngine:
                         dst_ip=dst_ip,
                         dst_port=dst_port)
 
-                    entry_frozenset = frozenset(entry.items())
+                    keys_to_keep = ['src_ip', 'src_port', 'dst_ip', 'dst_port']
+                    entry_filtered = {k: v for k, v in entry.items() if k in keys_to_keep}
+                    entry_frozenset = frozenset(entry_filtered.items())
 
                     if entry_frozenset not in seen_ips:
                         detected_c2_ip_connections.append(entry)
