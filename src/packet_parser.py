@@ -191,6 +191,7 @@ class PacketParser:
                     host = http_request.fields.get('Host')
                     if host and isinstance(host, bytes):
                         host = host.decode() # decode bytes
+                        domain_names.add(host)
                     
                     path = http_request.fields.get('Path')
                     if path and isinstance(path, bytes):

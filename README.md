@@ -140,6 +140,8 @@ update options:
 - [x] update options for Tor node list, crypto based sites list and Proofpoint ET JA3 rules
   - [x] notify the user if Tor node list, crypto based sites list or Proofpoint ET JA3 rules is out-of-date
 - [x] option for packet capturing
+- [x] report C2 indicators detection score
+- [x] create HTML analysis report containing detailed information about detected C2 IoCs 
 
 #### Packet Capture Analysis
 
@@ -168,7 +170,7 @@ update options:
 - [x] data enrichment with URLhaus
 - [x] data enrichment with VirusTotal
 - [x] correlate enriched data to one JSON object
-- [x] write detected IOCs to JSON file (`detected_iocs.json`)
+- [x] write detected IoCs to JSON file (`detected_iocs.json`)
 
 #### Detection
 - [x] detect suspicious domains and hosts based on the enriched data
@@ -197,8 +199,7 @@ update options:
 
 #### General
 
-- [ ] implement cashing (e.g. database) for enriched data and IOCs
-- [ ] create final HTML report file containg the detected IOCs 
+- [ ] implement database cashing for enriched IoCs
 
 #### Packet Capture Analysis
 
@@ -206,11 +207,11 @@ update options:
 
 #### Data Enrichment & Correlation 
 
-- [ ] revise the IOC enrichment for implementation at the conclusion of the analysis process 
+- [ ] revise the IOCs enrichment for implementation at the conclusion of the analysis process 
 
 #### Detection
 
-- [ ] implement detection confidence scoring system
+- *no queued tasks at this moment*
 
 ---
 ## :toolbox: Development

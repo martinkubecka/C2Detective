@@ -425,6 +425,8 @@ class DetectionEngine:
                 entry['c2_framework'] = c2_framework
                 entry['malicious_value'] = detected_malicious_value
                 detected_certificates.append(entry)
+                self.detected_iocs['aggregated_ip_addresses'].add(entry.get('src_ip'))
+                self.detected_iocs['aggregated_ip_addresses'].add(entry.get('dst_ip'))
 
         if detected_certificates:
             self.c2_indicators_detected = True
