@@ -12,7 +12,7 @@
 <h2 id="table-of-contents">Table of Contents</h2>
 
 - [:memo: Pre-requisites](#memo-pre-requisites)
-  - [:package: Installing Required Packages](#package-installing-required-packages)
+  - [:package: Installing Required Packages and Tools](#package-installing-required-packages-and-tools)
   - [:old\_key: API Keys](#old_key-api-keys)
 - [:rotating_light: Notice](#rotating_light-notice)
 - [:keyboard: Usage](#keyboard-usage)
@@ -33,6 +33,7 @@
 ---
 ## :memo: Pre-requisites
 
+- the current version requires **Linux** based operating system 
 - install [Python](https://www.python.org/downloads/) version >= **3.8** < **3.11** (recommended 3.10)
 - clone this project with the following command
 
@@ -40,7 +41,7 @@
 $ git clone https://github.com/martinkubecka/C2Detective.git
 ```
 
-### :package: Installing Required Packages
+### :package: Installing Required Packages and Tools
 
 ```
 $ pip install -r requirements.txt
@@ -48,21 +49,21 @@ $ pip install -r requirements.txt
 
 > Note: To learn more about different Scapy v2.x bundles visit https://scapy.readthedocs.io/en/latest/installation.html
 
+- install [wkhtmltopdf](https://wkhtmltopdf.org/) tool that provides a way to convert HTML web pages or documents to PDF format
+
+> Note: To find out more about **wkhtmltopdf**, you can refer to the documentation or support resources provided by your package manager.
+
 ### :old_key: API Keys
 
 - enrichment engine uses the following APIs:
   - [AbuseIPDB](https://www.abuseipdb.com/)
   - [AlienVault](https://otx.alienvault.com/)
-  - [CIRCL's BGP Ranking](https://www.circl.lu/projects/bgpranking/)
-  - [SecurityTrails](https://securitytrails.com/)
   - [Shodan](https://www.shodan.io/)
   - [ThreatFox](https://threatfox.abuse.ch/)
   - [URLhaus](https://urlhaus.abuse.ch/)
   - [VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-- add your API keys for the services listed above (except for `AlienVault`, `ThreatFox`, `URLhaus` and `CIRCL's BGP Ranking`) to the `config/config.yml` file as shown in the `config/example.yml` 
-
-> ***Warning:*** *Do not use SecurityTrails's enrichment on FREE subscription plan.*
+- add your API keys for the services listed above (except for `AlienVault`, `ThreatFox` abd `URLhaus`) to the `config/config.yml` file as shown in the `config/example.yml` 
 
 ---
 ## :rotating_light: Notice

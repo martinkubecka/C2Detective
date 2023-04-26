@@ -440,10 +440,12 @@ def main():
     extracted_data = packet_parser.get_extracted_data()
     detected_iocs = detection_engine.get_detected_iocs()
     c2_indicators_count = detection_engine.get_c2_indicators_count()
+    thresholds = analyst_profile.thresholds
     if extracted_data and detected_iocs:
-        detection_reporter = DetectionReporter(output_dir, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
+        detection_reporter = DetectionReporter(output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
         detection_reporter.write_detected_iocs_to_file()
         detection_reporter.create_html_analysis_report()
+        detection_reporter.create_pdf_analysis_report()
     else:
         print(f"[{time.strftime('%H:%M:%S')}] [ERROR] The provided data is incomplete, therefore, exporting detected IOCs is not possible ...")
         logging.error(f"The provided data is incomplete, therefore, exporting detected IOCs is not possible")

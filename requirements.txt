@@ -8,3 +8,5 @@ colorama
 dgad
 pyja3
 Jinja2
+beautifulsoup4
+pdfkit
