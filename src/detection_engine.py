@@ -36,7 +36,7 @@ certificates :                              selected TLS certificate fields :   
 
 
 class DetectionEngine:
-    def __init__(self, c2_indicators_total_count, analyst_profile, packet_parser, enrichment_enchine):
+    def __init__(self, c2_indicators_total_count, analyst_profile, packet_parser):
         self.logger = logging.getLogger(__name__)
         self.c2_indicators_total_count = c2_indicators_total_count
         self.c2_indicators_count = 0
@@ -47,7 +47,6 @@ class DetectionEngine:
         self.detected_iocs['aggregated_urls'] = set()
 
         self.packet_parser = packet_parser
-        self.enrichment_enchine = enrichment_enchine
 
         self.CHUNK_SIZE = analyst_profile.chunk_size
         self.MAX_FREQUENCY = len(
@@ -449,85 +448,24 @@ class DetectionEngine:
         for entry in detected_certificates:
             print(f">> Found {Fore.RED}'{entry['malicious_value']}'{Fore.RESET} value associated with {Fore.RED}'{entry['c2_framework']}'{Fore.RESET} C2 framework")
 
-    def detect_outgoing_traffic_to_tor(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for outgoing network traffic to TOR exit nodes ...")
-        logging.info("Looking for outgoing network traffic to TOR exit nodes")
-
-        detected = False
-        detected_connections = []
-        detected_tor_exit_nodes = set()
-        seen_ips = set()
-
-        for connection in self.packet_parser.external_tcp_connections:
-            detected_node = False
-
-            timestamp = connection[0]
-            src_ip = connection[1]
-            src_port = connection[2]
-            dst_ip = connection[3]
-            dst_port = connection[4]
-
-            if src_ip in self.tor_exit_nodes:
-                detected_node = True
-                detected_tor_exit_nodes.add(src_ip)
-            elif dst_ip in self.tor_exit_nodes:
-                detected_node = True
-                detected_tor_exit_nodes.add(dst_ip)
-
-            if detected_node:
-                entry = dict(
-                    timestamp=timestamp,
-                    src_ip=src_ip,
-                    src_port=src_port,
-                    dst_ip=dst_ip,
-                    dst_port=dst_port
-                )
-
-                if entry_frozenset not in seen_ips:
-                    detected_connections.append(entry)
-                    self.detected_iocs['aggregated_ip_addresses'].add(src_ip)
-                    self.detected_iocs['aggregated_ip_addresses'].add(dst_ip)
-                    seen_ips.add(entry_frozenset)
-                    detected = True
-
-        if detected:
-            self.c2_indicators_detected = True
-            self.c2_indicators_count += 1
-            self.detected_iocs['Tor_exit_nodes'] = list(
-                detected_tor_exit_nodes)
-            self.detected_iocs['Tor_exit_network_traffic'] = detected_connections
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
-            logging.info(
-                f"Detected outgoing network traffic to TOR exit nodes. (detected_ips : {detected_connections})")
-            self.print_detected_tor_exit_nodes(detected_connections)
-        else:
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Outgoing network traffic to TOR exit nodes not detected{Fore.RESET}")
-            logging.info(
-                f"Outgoing network traffic to TOR exit nodes not detected")
-
-    def print_detected_tor_exit_nodes(self, detected_connections):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing network traffic to detected TOR exit nodes")
-        logging.info(f"Listing network traffic to detected TOR exit nodes")
-
-        for entry in detected_connections:
-            print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
-
     def detect_tor_traffic(self):
         print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to public TOR nodes ...")
-        logging.info("Looking for network traffic to public TOR nodes")
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for indicators of Tor network traffic ...")
+        logging.info("Looking for indicators of Tor network traffic")
 
-        detected = False
-        detected_connections = []
+        detected_tor_traffic = False
+        detected_tor_traffic_connections = []
         detected_tor_nodes = set()
-        seen_ips = set()
+        tor_traffic_seen_ips = set()
+
+        detected_tor_traffic_exit_nodes = False
+        detected_tor_exit_node_connections = []
+        detected_tor_exit_nodes = set()
+        tor_exit_nodes_seen_ips = set()
 
         for connection in self.packet_parser.external_tcp_connections:
-            detected_node = False
+            detected_tor_node = False
+            detected_tor_exit_node = False
 
             timestamp = connection[0]
             src_ip = connection[1]
@@ -536,13 +474,13 @@ class DetectionEngine:
             dst_port = connection[4]
 
             if src_ip in self.tor_nodes:
-                detected_node = True
+                detected_tor_node = True
                 detected_tor_nodes.add(src_ip)
             elif dst_ip in self.tor_nodes:
-                detected_node = True
+                detected_tor_node = True
                 detected_tor_nodes.add(dst_ip)
 
-            if detected_node:
+            if detected_tor_node:
                 entry = dict(
                     timestamp=timestamp,
                     src_ip=src_ip,
@@ -556,32 +494,80 @@ class DetectionEngine:
                                   v in entry.items() if k in keys_to_keep}
                 entry_frozenset = frozenset(entry_filtered.items())
 
-                if entry_frozenset not in seen_ips:
-                    detected_connections.append(entry)
+                if entry_frozenset not in tor_traffic_seen_ips:
+                    detected_tor_traffic_connections.append(entry)
                     self.detected_iocs['aggregated_ip_addresses'].add(src_ip)
                     self.detected_iocs['aggregated_ip_addresses'].add(dst_ip)
-                    seen_ips.add(entry_frozenset)
-                    detected = True
+                    tor_traffic_seen_ips.add(entry_frozenset)
+                    detected_tor_traffic = True
 
-        if detected:
+            if src_ip in self.tor_exit_nodes:
+                detected_tor_exit_node = True
+                detected_tor_exit_nodes.add(src_ip)
+            elif dst_ip in self.tor_exit_nodes:
+                detected_tor_exit_node = True
+                detected_tor_exit_nodes.add(dst_ip)
+
+            if detected_tor_exit_node:
+                entry = dict(
+                    timestamp=timestamp,
+                    src_ip=src_ip,
+                    src_port=src_port,
+                    dst_ip=dst_ip,
+                    dst_port=dst_port
+                )
+
+                if entry_frozenset not in tor_exit_nodes_seen_ips:
+                    detected_tor_exit_node_connections.append(entry)
+                    self.detected_iocs['aggregated_ip_addresses'].add(src_ip)
+                    self.detected_iocs['aggregated_ip_addresses'].add(dst_ip)
+                    tor_exit_nodes_seen_ips.add(entry_frozenset)
+                    detected_tor_traffic_exit_nodes = True
+
+        if detected_tor_traffic:
             self.c2_indicators_detected = True
             self.c2_indicators_count += 1
             self.detected_iocs['Tor_nodes'] = list(detected_tor_nodes)
-            self.detected_iocs['Tor_network_traffic'] = detected_connections
+            self.detected_iocs['Tor_network_traffic'] = detected_tor_traffic_connections
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected network traffic to public TOR nodes{Fore.RESET}")
             logging.info(
-                f"Detected network traffic to public TOR nodes. (detected_ips : {detected_connections})")
-            self.print_detected_tor_nodes(detected_connections)
+                f"Detected network traffic to public TOR nodes. (detected_ips : {detected_tor_traffic_connections})")
+            self.print_detected_tor_nodes(detected_tor_traffic_connections)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Network traffic to public TOR nodes not detected{Fore.RESET}")
             logging.info(f"Network traffic to public TOR nodes not detected")
 
+        if detected_tor_traffic_exit_nodes:
+            self.c2_indicators_detected = True
+            self.c2_indicators_count += 1
+            self.detected_iocs['Tor_exit_nodes'] = list(
+                detected_tor_exit_nodes)
+            self.detected_iocs['Tor_exit_network_traffic'] = detected_tor_exit_node_connections
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected outgoing network traffic to TOR exit nodes{Fore.RESET}")
+            logging.info(
+                f"Detected outgoing network traffic to TOR exit nodes. (detected_ips : {detected_tor_exit_node_connections})")
+            self.print_detected_tor_exit_nodes(detected_tor_exit_node_connections)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Outgoing network traffic to TOR exit nodes not detected{Fore.RESET}")
+            logging.info(
+                f"Outgoing network traffic to TOR exit nodes not detected")
+
     def print_detected_tor_nodes(self, detected_connections):
         print(
             f"[{time.strftime('%H:%M:%S')}] [INFO] Listing traffic to public TOR nodes")
         logging.info(f"Listing traffic to public TOR nodes")
+
+        for entry in detected_connections:
+            print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
+
+    def print_detected_tor_exit_nodes(self, detected_connections):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing network traffic to detected TOR exit nodes")
+        logging.info(f"Listing network traffic to detected TOR exit nodes")
 
         for entry in detected_connections:
             print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
@@ -1026,7 +1012,6 @@ class DetectionEngine:
     def get_c2_http_sessions(self, detected_urls):
         c2_http_sessions = []
 
-        # TODO: use frozenset for duplicate filtering
         for session in self.packet_parser.http_sessions:
             for c2_url in detected_urls:
                 if session.get('url') == c2_url:
@@ -1081,6 +1066,15 @@ class DetectionEngine:
     # ----------------------------------------------------------------------------------------------------------------
 
     def get_detected_iocs(self):
+        self.logger.info(f"Preparing detected IOCs for writing to the output file")
+        self.detected_iocs['aggregated_ip_addresses'] = list(self.detected_iocs['aggregated_ip_addresses'])
+        self.detected_iocs['aggregated_domain_names'] = list(self.detected_iocs['aggregated_domain_names'])
+        self.detected_iocs['aggregated_urls'] = list(self.detected_iocs['aggregated_urls'])
+
+        ip_list = self.detected_iocs['aggregated_ip_addresses']
+        public_ips = [ip for ip in ip_list if not ip_address(ip).is_private]
+        self.detected_iocs['aggregated_ip_addresses'] = public_ips 
+
         return self.detected_iocs
 
     def get_c2_indicators_count(self):

@@ -5,14 +5,13 @@ import os
 import sys
 from jinja2 import Environment, FileSystemLoader
 import datetime
-from ipaddress import ip_address
 import pdfkit
 from bs4 import BeautifulSoup
 
 
 class DetectionReporter:
 
-    def __init__(self, output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter):
+    def __init__(self, output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, plugin_c2_hunter):
         self.logger = logging.getLogger(__name__)
         self.base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.template_dir_path = os.path.join(self.base_relative_path, "templates")
@@ -20,29 +19,28 @@ class DetectionReporter:
         self.html_analysis_report_path = os.path.join(self.report_dir, "analysis_report.html")
         self.pdf_analysis_report_path = os.path.join(self.report_dir, "analysis_report.pdf")
         self.report_output_path = os.path.join(self.report_dir, "detected_iocs.json")
+        self.enriched_data_output_path = os.path.join(self.report_dir, "enriched_iocs.json")
         self.thresholds = thresholds
         self.extracted_data = extracted_data
         self.detected_iocs = detected_iocs
+        self.enriched_iocs = enriched_iocs
         self.c2_indicators_total_count = c2_indicators_total_count
         self.c2_indicators_count = c2_indicators_count
         self.plugin_c2_hunter = plugin_c2_hunter
 
     def write_detected_iocs_to_file(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Preparing detected IOCs for writing to the output file ...")
-        self.logger.info(f"Preparing detected IOCs for writing to the output file")
-        self.detected_iocs['aggregated_ip_addresses'] = list(self.detected_iocs['aggregated_ip_addresses'])
-        self.detected_iocs['aggregated_domain_names'] = list(self.detected_iocs['aggregated_domain_names'])
-        self.detected_iocs['aggregated_urls'] = list(self.detected_iocs['aggregated_urls'])
-
-        ip_list = self.detected_iocs['aggregated_ip_addresses']
-        public_ips = [ip for ip in ip_list if not ip_address(ip).is_private]
-        self.detected_iocs['aggregated_ip_addresses'] = public_ips 
-
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing detected IOCs to '{self.report_output_path}' ...")
         self.logger.info(f"Writing detected IOCs '{self.report_output_path}'")
 
         with open(self.report_output_path, "w") as output:
             output.write(json.dumps(self.detected_iocs, indent=4))
+
+    def write_enriched_iocs_to_file(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing enriched IOCs to '{self.enriched_data_output_path}' ...")
+        self.logger.info(f"Writing enriched IOCs '{self.enriched_data_output_path}'")
+
+        with open(self.enriched_data_output_path, "w") as output:
+            output.write(json.dumps(self.enriched_iocs, indent=4))
 
     def create_html_analysis_report(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Creating an HTML analysis report '{self.html_analysis_report_path}' ...")

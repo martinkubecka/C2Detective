@@ -20,13 +20,13 @@
   - [:ballot\_box\_with\_check: Implemented Features](#ballot_box_with_check-implemented-features)
     - [General](#general)
     - [Packet Capture Analysis](#packet-capture-analysis)
-    - [Data Enrichment \& Correlation](#data-enrichment--correlation)
     - [Detection](#detection)
+    - [IoCs Enrichment](#iocs-enrichment)
   - [:clipboard: To-Do](#clipboard-to-do)
     - [General](#general-1)
     - [Packet Capture Analysis](#packet-capture-analysis-1)
-    - [Data Enrichment \& Correlation](#data-enrichment--correlation-1)
     - [Detection](#detection-1)
+    - [IoCs Enrichment](#iocs-enrichment-1)
 - [:toolbox: Development](#toolbox-development)
   - [:office: Virtual Environment](#office-virtual-environment)
 
@@ -63,7 +63,9 @@ $ pip install -r requirements.txt
   - [URLhaus](https://urlhaus.abuse.ch/)
   - [VirusTotal](https://www.virustotal.com/gui/home/upload)
 
-- add your API keys for the services listed above (except for `AlienVault`, `ThreatFox` abd `URLhaus`) to the `config/config.yml` file as shown in the `config/example.yml` 
+- if you want to use all the service listed above, add your API keys for `AbuseIPDB`, `VirusTotal` and `Shodan` to the `config/config.yml` file as shown in the `config/example.yml`
+
+> Note: You can enable or disable specific enrichment services by modifying the `enrichment_services` section in the configuration file `config/config.yml`.
 
 ---
 ## :rotating_light: Notice
@@ -97,8 +99,7 @@ $ getcap /usr/bin/python3.10
 ## :keyboard: Usage
 
 ```
-usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [--print-config] [-d] [-g] [-e] [-utn]
-                   [-ucd] [-ujr]
+usage: c2detective [-h] [-q] (-i FILENAME | -p) [-c FILE] [-s] [-w] [-o PATH] [-d] [-g] [-e] [-utn] [-ucd] [-ujr]
 
 Application for detecting command and control (C2) communication through network traffic analysis.
 
@@ -109,7 +110,6 @@ options:
   -s, --statistics               print packet capture statistics to the console
   -w, --write-extracted          write extracted data to a JSON file
   -o PATH, --output PATH         output directory file path for report files (default: 'reports/')
-  --print-config                 print loaded config to the console
 
 required options:
   -i FILENAME, --input FILENAME  input file (.cap / .pcap / .pcapng)
@@ -158,20 +158,7 @@ update options:
     - [x] requested URLs
     - [x] fields of interest from TLS certificates
 - [x] show custom packet capture statistics in terminal
-- [x] write extracted data from packet capture to JSON file (`extracted_data.json`)
-
-#### Data Enrichment & Correlation 
-
-- [x] data enrichment with AlienVault
-- [x] data enrichment with AbuseIPDB
-- [x] data enrichment with CIRCL's BGP Ranking
-- [x] data enrichment with SecurityTrails
-- [x] data enrichment with Shodan
-- [x] data enrichment with ThreatFox
-- [x] data enrichment with URLhaus
-- [x] data enrichment with VirusTotal
-- [x] correlate enriched data to one JSON object
-- [x] write detected IoCs to JSON file (`detected_iocs.json`)
+- [x] write extracted data from packet capture to a JSON file (`extracted_data.json`)
 
 #### Detection
 - [x] detect suspicious domains and hosts based on the enriched data
@@ -190,8 +177,17 @@ update options:
 - [x] detect known C2 values in TLS certificates
 - [x] detect signs of DNS based covert channels (DNS Tunneling)
 - [x] detect know malicious JA3 (TLS negotiation) fingerprints
+- [x] write detected IoCs to a JSON file (`detected_iocs.json`)
 
-> *currently working on detection features*
+#### IoCs Enrichment 
+
+- [x] IoCs enrichment with AlienVault
+- [x] IoCs enrichment with AbuseIPDB
+- [x] IoCs enrichment with Shodan
+- [x] IoCs enrichment with ThreatFox
+- [x] IoCs enrichment with URLhaus
+- [x] IoCs enrichment with VirusTotal
+- [x] write enriched IoCs to a JSON file (`enriched_iocs.json`)
 
 ### :clipboard: To-Do
 
@@ -200,17 +196,17 @@ update options:
 
 #### General
 
-- [ ] implement database cashing for enriched IoCs
+- *no queued tasks at this moment*
 
 #### Packet Capture Analysis
 
 - *no queued tasks at this moment*
 
-#### Data Enrichment & Correlation 
-
-- [ ] revise the IOCs enrichment for implementation at the conclusion of the analysis process 
-
 #### Detection
+
+- *no queued tasks at this moment*
+
+#### IoCs Enrichment 
 
 - *no queued tasks at this moment*
 

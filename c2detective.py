@@ -168,6 +168,7 @@ def check_required_structure(analyst_profile, output_dir):
         print("\nExiting program ...\n")
         sys.exit(1)
 
+
 def load_config(filename):
     try:
         with open(filename, "r") as ymlfile:
@@ -203,15 +204,13 @@ def parse_arguments():
     # parser.add_argument('-n', '--name', metavar="NAME",
     #                     help='analysis keyword (e.g. Trickbot, Mirai, Zeus, ...)')
     parser.add_argument('-c', '--config', metavar='FILE', default="config/config.yml",
-                        help="configuration file (default: 'config/config.yml')")  # add option to load arguments config file
+                        help="configuration file (default: 'config/config.yml')")
     parser.add_argument('-s', '--statistics', action='store_true',
                         help='print packet capture statistics to the console')
     parser.add_argument('-w', '--write-extracted', action='store_true',
                         help='write extracted data to a JSON file')
     parser.add_argument('-o', '--output', metavar='PATH', default="reports",
                         help="output directory file path for report files (default: 'reports/')")
-    parser.add_argument('--print-config', action='store_true',
-                        help='print loaded config to the console')
 
     enable_group = parser.add_argument_group('enable options')
     enable_group.add_argument('-d', '--dga', action='store_true',
@@ -261,8 +260,6 @@ def main():
         logging.info(f"Loading config '{args.config}'")
         config = load_config(args.config)
         analyst_profile = AnalystProfile(config)
-        if args.print_config:
-            analyst_profile.print_config()
 
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Verifying required directory structure ...")
@@ -363,14 +360,7 @@ def main():
         report_extracted_data_option = args.write_extracted
         statistics_option = args.statistics
         packet_parser = PacketParser(analyst_profile, input_file, output_dir, report_extracted_data_option, statistics_option)
-
-    if args.enrich:
-        print('-' * terminal_size.columns)
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating data enrichment engine ...")
-        logging.info("Configurating data enrichment engine")
-        enrichment_enchine = EnrichmentEngine(analyst_profile, output_dir)
-    else:
-        enrichment_enchine = None
+        extracted_data = packet_parser.get_extracted_data()
 
     plugins = None
     if args.plugins:
@@ -397,7 +387,7 @@ def main():
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
     logging.info("Configurating detection engine")
-    detection_engine = DetectionEngine(c2_indicators_total_count, analyst_profile, packet_parser, enrichment_enchine)
+    detection_engine = DetectionEngine(c2_indicators_total_count, analyst_profile, packet_parser)
     print(('- ' * (terminal_size.columns // 2)) + ('-' * (terminal_size.columns % 2)))
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
@@ -409,7 +399,6 @@ def main():
     detection_engine.detect_dns_tunneling()
     detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
-    detection_engine.detect_outgoing_traffic_to_tor()
     detection_engine.detect_crypto_domains()
 
     if plugin_c2_hunter:
@@ -423,27 +412,35 @@ def main():
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Configured C2Hunter database path '{c2hunter_db}' does not exist ...")
             logging.error(f"Configured C2Hunter database path '{c2hunter_db}' does not exist")
 
-    # if not enrichment_enchine is None:
-    #     # using set() to remove duplicates and check for values count
-    #     no_enabled_services = len(list(set(list(config.get('enrichment_services').values())))) == 1
-    #     # do not use enrichment services when all services are set to 'False' even if enrichment is enavled
-    #     if no_enabled_services:
-    #         print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No enrichment services are enabled ...")
-    #         logging.warning("No enrichment services are enabled")
-    #     else:
-    #         pass
-    
+    detected_iocs = detection_engine.get_detected_iocs()
+
+    if args.enrich:
+        print('-' * terminal_size.columns)
+        # using set() to remove duplicates and check for values count
+        no_enabled_services = len(list(set(list(analyst_profile.enrichment_services.values())))) == 1
+        # do not use enrichment services when all services are set to 'False' even if enrichment flas is enabled
+        if no_enabled_services:
+            print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No enrichment services are enabled in the configuration file ...")
+            logging.warning("No enrichment services are enabled in the configuration file")
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating IoCs enrichment engine ...")
+            logging.info("Configurating IoCs enrichment engine")
+            enrichment_enchine = EnrichmentEngine(output_dir, analyst_profile.api_keys, analyst_profile.api_urls, analyst_profile.enrichment_services, detected_iocs)
+            enriched_iocs = enrichment_enchine.enrich_detected_iocs()
+    else:
+        enrichment_enchine = None
+        enriched_iocs = {}
+
     print('-' * terminal_size.columns)
     detection_engine.evaluate_detection()
 
     print('-' * terminal_size.columns)
-    extracted_data = packet_parser.get_extracted_data()
-    detected_iocs = detection_engine.get_detected_iocs()
-    c2_indicators_count = detection_engine.get_c2_indicators_count()
-    thresholds = analyst_profile.thresholds
     if extracted_data and detected_iocs:
-        detection_reporter = DetectionReporter(output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, detected_iocs, plugin_c2_hunter)
+        c2_indicators_count = detection_engine.get_c2_indicators_count()
+        thresholds = analyst_profile.thresholds
+        detection_reporter = DetectionReporter(output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, plugin_c2_hunter)
         detection_reporter.write_detected_iocs_to_file()
+        detection_reporter.write_enriched_iocs_to_file()
         detection_reporter.create_html_analysis_report()
         detection_reporter.create_pdf_analysis_report()
     else:
@@ -457,6 +454,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# NOTE: data enrichment caching system/database
-# may be useful when running c2detective periodicly in the same environment  

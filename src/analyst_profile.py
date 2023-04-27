@@ -16,10 +16,9 @@ class AnalystProfile:
         if self.api_keys:
             self.abuseipdb_api_key = self.api_keys.get('abuseipdb')
             self.virustotal_api_key = self.api_keys.get('virustotal')
-            self.securitytrails_api_key = self.api_keys.get('securitytrails')
             self.shodan_api_key = self.api_keys.get('shodan')
 
-            if any(api_key is None for api_key in (self.abuseipdb_api_key, self.virustotal_api_key, self.securitytrails_api_key, self.shodan_api_key)):
+            if any(api_key is None for api_key in (self.abuseipdb_api_key, self.virustotal_api_key, self.shodan_api_key)):
                 print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Incomplete API keys are present in the configuration file ...")
                 logging.error(f"Incomplete API keys are present in the configuration file")
                 print("\nExiting program ...\n")
@@ -27,6 +26,27 @@ class AnalystProfile:
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [ERROR] API keys are not present in the configuration file ...")
             logging.error(f"API keys are not present in the configuration file")
+            print("\nExiting program ...\n")
+            sys.exit(1)
+
+        self.api_urls = config.get('api_urls')
+        if self.api_urls:
+            self.abuseipdb_api_url = self.api_urls.get('abuseipdb')
+            self.threatfox_api_url = self.api_urls.get('threatfox')
+            self.virustotal_api_url = self.api_urls.get('virustotal')
+            self.shodan_api_url = self.api_urls.get('shodan')
+            self.alienvault_api_url = self.api_urls.get('alienvault')
+            self.urlhaus_api_url = self.api_urls.get('urlhaus')
+
+            if any(api_url is None for api_url in (self.abuseipdb_api_url, self.threatfox_api_url, self.virustotal_api_url, self.shodan_api_url, self.alienvault_api_url ,self.urlhaus_api_url)):
+                print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Incomplete API URLs are present in the configuration file ...")
+                logging.error(f"Incomplete API URLs are present in the configuration file")
+                print("\nExiting program ...\n")
+                sys.exit(1)
+
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] API URLs are not present in the configuration file ...")
+            logging.error(f"API URLs are not present in the configuration file")
             print("\nExiting program ...\n")
             sys.exit(1)
 
@@ -89,14 +109,12 @@ class AnalystProfile:
         if self.enrichment_services:
             self.abuseipdb = self.enrichment_services.get('abuseipdb')
             self.threatfox = self.enrichment_services.get('threatfox')
-            self.securitytrails = self.enrichment_services.get('securitytrails')
             self.virustotal = self.enrichment_services.get('virustotal')
             self.shodan = self.enrichment_services.get('shodan')
             self.alienvault = self.enrichment_services.get('alienvault')
-            self.bgp_ranking = self.enrichment_services.get('bgp_ranking')
             self.urlhaus = self.enrichment_services.get('urlhaus')
 
-            if any(service is None for service in (self.abuseipdb, self.threatfox, self.securitytrails, self.virustotal, self.shodan, self.alienvault, self.bgp_ranking, self.urlhaus)):
+            if any(service is None for service in (self.abuseipdb, self.threatfox, self.virustotal, self.shodan, self.alienvault, self.urlhaus)):
                 print(f"[{time.strftime('%H:%M:%S')}] [ERROR] The configuration file does not contain complete settings for enrichment services ...")
                 logging.error(f"The configuration file does not contain complete settings for enrichment services")
                 print("\nExiting program ...\n")
@@ -106,9 +124,6 @@ class AnalystProfile:
             logging.error(f"Enrichment services are not present in the configuration file")
             print("\nExiting program ...\n")
             sys.exit(1)
-
-        # NOTE: maybe this option will not be implementd ... 
-        self.arguments = config.get('arguments')
 
         self.sniffing = config.get('sniffing')
         if self.sniffing:
@@ -148,22 +163,3 @@ class AnalystProfile:
 
         # plugins are optional
         self.plugins = config.get('plugins')
-
-    def print_config(self):
-        print(f"name: {self.name}")
-        print(f"abuseipdb: {self.abuseipdb_api_key}")
-        print(f"virustotal: {self.virustotal_api_key}")
-        print(f"securitytrails: {self.securitytrails_api_key}")
-        print(f"shodan: {self.shodan_api_key}")
-        print(f"tor_node_list: {self.tor_node_list}")
-        print(f"tor_exit_node_list: {self.tor_exit_node_list}")
-        print(f"crypto_domains: {self.crypto_domains}")
-        print(f"ja3_rules: {self.ja3_rules}")
-        print(f"enrichment_services: {self.enrichment_services}")
-        print(f"arguments: {self.arguments}")
-        print(f"sniffing: {self.sniffing}")
-        print(f"MAX_FREQUENCY: {self.MAX_FREQUENCY}")
-        print(f"MAX_DURATION: {self.MAX_DURATION}")
-        print(f"MAX_HTTP_SIZE: {self.MAX_HTTP_SIZE}")
-        print(f"MAX_SUBDOMAIN_LENGTH: {self.MAX_SUBDOMAIN_LENGTH}")
-        print(f"plugins: {self.plugins}")

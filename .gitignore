@@ -1,23 +1,16 @@
 config/config.yml
 iocs/tor/tor_nodes.json
 iocs/crypto_domains/crypto_domains.json
+iocs/ja3/ja3_rules.json
 
+testing/
 samples/
 reports/
 logs/
 
-testing/
-tls_testing/
-testing.py
-testing_detection.py
-
-src/database_engine.py
-
 TODO.md
 
-##########################################################################
-############################# Python template ############################
-##########################################################################
+# ----------------------------------------------------------------------- #
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
