@@ -15,7 +15,6 @@
         "P18055077"
     ],
     "Sliver C2": [
-        "multiplayer",
-        "operators"
+        "multiplayer+operators"
     ]
 }

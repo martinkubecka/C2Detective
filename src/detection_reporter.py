@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 class DetectionReporter:
 
-    def __init__(self, output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, plugin_c2_hunter):
+    def __init__(self, output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, dga_detection, plugin_c2hunter):
         self.logger = logging.getLogger(__name__)
         self.base_relative_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.template_dir_path = os.path.join(self.base_relative_path, "templates")
@@ -26,7 +26,8 @@ class DetectionReporter:
         self.enriched_iocs = enriched_iocs
         self.c2_indicators_total_count = c2_indicators_total_count
         self.c2_indicators_count = c2_indicators_count
-        self.plugin_c2_hunter = plugin_c2_hunter
+        self.dga_detection = dga_detection
+        self.plugin_c2hunter = plugin_c2hunter
 
     def write_detected_iocs_to_file(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Writing detected IOCs to '{self.report_output_path}' ...")
@@ -53,7 +54,7 @@ class DetectionReporter:
         current_datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # render the template with the detected_iocs data
-        rendered_html = template.render(current_datetime=current_datetime, thresholds=self.thresholds, c2_indicators_total_count=self.c2_indicators_total_count, c2_indicators_count=self.c2_indicators_count, extracted_data=self.extracted_data, detected_iocs=self.detected_iocs, plugin_c2_hunter=self.plugin_c2_hunter)
+        rendered_html = template.render(current_datetime=current_datetime, thresholds=self.thresholds, c2_indicators_total_count=self.c2_indicators_total_count, c2_indicators_count=self.c2_indicators_count, extracted_data=self.extracted_data, detected_iocs=self.detected_iocs, dga_detection=self.dga_detection, plugin_c2hunter=self.plugin_c2hunter)
 
         # write the report to a file
         with open(self.html_analysis_report_path, 'w') as f:

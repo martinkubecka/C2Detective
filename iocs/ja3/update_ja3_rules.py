@@ -31,12 +31,15 @@ class JA3Rules:
                     try:
                         msg = match.group(1)
                         msg = msg.split("- ")[-1]
-                        content = match.group(2)
-                        entry = dict(
-                            type=msg,
-                            hash=content
-                        )
-                        ja3_rules.append(entry)
+
+                        # NOTE : rule 'Fake Firefox Font Update' is not documented, therefore it is not processed 
+                        if not msg == "Fake Firefox Font Update": 
+                            content = match.group(2)
+                            entry = dict(
+                                type=msg,
+                                hash=content
+                            )
+                            ja3_rules.append(entry)
                     except Exception as e:
                         logging.error(f"Error ocurred while parsing fetched JA3 rules", exc_info=True)
                         continue

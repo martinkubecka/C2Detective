@@ -158,7 +158,6 @@
 
     <h1>C2Detective Analysis Report</h1>
 
-    <hr>
     <div class="toc" id="toc"></div>
 
     <hr>
@@ -213,10 +212,11 @@
     <table class="report-table">
         <thead>
             <tr>
-                <th colspan="3">Configured Detection Thresholds</th>
+                <th colspan="4">Configured Detection Thresholds</th>
             </tr>
             <tr>
                 <th>Indicator</th>
+                <th>Description</th>
                 <th>Value</th>
                 <th>Unit</th>
             </tr>
@@ -224,21 +224,25 @@
         <tbody>
             <tr>
                 <td>Frequency</td>
+                <td>Percentage of TCP network connections out of all TCP connections.</td>
                 <td>{{ thresholds.get("MAX_FREQUENCY") }}</td>
                 <td>percentage</td>
             </tr>
             <tr>
                 <td>Session Duration</td>
+                <td>Network connection duration in seconds.</td>
                 <td>{{ thresholds.get("MAX_DURATION") }}</td>
                 <td>seconds</td>
             </tr>
             <tr>
                 <td>HTTP Content-Length</td>
+                <td>HTTP response message body size in bytes.</td>
                 <td>{{ thresholds.get("MAX_HTTP_SIZE") }}</td>
                 <td>bytes</td>
             </tr>
             <tr>
                 <td>Subdomain Length</td>
+                <td>The number of characters that make up the subdomains.</td>
                 <td>{{ thresholds.get("MAX_SUBDOMAIN_LENGTH") }}</td>
                 <td>characters</td>
             </tr>
@@ -486,54 +490,7 @@
     {% endif %}
 
     <hr>
-    <h2 class="toc-heading">Outgoing traffic to Tor exit nodes</h2>
-    {% if detected_iocs.get("Tor_exit_nodes") %}
-    <button class="toggle-button" onclick="toggleContent('tor-exit-nodes')" style="text-align: right;">[ hide content
-        ]</button>
-    <div id="tor-exit-nodes" style="display:block;">
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>Tor Exit Node IP Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ip_address in detected_iocs.get("Tor_exit_nodes") %}
-                <tr>
-                    <td>{{ ip_address }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <br>
-        {% endif %}
-
-        {% if detected_iocs.get("Tor_exit_network_traffic") %}
-        <table class="report-table">
-            <tr>
-                <th>Timestamp</th>
-                <th>Source IP</th>
-                <th>Source Port</th>
-                <th>Destination IP</th>
-                <th>Destination Port</th>
-            </tr>
-            {% for entry in detected_iocs.get("Tor_exit_network_traffic") %}
-            <tr>
-                <td>{{ entry.get("timestamp") }}</td>
-                <td>{{ entry.get("src_ip") }}</td>
-                <td>{{ entry.get("src_port") }}</td>
-                <td>{{ entry.get("dst_ip") }}</td>
-                <td>{{ entry.get("dst_port") }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% else %}
-    <p class="not-detected">NOT DETECTED</p>
-    {% endif %}
-
-    <hr>
-    <h2 class="toc-heading">Tor traffic</h2>
+    <h2 class="toc-heading">Tor network traffic</h2>
     {% if detected_iocs.get("Tor_nodes") %}
     <button class="toggle-button" onclick="toggleContent('tor-traffic')" style="text-align: right;">[ hide content
         ]</button>
@@ -580,6 +537,55 @@
     {% endif %}
 
     <hr>
+    <h2 class="toc-heading">Outgoing network traffic to Tor exit nodes</h2>
+    {% if detected_iocs.get("Tor_exit_nodes") %}
+    <button class="toggle-button" onclick="toggleContent('tor-exit-nodes')" style="text-align: right;">[ hide content
+        ]</button>
+    <div id="tor-exit-nodes" style="display:block;">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Tor Exit Node IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ip_address in detected_iocs.get("Tor_exit_nodes") %}
+                <tr>
+                    <td>{{ ip_address }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+        {% endif %}
+
+        {% if detected_iocs.get("Tor_exit_network_traffic") %}
+        <table class="report-table">
+            <tr>
+                <th>Timestamp</th>
+                <th>Source IP</th>
+                <th>Source Port</th>
+                <th>Destination IP</th>
+                <th>Destination Port</th>
+            </tr>
+            {% for entry in detected_iocs.get("Tor_exit_network_traffic") %}
+            <tr>
+                <td>{{ entry.get("timestamp") }}</td>
+                <td>{{ entry.get("src_ip") }}</td>
+                <td>{{ entry.get("src_port") }}</td>
+                <td>{{ entry.get("dst_ip") }}</td>
+                <td>{{ entry.get("dst_port") }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
+
+    {% if dga_detection %}
+
+    <hr>
     <h2 class="toc-heading">Detected DGA domain names</h2>
     {% if detected_iocs.get("DGA_domains") %}
     <button class="toggle-button" onclick="toggleContent('dga-domains')" style="text-align: right;">[ hide content
@@ -598,6 +604,8 @@
     </div>
     {% else %}
     <p class="not-detected">NOT DETECTED</p>
+    {% endif %}
+
     {% endif %}
 
     <hr>
@@ -695,7 +703,7 @@
     <p class="not-detected">NOT DETECTED</p>
     {% endif %}
 
-    {% if plugin_c2_hunter %}
+    {% if plugin_c2hunter %}
 
     <hr>
     <h2 class="toc-heading">Connections with C2 IP addresses</h2>
@@ -864,7 +872,7 @@
             tocHtml += '<li><a href="#' + anchorId + '" onclick="scrollToHeading(\'' + anchorId + '\')">' + headingText + '</a></li>';
             headings[i].id = anchorId;
         }
-        document.getElementById('toc').innerHTML = '<h2>Table of Contents</h2><ol>' + tocHtml + '</ol>';
+        document.getElementById('toc').innerHTML = '<hr><h2>Table of Contents</h2><ol>' + tocHtml + '</ol>';
     </script>
 
 </body>

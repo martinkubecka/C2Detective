@@ -51,7 +51,6 @@ class DetectionEngine:
         self.CHUNK_SIZE = analyst_profile.chunk_size
         self.MAX_FREQUENCY = len(
             self.packet_parser.packets) * (analyst_profile.MAX_FREQUENCY / 100)
-        # 14000 set for testing 'Qakbot.pcap'
         self.MAX_DURATION = analyst_profile.MAX_DURATION
         self.MAX_HTTP_SIZE = analyst_profile.MAX_HTTP_SIZE
         self.MAX_SUBDOMAIN_LENGTH = analyst_profile.MAX_SUBDOMAIN_LENGTH
@@ -406,19 +405,32 @@ class DetectionEngine:
 
                 for malicious_value in malicious_tls_values:
 
-                    if malicious_value in entry.get('serialNumber'):
-                        detected_value = True
-                        detected_malicious_value = malicious_value
-
-                    for value in issuer_values:
-                        if malicious_value in value:
+                    if '+' in malicious_value:
+                            value_parts = malicious_value.split('+')
+                            
+                            is_value_detected = all(
+                                part in entry.get('serialNumber') or
+                                any(part in value for value in list(issuer_values) + list(subject_values))
+                                    for part in value_parts
+                                )
+                            
+                            if is_value_detected:
+                                detected_value = True
+                                detected_malicious_value = malicious_value
+                    else:
+                        if malicious_value in entry.get('serialNumber'):
                             detected_value = True
                             detected_malicious_value = malicious_value
 
-                    for value in subject_values:
-                        if malicious_value in value:
-                            detected_value = True
-                            detected_malicious_value = malicious_value
+                        for value in issuer_values:
+                            if malicious_value in value:
+                                detected_value = True
+                                detected_malicious_value = malicious_value
+
+                        for value in subject_values:
+                            if malicious_value in value:
+                                detected_value = True
+                                detected_malicious_value = malicious_value
 
             if detected_value:
                 entry['c2_framework'] = c2_framework
@@ -572,10 +584,11 @@ class DetectionEngine:
         for entry in detected_connections:
             print(f">> {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
-    # DGA Detective : https://cossas-project.org/portfolio/dgad/
-    # source code: https://github.com/COSSAS/dgad
-    # package: https://pypi.org/project/dgad/
-
+    """
+    DGA Detective : https://cossas-project.org/portfolio/dgad/
+    - source code: https://github.com/COSSAS/dgad
+    - package: https://pypi.org/project/dgad/
+    """
     def detect_dga(self):
         # https://lindevs.com/disable-tensorflow-2-debugging-information
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logging
@@ -751,6 +764,41 @@ class DetectionEngine:
         # for entry in detected_connections:
         #     print(f">> '{entry.get('type')}' : {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
+    def detect_crypto_domains(self):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto / cryptojacking based sites ...")
+        logging.info(
+            f"Looking for network traffic to crypto / cryptojacking based sites")
+
+        detected = False
+        detected_domains = []
+
+        for domain in self.packet_parser.domain_names:
+            if domain in self.crypto_domains:
+                detected = True
+                detected_domains.append(domain)
+                self.detected_iocs['aggregated_domain_names'].add(domain)
+
+        if detected:
+            self.c2_indicators_detected = True
+            self.c2_indicators_count += 1
+            self.detected_iocs['crypto_domains'] = detected_domains
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected crypto / cryptojacking based sites{Fore.RESET}")
+            logging.info(
+                f"Detected crypto / cryptojacking based sites (detected_domains : {detected_domains})")
+            self.print_crypto_domains(detected_domains)
+        else:
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Crypto / cryptojacking based sites not detected{Fore.RESET}")
+            logging.info(f"Crypto / cryptojacking based sites not detected")
+
+    def print_crypto_domains(self, detected_domains):
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected crypto / cryptojacking based sites")
+        logging.info(f"Listing detected crypto / cryptojacking based sites")
+        for domain in detected_domains:
+            print(f">> {Fore.RED}{domain}{Fore.RESET}")
+    
     # ----------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------ C2Hunter Plugin -----------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------
@@ -821,7 +869,6 @@ class DetectionEngine:
         detected_ips = []
         c2_detected = False
 
-        self.CHUNK_SIZE = 100
         ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i+self.CHUNK_SIZE]
                      for i in range(0, len(self.packet_parser.combined_unique_ip_list), self.CHUNK_SIZE)]
 
@@ -942,7 +989,6 @@ class DetectionEngine:
         detected_domains = []
         c2_detected = False
 
-        self.CHUNK_SIZE = 100
         domain_chunks = [self.packet_parser.domain_names[i:i+self.CHUNK_SIZE]
                          for i in range(0, len(self.packet_parser.domain_names), self.CHUNK_SIZE)]
 
@@ -984,7 +1030,6 @@ class DetectionEngine:
         detected_urls = []
         c2_detected = False
 
-        self.CHUNK_SIZE = 100
         url_chunks = [self.packet_parser.unique_urls[i:i+self.CHUNK_SIZE]
                       for i in range(0, len(self.packet_parser.unique_urls), self.CHUNK_SIZE)]
 
@@ -1025,43 +1070,6 @@ class DetectionEngine:
         logging.info(f"Listing detected C2 related URLs")
         for url in detected_urls:
             print(f">> {Fore.RED}{url}{Fore.RESET}")
-
-    # ----------------------------------------------------------------------------------------------------------------
-
-    def detect_crypto_domains(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for network traffic to crypto / cryptojacking based sites ...")
-        logging.info(
-            f"Looking for network traffic to crypto / cryptojacking based sites")
-
-        detected = False
-        detected_domains = []
-
-        for domain in self.packet_parser.domain_names:
-            if domain in self.crypto_domains:
-                detected = True
-                detected_domains.append(domain)
-                self.detected_iocs['aggregated_domain_names'].add(domain)
-
-        if detected:
-            self.c2_indicators_detected = True
-            self.c2_indicators_count += 1
-            self.detected_iocs['crypto_domains'] = detected_domains
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected crypto / cryptojacking based sites{Fore.RESET}")
-            logging.info(
-                f"Detected crypto / cryptojacking based sites (detected_domains : {detected_domains})")
-            self.print_crypto_domains(detected_domains)
-        else:
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Crypto / cryptojacking based sites not detected{Fore.RESET}")
-            logging.info(f"Crypto / cryptojacking based sites not detected")
-
-    def print_crypto_domains(self, detected_domains):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Listing detected crypto / cryptojacking based sites")
-        logging.info(f"Listing detected crypto / cryptojacking based sites")
-        for domain in detected_domains:
-            print(f">> {Fore.RED}{domain}{Fore.RESET}")
 
     # ----------------------------------------------------------------------------------------------------------------
 

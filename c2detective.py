@@ -217,7 +217,7 @@ def parse_arguments():
                         help="enable DGA domain detection")
     enable_group.add_argument('-g', '--plugins', action='store_true',
                         help="enable plugins for extended detection capabilities")
-    enable_group.add_argument('-e', '--enrich', action='store_true', 
+    enable_group.add_argument('-e', '--enrich-iocs', action='store_true', 
                         help="enable data enrichment")
 
     update_group = parser.add_argument_group('update options')
@@ -375,14 +375,31 @@ def main():
             print(f"[{time.strftime('%H:%M:%S')}] [WARNING] No plugins were added ...")
             logging.warning("No plugins were added")
 
-    # set the total count of C2 indicators 
+    # set the total count of C2 indicators
+
+    # without C2hunter = 11 ; 
+    # without C2hunter and DGA (args.dga) = 10;    
     if plugins:
-        if plugins.get('C2Hunter'):
+    
+        if plugins.get('C2Hunter') and args.dga:
             c2_indicators_total_count = 14
-            plugin_c2_hunter = True
-    else:
+            plugin_c2hunter = True
+            dga_detection = True
+
+        else: # wihtout DGA detection    
+            c2_indicators_total_count = 13
+            plugin_c2hunter = True
+            dga_detection = False
+    
+    elif args.dga: # wihtout C2Hunter; with DGA detection
         c2_indicators_total_count = 11
-        plugin_c2_hunter = False
+        plugin_c2hunter = False
+        dga_detection = True
+    
+    else: # wihtout C2Hunter; without DGA detection
+        c2_indicators_total_count = 10
+        plugin_c2hunter = False
+        dga_detection = False
 
     print('-' * terminal_size.columns)
     print(f"[{time.strftime('%H:%M:%S')}] [INFO] Configurating detection engine ...")
@@ -401,7 +418,7 @@ def main():
     detection_engine.detect_tor_traffic()
     detection_engine.detect_crypto_domains()
 
-    if plugin_c2_hunter:
+    if plugin_c2hunter:
         print(('- ' * (terminal_size.columns // 2)) + ('-' * (terminal_size.columns % 2)))
         c2hunter_db = plugins.get('C2Hunter')
         if os.path.isfile(c2hunter_db):
@@ -414,7 +431,7 @@ def main():
 
     detected_iocs = detection_engine.get_detected_iocs()
 
-    if args.enrich:
+    if args.enrich_iocs:
         print('-' * terminal_size.columns)
         # using set() to remove duplicates and check for values count
         no_enabled_services = len(list(set(list(analyst_profile.enrichment_services.values())))) == 1
@@ -438,7 +455,7 @@ def main():
     if extracted_data and detected_iocs:
         c2_indicators_count = detection_engine.get_c2_indicators_count()
         thresholds = analyst_profile.thresholds
-        detection_reporter = DetectionReporter(output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, plugin_c2_hunter)
+        detection_reporter = DetectionReporter(output_dir, thresholds, c2_indicators_total_count, c2_indicators_count, extracted_data, enriched_iocs, detected_iocs, dga_detection, plugin_c2hunter)
         detection_reporter.write_detected_iocs_to_file()
         detection_reporter.write_enriched_iocs_to_file()
         detection_reporter.create_html_analysis_report()
