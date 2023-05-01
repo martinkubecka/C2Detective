@@ -371,64 +371,6 @@
     {% endif %}
 
     <hr>
-    <h2 class="toc-heading">Malicious HTTP headers</h2>
-    {% if detected_iocs.get("malicious_HTTP_headers") %}
-    <button class="toggle-button" onclick="toggleContent('malicious-headers')" style="text-align: right;">[ hide content
-        ]</button>
-    <div id="malicious-headers" style="display:block;">
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th colspan="2">General Information</th>
-                    <th colspan="6">Session Information</th>
-                    <th colspan="7">HTTP Headers</th>
-                </tr>
-                <tr>
-                    <th>C2 Framework</th>
-                    <th>Malicious Header</th>
-                    <th>Timestamp</th>
-                    <th>Source IP</th>
-                    <th>Source Port</th>
-                    <th>Destination IP</th>
-                    <th>Destination Port</th>
-                    <th>URL</th>
-                    <th>Connection</th>
-                    <th>User-Agent</th>
-                    <th>Content Length</th>
-                    <th>Content Type</th>
-                    <th>Server</th>
-                    <th>HTTP Version</th>
-                    <th>Status Code</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for header in detected_iocs.get("malicious_HTTP_headers") %}
-                <tr>
-                    <td>{{ header.get("c2_framework") }}</td>
-                    <td>{{ header.get("malicious_header") }}</td>
-                    <td>{{ header.get("session").get("timestamp") }}</td>
-                    <td>{{ header.get("session").get("src_ip") }}</td>
-                    <td>{{ header.get("session").get("src_port") }}</td>
-                    <td>{{ header.get("session").get("dst_ip") }}</td>
-                    <td>{{ header.get("session").get("dst_port") }}</td>
-                    <td>{{ header.get("session").get("url") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Connection")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("User_Agent")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Content_Length")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Content_Type")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Server")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Http_Version")|default("N/A") }}</td>
-                    <td>{{ header.get("session").get("http_headers").get("Status_Code")|default("N/A") }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="not-detected">NOT DETECTED</p>
-    {% endif %}
-
-    <hr>
     <h2 class="toc-heading">Malicious TLS certificate values</h2>
     {% if detected_iocs.get("malicious_TLS_certificates") %}
     <button class="toggle-button" onclick="toggleContent('malicious-certificates')" style="text-align: right;">[ hide
@@ -586,7 +528,7 @@
     {% if dga_detection %}
 
     <hr>
-    <h2 class="toc-heading">Detected DGA domain names</h2>
+    <h2 class="toc-heading">DGA domain names</h2>
     {% if detected_iocs.get("DGA_domains") %}
     <button class="toggle-button" onclick="toggleContent('dga-domains')" style="text-align: right;">[ hide content
         ]</button>

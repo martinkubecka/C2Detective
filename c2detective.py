@@ -70,7 +70,6 @@ def check_required_structure(analyst_profile, output_dir):
     templates_dir = os.path.join(base_relative_path, "templates")
 
     domain_whitelist_path = os.path.join(base_relative_path, analyst_profile.domain_whitelist_path)
-    c2_http_headers_path = os.path.join(base_relative_path, analyst_profile.c2_http_headers_path)
     c2_tls_certificate_values_path = os.path.join(base_relative_path, analyst_profile.c2_tls_certificate_values_path)
     report_template_path = os.path.join(base_relative_path, analyst_profile.report_template_path)
 
@@ -132,11 +131,6 @@ def check_required_structure(analyst_profile, output_dir):
     if not os.path.isfile(domain_whitelist_path):
         print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{domain_whitelist_path}' is missing")
         logging.error(f"Required file '{domain_whitelist_path}' is missing")
-        missing_files = True
-
-    if not os.path.isfile(c2_http_headers_path):
-        print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Required file '{c2_http_headers_path}' is missing")
-        logging.error(f"Required file '{c2_http_headers_path}' is missing")
         missing_files = True
 
     if not os.path.isfile(c2_tls_certificate_values_path):
@@ -382,22 +376,22 @@ def main():
     if plugins:
     
         if plugins.get('C2Hunter') and args.dga:
-            c2_indicators_total_count = 14
+            c2_indicators_total_count = 13
             plugin_c2hunter = True
             dga_detection = True
 
         else: # wihtout DGA detection    
-            c2_indicators_total_count = 13
+            c2_indicators_total_count = 12
             plugin_c2hunter = True
             dga_detection = False
     
     elif args.dga: # wihtout C2Hunter; with DGA detection
-        c2_indicators_total_count = 11
+        c2_indicators_total_count = 10
         plugin_c2hunter = False
         dga_detection = True
     
     else: # wihtout C2Hunter; without DGA detection
-        c2_indicators_total_count = 10
+        c2_indicators_total_count = 9
         plugin_c2hunter = False
         dga_detection = False
 
@@ -414,7 +408,6 @@ def main():
     if args.dga:
         detection_engine.detect_dga()
     detection_engine.detect_dns_tunneling()
-    detection_engine.detect_known_malicious_HTTP_headers()
     detection_engine.detect_tor_traffic()
     detection_engine.detect_crypto_domains()
 

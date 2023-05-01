@@ -61,8 +61,6 @@ class DetectionEngine:
             analyst_profile.tor_node_list_path)
         self.crypto_domains = self.get_crypto_domains(
             analyst_profile.crypto_domain_list_path)
-        self.c2_http_headers = self.get_c2_http_headers(
-            analyst_profile.c2_http_headers_path)
         self.c2_tls_certificate_values = self.get_c2_tls_certificate_values(
             analyst_profile.c2_tls_certificate_values_path)
         self.ja3_rules = self.get_ja3_rules(analyst_profile.ja3_rules_path)
@@ -80,16 +78,6 @@ class DetectionEngine:
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Command & Control communication indicators not detected{Fore.RESET}")
             logging.info(f"Command & Control communication indicators not detected")
-
-    def get_c2_http_headers(self, c2_http_headers_path):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Loading known C2 HTTP headers ...")
-        logging.info("Loading known C2 HTTP headers")
-
-        with open(c2_http_headers_path, 'r') as http_headers:
-            c2_http_headers = json.load(http_headers)
-
-        return c2_http_headers
 
     def get_tor_nodes(self, tor_node_list_path):
         print(
@@ -320,72 +308,6 @@ class DetectionEngine:
         for entry in detected_connections:
             print(
                 f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['http_headers']['Content_Length']} bytes")
-
-    def detect_known_malicious_HTTP_headers(self):
-        print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious HTTP headers ...")
-        logging.info("Looking for known malicious HTTP headers")
-
-        detected = False
-        detected_headers = []
-
-        for session in self.packet_parser.http_sessions:
-
-            if session.get('http_headers').get('Host'):
-                host = session.get('http_headers').get('Host')
-            else:
-                host = None
-            if session.get('url'):
-                url = session.get('url')
-            else:
-                url = None
-
-            for key, header_value in session.get('http_headers').items():
-
-                for c2_framework, http_headers in self.c2_http_headers.items():
-
-                    for malicious_header in http_headers:
-
-                        if malicious_header in header_value:
-                            detected = True
-                            entry = dict(
-                                c2_framework=c2_framework,
-                                malicious_header=malicious_header,
-                                session=session
-                            )
-                            detected_headers.append(entry)
-                            self.detected_iocs['aggregated_ip_addresses'].add(
-                                session.get('src_ip'))
-                            self.detected_iocs['aggregated_ip_addresses'].add(
-                                session.get('dst_ip'))
-                            if host:
-                                self.detected_iocs['aggregated_domain_names'].add(
-                                    host)
-                            if url:
-                                self.detected_iocs['aggregated_urls'].add(url)
-
-        if detected:
-            self.c2_indicators_detected = True
-            self.c2_indicators_count += 1
-            self.detected_iocs['malicious_HTTP_headers'] = detected_headers
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected known malicious HTTP headers{Fore.RESET}")
-            logging.info(
-                f"Detected known malicious HTTP headers. (detected_headers : {detected_headers})")
-            self.print_malicious_HTTP_headers(detected_headers)
-        else:
-            print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Known malicious HTTP headers not detected{Fore.RESET}")
-            logging.info(f"Known malicious HTTP headers not detected")
-
-    def print_malicious_HTTP_headers(self, detected_headers):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected malicious HTTP headers")
-        logging.info(
-            f"Listing information about detected malicious HTTP headers")
-
-        for entry in detected_headers:
-            print(
-                f">> Found {Fore.RED}'{entry['malicious_header']}'{Fore.RESET} value associated with {Fore.RED}'{entry['c2_framework']}'{Fore.RESET} C2 framework")
 
     def detect_known_c2_tls_values(self):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for known malicious values in extracted data from TLS certificates ...")
