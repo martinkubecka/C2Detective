@@ -5,6 +5,7 @@ import json
 import requests
 import logging
 
+
 class CryptoDomains:
     def __init__(self, crypto_domains, crypto_domain_list_path):
         self.logger = logging.getLogger(__name__)
@@ -14,7 +15,8 @@ class CryptoDomains:
         self.crypto_domains_iocs_path = os.path.join(base_relative_path, crypto_domain_list_path)
 
     def update_crypto_domains(self):
-        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Fetching the most up-to-date crypto / cryptojacking based sites list ...")
+        print(
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Fetching the most up-to-date crypto / cryptojacking based sites list ...")
         logging.info(f"Fetching the most up-to-date crypto / cryptojacking based sites list ...")
         response = requests.get(self.url_crypto_domains)
         if response.status_code == 200:
@@ -26,17 +28,19 @@ class CryptoDomains:
                 if not line.startswith("#") and len(line) > 0:
                     crypto_domains.append(line)
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while fetching crypto / cryptojacking based sites list")
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while fetching crypto / cryptojacking based sites list")
             logging.error(f"Error ocurred while fetching crypto / cryptojacking based sites list", exc_info=True)
-            crypto_domains = []        
+            crypto_domains = []
 
-        # caching fetched crypto domains
+            # caching fetched crypto domain names
         if not crypto_domains:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Retrieving crypto / cryptojacking based sites list was not successful ...")
+            print(
+                f"[{time.strftime('%H:%M:%S')}] [ERROR] Retrieving crypto / cryptojacking based sites list was not successful ...")
             logging.error(f"Retrieving crypto / cryptojacking based sites list was not successful")
             print("\nExiting program ...\n")
             sys.exit(1)
-        else:    
+        else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] Caching fetched crypto / cryptojacking based sites list ...")
             logging.info(f"Caching fetched crypto / cryptojacking based sites list")
             data = json.dumps({'crypto_domains': crypto_domains}, indent=4)

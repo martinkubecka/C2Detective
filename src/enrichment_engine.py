@@ -1,8 +1,6 @@
 import requests
 import json
 import shodan
-import os
-import sys
 from ipaddress import ip_address, IPv4Address
 import logging
 import time
@@ -15,18 +13,18 @@ def get_ip_address_type(target):
         return "Invalid"
 
 
-def is_ip_address(target):
-    is_ip_address = False
-    if ("." in target):
+def is_target_ip_address(target):
+    is_ip = False
+    if "." in target:
         elements_array = target.strip().split(".")
-        if (len(elements_array) == 4):
+        if len(elements_array) == 4:
             for i in elements_array:
-                if (i.isnumeric() and int(i) >= 0 and int(i) <= 255):
-                    is_ip_address = True
+                if i.isnumeric() and 0 <= int(i) <= 255:
+                    is_ip = True
                 else:
-                    is_ip_address = False
+                    is_ip = False
                     break
-    return is_ip_address
+    return is_ip
 
 
 class EnrichmentEngine:
@@ -52,15 +50,7 @@ class EnrichmentEngine:
         self.domain_names = self.detected_iocs.get('aggregated_domain_names')
         self.urls = self.detected_iocs.get('aggregated_urls')
 
-        # NOTE: TESTING
-        # self.ip_addresses = ["5.252.177.10"] 
-        # self.domain_names = []
-        # self.urls = ["trallfasterinf.com/"]
-
-        self.enriched_iocs = {}
-        self.enriched_iocs['ip_addresses'] = {}
-        self.enriched_iocs['domain_names'] = {}
-        self.enriched_iocs['urls'] = {}
+        self.enriched_iocs = {'ip_addresses': {}, 'domain_names': {}, 'urls': {}}
 
         self.enabled_enrichment_services = enrichment_services
 
@@ -68,42 +58,42 @@ class EnrichmentEngine:
         if self.ip_addresses:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] Enriching detected IP address IoCs ...")
             self.logger.info(f"Enriching detected IP address IoCs")
-            for ip_address in self.ip_addresses:
-                self.enriched_iocs['ip_addresses'][ip_address] = {}
+            for ip_addr in self.ip_addresses:
+                self.enriched_iocs['ip_addresses'][ip_addr] = {}
 
                 if self.enabled_enrichment_services.get('abuseipdb'):
-                    self.enriched_iocs['ip_addresses'][ip_address]['abuseipdb'] = self.query_abuseipdb(ip_address)
+                    self.enriched_iocs['ip_addresses'][ip_addr]['abuseipdb'] = self.query_abuseipdb(ip_addr)
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['abuseipdb'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['abuseipdb'] = {}
 
                 if self.enabled_enrichment_services.get('threatfox'):
-                    self.enriched_iocs['ip_addresses'][ip_address]['threatfox'] = self.query_threatfox(ip_address)
+                    self.enriched_iocs['ip_addresses'][ip_addr]['threatfox'] = self.query_threatfox(ip_addr)
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['threatfox'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['threatfox'] = {}
 
                 if self.enabled_enrichment_services.get('virustotal'):
-                    self.enriched_iocs['ip_addresses'][ip_address]['virustotal'] = self.query_virustotal(ip_address)
+                    self.enriched_iocs['ip_addresses'][ip_addr]['virustotal'] = self.query_virustotal(ip_addr)
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['virustotal'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['virustotal'] = {}
 
                 if self.enabled_enrichment_services.get('shodan'):
-                    self.enriched_iocs['ip_addresses'][ip_address]['shodan'] = self.query_shodan(ip_address)
+                    self.enriched_iocs['ip_addresses'][ip_addr]['shodan'] = self.query_shodan(ip_addr)
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['shodan'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['shodan'] = {}
 
                 if self.enabled_enrichment_services.get('alienvault'):
-                    self.enriched_iocs['ip_addresses'][ip_address]['alienvault'] = self.query_alienvault(ip_address)
+                    self.enriched_iocs['ip_addresses'][ip_addr]['alienvault'] = self.query_alienvault(ip_addr)
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['alienvault'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['alienvault'] = {}
 
                 if self.enabled_enrichment_services.get('urlhaus'):
-                    ip_type = get_ip_address_type(ip_address)
+                    ip_type = get_ip_address_type(ip_addr)
                     if not ip_type == "IPv6":
-                        self.enriched_iocs['ip_addresses'][ip_address]['urlhaus'] = self.query_urlhaus(ip_address)
+                        self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = self.query_urlhaus(ip_addr)
                     else:
-                        self.enriched_iocs['ip_addresses'][ip_address]['urlhaus'] = {}
+                        self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = {}
                 else:
-                    self.enriched_iocs['ip_addresses'][ip_address]['urlhaus'] = {}
+                    self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = {}
 
         if self.domain_names:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] Enriching detected domain name IoCs ...")
@@ -189,7 +179,8 @@ class EnrichmentEngine:
                 method='GET', url=self.abuseipdb_api_url, headers=headers, params=querystring)
 
             if response.status_code == 401:
-                print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.")
+                print(
+                    f"[{time.strftime('%H:%M:%S')}] [ERROR] Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.")
                 self.logger.error(
                     "Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.")
                 return {}
@@ -198,8 +189,8 @@ class EnrichmentEngine:
                 return enriched_data
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the AbuseIPDB's API")
-            self.logger.error("Error ocurred while querying the AbuseIPDB's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occurred while querying the AbuseIPDB's API")
+            self.logger.error("Error occurred while querying the AbuseIPDB's API", exc_info=True)
             return {}
 
     # API Reference : https://threatfox.abuse.ch/api/
@@ -221,8 +212,8 @@ class EnrichmentEngine:
                 return {}
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the ThreatFox's API")
-            self.logger.error("Error ocurred while querying the ThreatFox's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occurred while querying the ThreatFox's API")
+            self.logger.error("Error occurred while querying the ThreatFox's API", exc_info=True)
             return {}
 
     # API Reference : https://developers.virustotal.com/v2.0/reference/getting-started
@@ -245,7 +236,7 @@ class EnrichmentEngine:
             else:
                 enriched_data = json.loads(response.text)
 
-            if is_ip_address(target):  # input is a domain
+            if is_target_ip_address(target):  # input is a domain
                 # https://developers.virustotal.com/v2.0/reference/ip-address-report
                 # print(f"[{time.strftime('%H:%M:%S')}] [INFO] Virustotal : Retrieving IP address report for '{keyword}'")
                 self.logger.info(
@@ -291,7 +282,7 @@ class EnrichmentEngine:
         try:
             shodan_api = shodan.Shodan(self.shodan_api_key)
 
-            if not is_ip_address(target):  # input is a domain
+            if not is_target_ip_address(target):  # input is a domain
                 # print(f"[{time.strftime('%H:%M:%S')}] [INFO] Shodan : Resolving '{target}' to an IP address")
                 self.logger.info(
                     f"Shodan : Resolving '{target}' to an IP address")
@@ -300,14 +291,15 @@ class EnrichmentEngine:
                 response = requests.get(url)
                 decoded_response = json.loads(response.text)
                 # print(json.dumps(decoded_response, indent=4))
-                ip_address = decoded_response[target]
-                if ip_address:
+                ip_addr = decoded_response[target]
+                if ip_addr:
                     # print(f"[{time.strftime('%H:%M:%S')}] [INFO] Shodan : Resolved '{target}' to '{ip_addr}'")
-                    self.logger.info(f"Shodan : Resolved '{target}' to '{ip_address}'")
-                    target = ip_address
+                    self.logger.info(f"Shodan : Resolved '{target}' to '{ip_addr}'")
+                    target = ip_addr
                 else:
-                    print(f"[{time.strftime('%H:%M:%S')}] [WARNING] Shodan : Failed to resolved '{keyword}' to an IP address")
-                    self.logger.warning(msg)(f"Shodan : Failed to resolved '{keyword}' to an IP address")
+                    print(
+                        f"[{time.strftime('%H:%M:%S')}] [WARNING] Shodan : Failed to resolved '{target}' to an IP address")
+                    self.logger.warning(f"Shodan : Failed to resolved '{target}' to an IP address")
                     return {}
 
             # execute a Shodan search query for IP
@@ -324,8 +316,8 @@ class EnrichmentEngine:
             return enriched_data
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the Shodan's API")
-            self.logger.error("Error ocurred while querying the Shodan's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occurred while querying the Shodan's API")
+            self.logger.error("Error occurred while querying the Shodan's API", exc_info=True)
             return {}
 
     # API Reference : https://otx.alienvault.com/assets/static/external_api.html
@@ -349,7 +341,7 @@ class EnrichmentEngine:
                     response = requests.get(f'{self.alienvault_api_url}IPv6/{target}/{section}')
                     enriched_data[section] = json.loads(response.text)
 
-            else:   # target is a domain
+            else:  # target is a domain
                 for section in sections:
                     # print(f"[{time.strftime('%H:%M:%S')}] [INFO] AlienVault : Fetching '{section}' section of indicators for '{target}'")
                     self.logger.info(f"AlienVault : Fetching '{section}' section of indicators for '{target}'")
@@ -359,8 +351,8 @@ class EnrichmentEngine:
             return enriched_data
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the AlienVault's API")
-            self.logger.error("Error ocurred while querying the AlienVault's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occurred while querying the AlienVault's API")
+            self.logger.error("Error occurred while querying the AlienVault's API", exc_info=True)
             return {}
 
     # API Reference : https://urlhaus-api.abuse.ch
@@ -382,10 +374,11 @@ class EnrichmentEngine:
                 return enriched_data
             else:
                 # print(f"[{time.strftime('%H:%M:%S')}] [WARNING] URLhaus : No result or illegal search term")
-                self.logger.warning(f"URLhaus : No result or illegal search term (API response: '{enriched_data['query_status']})'")
+                self.logger.warning(
+                    f"URLhaus : No result or illegal search term (API response: '{enriched_data['query_status']})'")
                 return {}
 
         except Exception as e:
-            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error ocurred while querying the URLhaus's API")
-            self.logger.error("Error ocurred while querying the URLhaus's API", exc_info=True)
+            print(f"[{time.strftime('%H:%M:%S')}] [ERROR] Error occurred while querying the URLhaus's API")
+            self.logger.error("Error occurred while querying the URLhaus's API", exc_info=True)
         return {}
