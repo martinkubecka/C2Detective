@@ -732,10 +732,9 @@
 
 <hr>
 <h2 class="toc-heading">Requested C2 URLs</h2>
-<p style="text-align: right;"><i>(IoCs Source: URLhaus)</i></p>
+<p style="text-align: right;"><i>(IoCs Source: URLhaus, ThreatFox)</i></p>
 {% if detected_iocs.get("c2_url") %}
-<button class="toggle-button" onclick="toggleContent('c2-urls')" style="text-align: right;">[ hide content
-    ]
+<button class="toggle-button" onclick="toggleContent('c2-urls')" style="text-align: right;">[ hide content ]
 </button>
 <div id="c2-urls" style="display:block;">
     <table class="report-table">
@@ -805,6 +804,52 @@
         </tr>
         {% endfor %}
         </tbody>
+    </table>
+</div>
+{% else %}
+<p class="not-detected">NOT DETECTED</p>
+{% endif %}
+
+<hr>
+<h2 class="toc-heading">Connections with potential C2 IP addresses</h2>
+<p style="text-align: right;"><i>(IoCs Sources: Shodan)</i></p>
+{% if detected_iocs.get("potential_c2_ip_address") %}
+<button class="toggle-button" onclick="toggleContent('potential-c2-ip-addresss')" style="text-align: right;">[ hide content ]
+</button>
+<div id="potential-c2-ip-addresss" style="display:block;">
+    <table class="report-table">
+        <thead>
+        <tr>
+            <th>Potential C2 IP address</th>
+        </tr>
+        </thead>
+        {% for ip_address in detected_iocs.get("potential_c2_ip_address") %}
+        <tr>
+            <td>{{ ip_address }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    {% endif %}
+
+    {% if detected_iocs.get("potential_c2_ip_address_connection") %}
+    <table class="report-table">
+        <tr>
+            <th>Timestamp</th>
+            <th>Source IP</th>
+            <th>Source Port</th>
+            <th>Destination IP</th>
+            <th>Destination Port</th>
+        </tr>
+        {% for entry in detected_iocs.get("potential_c2_ip_address_connection") %}
+        <tr>
+            <td>{{ entry.get("timestamp") }}</td>
+            <td>{{ entry.get("src_ip") }}</td>
+            <td>{{ entry.get("src_port") }}</td>
+            <td>{{ entry.get("dst_ip") }}</td>
+            <td>{{ entry.get("dst_port") }}</td>
+        </tr>
+        {% endfor %}
     </table>
 </div>
 {% else %}

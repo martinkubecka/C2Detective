@@ -391,12 +391,12 @@ def main():
     if plugins:
 
         if plugins.get('C2Hunter') and args.dga:
-            c2_indicators_total_count = 13
+            c2_indicators_total_count = 14
             plugin_c2hunter = True
             dga_detection = True
 
         else:  # without DGA detection
-            c2_indicators_total_count = 12
+            c2_indicators_total_count = 13
             plugin_c2hunter = True
             dga_detection = False
 
@@ -432,7 +432,7 @@ def main():
         if os.path.isfile(c2hunter_db):
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] Using plugin C2Hunter for enhanced detection capabilities ...")
             logging.info("Using plugin C2Hunter for enhanced detection capabilities")
-            detection_engine.threat_feeds(c2hunter_db)
+            detection_engine.c2hunter_plugin(c2hunter_db)
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [ERROR] Provided C2Hunter database at '{c2hunter_db}' does not exist")

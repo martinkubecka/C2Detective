@@ -6,6 +6,8 @@ import tldextract
 from ipaddress import ip_address
 import itertools
 import re
+from urllib.parse import urlparse
+
 
 """
 start_time :                                timestamp when packet capture stared :  string :        %Y-%m-%d %H:%M:%S
@@ -112,7 +114,7 @@ def print_known_c2_tls_certificates(detected_certificates):
 
     for entry in detected_certificates:
         print(
-            f">> Found {Fore.RED}'{entry['malicious_value']}'{Fore.RESET} value associated with {Fore.RED}'{entry['c2_framework']}'{Fore.RESET} C2 framework")
+            f">> Found {Fore.RED}'{entry['malicious_value']}'{Fore.RESET} value associated with {Fore.RED}'{entry['c2_framework']}'{Fore.RESET} Command and control framework")
 
 
 def print_detected_tor_nodes(detected_connections):
@@ -429,7 +431,6 @@ class DetectionEngine:
                             any(part in value for value in list(issuer_values) + list(subject_values))
                             for part in value_parts
                         )
-
                         if is_value_detected:
                             detected_value = True
                             detected_malicious_value = malicious_value
@@ -448,12 +449,12 @@ class DetectionEngine:
                                 detected_value = True
                                 detected_malicious_value = malicious_value
 
-            if detected_value:
-                entry['c2_framework'] = c2_framework
-                entry['malicious_value'] = detected_malicious_value
-                detected_certificates.append(entry)
-                self.detected_iocs['aggregated_ip_addresses'].add(entry.get('src_ip'))
-                self.detected_iocs['aggregated_ip_addresses'].add(entry.get('dst_ip'))
+                if detected_value:
+                    entry['c2_framework'] = c2_framework
+                    entry['malicious_value'] = detected_malicious_value
+                    detected_certificates.append(entry)
+                    self.detected_iocs['aggregated_ip_addresses'].add(entry.get('src_ip'))
+                    self.detected_iocs['aggregated_ip_addresses'].add(entry.get('dst_ip'))
 
         if detected_certificates:
             self.c2_indicators_detected = True
@@ -763,7 +764,7 @@ class DetectionEngine:
     # ------------------------------------------------ C2Hunter Plugin -----------------------------------------------
     # ----------------------------------------------------------------------------------------------------------------
 
-    def threat_feeds(self, c2hunter_db):
+    def c2hunter_plugin(self, c2hunter_db):
 
         c2_ips_detected, detected_ips = self.detect_c2_ip_addresses(
             c2hunter_db)
@@ -806,6 +807,7 @@ class DetectionEngine:
                 f"C2 domain names which received/initiated connections not detected")
 
         c2_url_detected, detected_urls = self.detect_c2_urls(c2hunter_db)
+
         if c2_url_detected:
             self.c2_indicators_detected = True
             self.c2_indicators_count += 1
@@ -821,6 +823,58 @@ class DetectionEngine:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 related URLs not detected{Fore.RESET}")
             logging.info(f"C2 related URLs not detected")
+
+        potential_c2_ips_detected, detected_ips = self.detect_potential_c2_ip_addresses(c2hunter_db)
+
+        if potential_c2_ips_detected:
+            self.c2_indicators_detected = True
+            self.c2_indicators_count += 1
+            self.detected_iocs['potential_c2_ip_address'] = detected_ips
+            self.detected_iocs['aggregated_ip_addresses'].update(detected_ips)
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Potential C2 IP addresses which received/initiated connections detected{Fore.RESET}")
+            logging.info(f"Potential C2 IP addresses which received/initiated connections detected")
+            potential_c2_ip_connections = self.build_c2_ip_connections(detected_ips)
+            self.detected_iocs['potential_c2_ip_address_connection'] = potential_c2_ip_connections
+            print_c2_ip_addresses(detected_ips)
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Potential C2 IP addresses which received/initiated connections not detected{Fore.RESET}")
+            logging.info(f"Potential C2 IP addresses which received/initiated connections not detected")
+
+    def detect_potential_c2_ip_addresses(self, c2hunter_db):
+        print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting potential fingerprinted C2 IP addresses which received/initiated connections ...")
+        logging.info("Detecting potential fingerprinted C2 IP addresses which received/initiated connections")
+
+        connection = sqlite3.connect(c2hunter_db)
+        cursor = connection.cursor()
+
+        detected_ips = []
+        c2_detected = False
+
+        ip_chunks = [self.packet_parser.combined_unique_ip_list[i:i + self.CHUNK_SIZE]
+                     for i in range(0, len(self.packet_parser.combined_unique_ip_list), self.CHUNK_SIZE)]
+
+        shodan_results = []
+
+        for chunk in ip_chunks:
+            # print(chunk)
+
+            shodan_query = '''
+                        SELECT ip_address FROM shodan 
+                        WHERE {}'''.format(' OR '.join(["ip_address='{}'".format(ip) for ip in chunk]))
+            # print(feodotracker_query)
+            cursor.execute(shodan_query)
+            shodan_results += cursor.fetchall()
+
+        connection.close()
+
+        if shodan_results:
+            c2_detected = True
+            detected_ips = [ip[0] for ip in shodan_results]
+
+        # for ip in detected_ips:
+        #     print(ip)
+
+        return c2_detected, detected_ips
 
     def detect_c2_ip_addresses(self, c2hunter_db):
         print(
@@ -985,6 +1039,7 @@ class DetectionEngine:
                       for i in range(0, len(self.packet_parser.unique_urls), self.CHUNK_SIZE)]
 
         urlhaus_results = []
+        threatfox_results = []
         cursor = connection.cursor()
 
         for chunk in url_chunks:
@@ -997,15 +1052,40 @@ class DetectionEngine:
             cursor.execute(urlhaus_query)
             urlhaus_results += cursor.fetchall()
 
+            threatfox_query = '''
+                            SELECT ioc FROM threatfox 
+                            WHERE ioc_type='url' 
+                            AND {}'''.format(' OR '.join(["ioc LIKE '%{}'".format(url) for url in chunk]))
+            # print(threatfox_query)
+            cursor.execute(threatfox_query)
+            threatfox_results += cursor.fetchall()
+
+
         connection.close()
 
         if urlhaus_results:
             c2_detected = True
-            detected_urls = [url[0] for url in urlhaus_results]
+            urlhaus_results = [url[0] for url in urlhaus_results]
+
+        if threatfox_results:
+            c2_detected = True
+            threatfox_results = [url[0] for url in threatfox_results]
+
+        detected_urls = list(
+            set(itertools.chain(urlhaus_results, threatfox_results)))
 
         return c2_detected, detected_urls
 
     def get_c2_http_sessions(self, detected_urls):
+
+        parsed_urls = []
+        for url in detected_urls:
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc
+            path = parsed_url.path
+            parsed_urls.append(domain + path)
+
+        detected_urls = parsed_urls
         c2_http_sessions = []
 
         for session in self.packet_parser.http_sessions:
