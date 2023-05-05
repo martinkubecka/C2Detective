@@ -13,7 +13,7 @@ api_urls:
 
 settings:
   statistics_top_count: 5 # number of displayed values
-  chunk_size: 1000 # number of values in one database query 
+  chunk_size: 500 # number of values in one database query 
 
 feeds:
   tor_node_list: "https://www.dan.me.uk/torlist/"
@@ -26,7 +26,7 @@ file_paths:
   crypto_domain_list_path: "iocs/crypto_domains/crypto_domains.json"
   ja3_rules_path: "iocs/ja3/ja3_rules.json"
   domain_whitelist_path: "config/domain_whitelist.txt"
-  c2_tls_certificate_values_path: "config/c2_tls_certificate_values.json"
+  c2_tls_certificate_values_path: "iocs/c2_tls_certificate_values.json"
   report_template_path : "templates/report_template.html"
 
 enrichment_services:

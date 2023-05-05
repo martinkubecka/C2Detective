@@ -89,7 +89,7 @@ class EnrichmentEngine:
                 if self.enabled_enrichment_services.get('urlhaus'):
                     ip_type = get_ip_address_type(ip_addr)
                     if not ip_type == "IPv6":
-                        self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = self.query_urlhaus(ip_addr)
+                        self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = self.query_urlhaus(ip_addr, "host")
                     else:
                         self.enriched_iocs['ip_addresses'][ip_addr]['urlhaus'] = {}
                 else:
@@ -127,7 +127,7 @@ class EnrichmentEngine:
                     self.enriched_iocs['domain_names'][domain_name]['alienvault'] = {}
 
                 if self.enabled_enrichment_services.get('urlhaus'):
-                    self.enriched_iocs['domain_names'][domain_name]['urlhaus'] = self.query_urlhaus(domain_name)
+                    self.enriched_iocs['domain_names'][domain_name]['urlhaus'] = self.query_urlhaus(domain_name, "host")
                 else:
                     self.enriched_iocs['domain_names'][domain_name]['urlhaus'] = {}
 
@@ -154,7 +154,7 @@ class EnrichmentEngine:
                 self.enriched_iocs['urls'][url]['alienvault'] = {}
 
                 if self.enabled_enrichment_services.get('urlhaus'):
-                    self.enriched_iocs['urls'][url]['urlhaus'] = self.query_urlhaus(url)
+                    self.enriched_iocs['urls'][url]['urlhaus'] = self.query_urlhaus(url, "url")
                 else:
                     self.enriched_iocs['urls'][url]['urlhaus'] = {}
 
@@ -356,18 +356,26 @@ class EnrichmentEngine:
             return {}
 
     # API Reference : https://urlhaus-api.abuse.ch
-    def query_urlhaus(self, target):
+    def query_urlhaus(self, target, endpoint):
         try:
             enriched_data = {}
 
-            # Query host information : https://urlhaus-api.abuse.ch/#hostinfo
-            data = {'host': target}
+            if endpoint == "url":
+                # query url information : https://urlhaus-api.abuse.ch/#urlinfo
+                urlhaus_api = f"{self.urlhaus_api_url}url/"
+                data = {'url': target}
+
+            elif endpoint == "host":
+                # query host information : https://urlhaus-api.abuse.ch/#hostinfo
+                urlhaus_api = f"{self.urlhaus_api_url}host/"
+                data = {'host': target}
+            else:
+                return {}
 
             # print(f"[{time.strftime('%H:%M:%S')}] [INFO] URLhaus : Querying database for {target} ...")
             self.logger.info(f"URLhaus : Querying database for {target} ...")
 
-            # IPv4 address, hostname or domain name
-            response = requests.post(self.urlhaus_api_url, data=data)
+            response = requests.post(urlhaus_api, data=data)
             enriched_data = json.loads(response.text)
 
             if enriched_data.get('query_status') == "ok":
@@ -375,7 +383,7 @@ class EnrichmentEngine:
             else:
                 # print(f"[{time.strftime('%H:%M:%S')}] [WARNING] URLhaus : No result or illegal search term")
                 self.logger.warning(
-                    f"URLhaus : No result or illegal search term (API response: '{enriched_data['query_status']})'")
+                    f"URLhaus : No result or illegal search term (API response: '{enriched_data.get('query_status')})'")
                 return {}
 
         except Exception as e:
