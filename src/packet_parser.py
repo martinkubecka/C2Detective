@@ -28,9 +28,10 @@ certificates :                              selected TLS certificate fields :   
 
 
 class PacketParser:
-    def __init__(self, analyst_profile, input_file, output_dir, report_extracted_data_option, statistics_option):
+    def __init__(self, analysis_timestamp, analyst_profile, input_file, output_dir, report_extracted_data_option, statistics_option):
         self.logger = logging.getLogger(__name__)
 
+        self.analysis_timestamp = analysis_timestamp
         self.analyst_profile = analyst_profile
         self.STATISTICS_TOP_COUNT = self.analyst_profile.statistics_top_count
 
@@ -429,7 +430,7 @@ class PacketParser:
     def get_statistics(self):
         statistics = {}
 
-        statistics["analysis_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        statistics["analysis_timestamp"] = self.analysis_timestamp
 
         with open(self.input_file, 'rb') as f:
             input_file_sha256 = hashlib.sha256()

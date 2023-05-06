@@ -5,6 +5,7 @@ import platform
 import yaml
 import logging
 import time
+import datetime
 
 from src.analyst_profile import AnalystProfile
 from src.packet_parser import PacketParser
@@ -250,6 +251,8 @@ def main():
     init_logger()
     is_platform_supported()
 
+    analysis_timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     args = parse_arguments()
 
     if not args.quiet:
@@ -367,7 +370,7 @@ def main():
         logging.info(f"Loading '{input_file}' input file")
         report_extracted_data_option = args.write_extracted
         statistics_option = args.statistics
-        packet_parser = PacketParser(analyst_profile, input_file, output_dir, report_extracted_data_option,
+        packet_parser = PacketParser(analysis_timestamp, analyst_profile, input_file, output_dir, report_extracted_data_option,
                                      statistics_option)
         extracted_data = packet_parser.get_extracted_data()
 
