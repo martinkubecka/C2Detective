@@ -420,7 +420,7 @@ def main():
     print(('- ' * (terminal_size.columns // 2)) + ('-' * (terminal_size.columns % 2)))
     detection_engine.detect_connections_with_excessive_frequency()
     detection_engine.detect_long_connection()
-    detection_engine.detect_big_http_response_size()
+    detection_engine.detect_big_http_body_size()
     detection_engine.detect_known_c2_tls_values()
     detection_engine.detect_malicious_ja3_digest()
     if args.dga:
@@ -473,7 +473,8 @@ def main():
                                                extracted_data, enriched_iocs, detected_iocs, dga_detection,
                                                plugin_c2hunter)
         detection_reporter.write_detected_iocs_to_file()
-        detection_reporter.write_enriched_iocs_to_file()
+        if args.enrich_iocs:
+            detection_reporter.write_enriched_iocs_to_file()
         detection_reporter.create_html_analysis_report()
         detection_reporter.create_pdf_analysis_report()
     else:

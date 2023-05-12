@@ -52,9 +52,9 @@ $ pip install -r requirements.txt
 
 - install [wkhtmltopdf](https://wkhtmltopdf.org/) tool that provides a way to convert HTML web pages or documents to PDF
   format
+- install [Tshark](https://tshark.dev/setup/install/#installing-tshark-only) which in our case is used for processing packets containg TLS certificate related information
 
-> Note: To find out more about **wkhtmltopdf**, you can refer to the documentation or support resources provided by your
-> package manager.
+> Note: To find out more about **wkhtmltopdf** or **Tshark**, you can refer to the documentation or support resources provided by your package manager.
 
 ### :old_key: API Keys
 

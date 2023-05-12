@@ -1,20 +1,20 @@
 {
-    "Cobalt Strike C2": [
+    "Cobalt Strike": [
         "146473198"
     ],
-    "Metasploit Framework C2": [
+    "Metasploit Framework": [
         "MetasploitSelfSignedCA"
     ],
-    "Covenant C2": [
+    "Covenant": [
         "Covenant"
     ],
-    "Mythic C2": [
+    "Mythic": [
         "Mythic"
     ],
-    "Posh C2": [
+    "PoshC2": [
         "P18055077"
     ],
-    "Sliver C2": [
+    "Sliver": [
         "multiplayer+operators"
     ]
 }

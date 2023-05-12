@@ -237,7 +237,7 @@
     </tr>
     <tr>
         <td>HTTP Content-Length</td>
-        <td>HTTP response message body size in bytes.</td>
+        <td>HTTP message body size in bytes.</td>
         <td>{{ thresholds.get("MAX_HTTP_SIZE") }}</td>
         <td>bytes</td>
     </tr>
@@ -320,12 +320,12 @@
 {% endif %}
 
 <hr>
-<h2 class="toc-heading">Unusual big HTTP response size</h2>
-{% if detected_iocs.get("big_HTTP_response_size") %}
-<button class="toggle-button" onclick="toggleContent('big-response-size')" style="text-align: right;">[ hide content
+<h2 class="toc-heading">Unusual big HTTP message body size</h2>
+{% if detected_iocs.get("big_HTTP_body_size") %}
+<button class="toggle-button" onclick="toggleContent('big-body-size')" style="text-align: right;">[ hide content
     ]
 </button>
-<div id="big-response-size" style="display:block;">
+<div id="big-body-size" style="display:block;">
     <table class="report-table">
         <thead>
         <tr>
@@ -350,7 +350,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for header in detected_iocs.get("big_HTTP_response_size") %}
+        {% for header in detected_iocs.get("big_HTTP_body_size") %}
         <tr>
             <td>{{ header.get("timestamp") }}</td>
             <td>{{ header.get("src_ip") }}</td>
@@ -643,7 +643,7 @@
 <div id="crypto-domains" style="display:block;">
     <table class="report-table">
         <tr>
-            <th>Domain Name</th>
+            <th>Crypto Domain Name</th>
         </tr>
         {% for domain in detected_iocs.get("crypto_domains") %}
         <tr>
@@ -716,7 +716,7 @@
     <table class="report-table">
         <thead>
         <tr>
-            <th>C2 domain name</th>
+            <th>C2 Domain Name</th>
         </tr>
         </thead>
         {% for domain in detected_iocs.get("c2_domain") %}

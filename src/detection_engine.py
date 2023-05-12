@@ -96,11 +96,11 @@ def print_long_connections(detected_connections):
             f">> {Fore.RED}{entry['src_ip']}:{entry['src_port']} -> {entry['dst_ip']}:{entry['dst_port']}{Fore.RESET} = {entry['duration']} seconds")
 
 
-def print_connections_with_big_http_response_size(detected_connections):
+def print_connections_with_big_http_body_size(detected_connections):
     print(
-        f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTTP response size")
+        f"[{time.strftime('%H:%M:%S')}] [INFO] Listing connections with unusual big HTTP message body size")
     logging.info(
-        f"Listing connections with unusual big HTTP response size")
+        f"Listing connections with unusual big HTTP message body size")
 
     for entry in detected_connections:
         print(
@@ -110,7 +110,8 @@ def print_connections_with_big_http_response_size(detected_connections):
 def print_known_c2_tls_certificates(detected_certificates):
     print(
         f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected malicious TLS certificates")
-    logging.info(f"Listing information about detected malicious TLS certificates")
+    logging.info(
+        f"Listing information about detected malicious TLS certificates")
 
     for entry in detected_certificates:
         print(
@@ -161,7 +162,8 @@ def print_detected_ja3_digests(detected_connections):
         f"[{time.strftime('%H:%M:%S')}] [INFO] Listing information about detected JA3 fingerprints")
     logging.info(f"Listing information about detected JA3 fingerprints")
 
-    print(f">> Found {len(detected_connections)} potentially malicious JA3 fingerprint matches")
+    print(
+        f">> Found {len(detected_connections)} potentially malicious JA3 fingerprint matches")
     # for entry in detected_connections:
     #     print(f">> '{entry.get('type')}' : {Fore.RED}{entry.get('src_ip')}:{entry.get('src_port')} -> {entry.get('dst_ip')}:{entry.get('dst_port')}{Fore.RESET}")
 
@@ -239,12 +241,15 @@ class DetectionEngine:
             else:
                 print(
                     f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Potential Command & Control communication indicators were detected{Fore.RESET}")
-            logging.info(f"Command & Control communication indicators detected")
-            print(f">> Number of detected indicators: {self.c2_indicators_count}/{self.c2_indicators_total_count}")
+            logging.info(
+                f"Command & Control communication indicators detected")
+            print(
+                f">> Number of detected indicators: {self.c2_indicators_count}/{self.c2_indicators_total_count}")
         else:
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Command & Control communication indicators not detected{Fore.RESET}")
-            logging.info(f"Command & Control communication indicators not detected")
+            logging.info(
+                f"Command & Control communication indicators not detected")
 
     # ----------------------------------------------------------------------------------------------------------------
     # ------------------------------------------- NETWORK TRAFFIC DETECTION ------------------------------------------
@@ -360,10 +365,10 @@ class DetectionEngine:
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Connections with long duration not detected{Fore.RESET}")
             logging.info(f"Connections with long duration not detected")
 
-    def detect_big_http_response_size(self):
+    def detect_big_http_body_size(self):
         print(
-            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTTP response size ...")
-        logging.info("Looking for unusual big HTTP response size")
+            f"[{time.strftime('%H:%M:%S')}] [INFO] Looking for unusual big HTTP message body size ...")
+        logging.info("Looking for unusual big HTTP message body size")
 
         detected = False
         detected_connections = []
@@ -393,16 +398,16 @@ class DetectionEngine:
         if detected:
             self.c2_indicators_detected = True
             self.c2_indicators_count += 1
-            self.detected_iocs['big_HTTP_response_size'] = detected_connections
+            self.detected_iocs['big_HTTP_body_size'] = detected_connections
             print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTTP response size{Fore.RESET}")
-            logging.info(f"Detected unusual big HTTP response size")
-            print_connections_with_big_http_response_size(
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Detected unusual big HTTP message body size{Fore.RESET}")
+            logging.info(f"Detected unusual big HTTP message body size")
+            print_connections_with_big_http_body_size(
                 detected_connections)
         else:
             print(
-                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTTP response size not detected{Fore.RESET}")
-            logging.info(f"Unusual big HTTP response size not detected")
+                f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Unusual big HTTP message body size not detected{Fore.RESET}")
+            logging.info(f"Unusual big HTTP message body size not detected")
 
     def detect_known_c2_tls_values(self):
         print(
@@ -428,7 +433,8 @@ class DetectionEngine:
 
                         is_value_detected = all(
                             part in entry.get('serialNumber') or
-                            any(part in value for value in list(issuer_values) + list(subject_values))
+                            any(part in value for value in list(
+                                issuer_values) + list(subject_values))
                             for part in value_parts
                         )
                         if is_value_detected:
@@ -453,8 +459,10 @@ class DetectionEngine:
                     entry['c2_framework'] = c2_framework
                     entry['malicious_value'] = detected_malicious_value
                     detected_certificates.append(entry)
-                    self.detected_iocs['aggregated_ip_addresses'].add(entry.get('src_ip'))
-                    self.detected_iocs['aggregated_ip_addresses'].add(entry.get('dst_ip'))
+                    self.detected_iocs['aggregated_ip_addresses'].add(
+                        entry.get('src_ip'))
+                    self.detected_iocs['aggregated_ip_addresses'].add(
+                        entry.get('dst_ip'))
 
         if detected_certificates:
             self.c2_indicators_detected = True
@@ -514,7 +522,7 @@ class DetectionEngine:
 
                 keys_to_keep = ['src_ip', 'src_port', 'dst_ip', 'dst_port']
                 entry_filtered = {k: v for k,
-                v in entry.items() if k in keys_to_keep}
+                                  v in entry.items() if k in keys_to_keep}
                 entry_frozenset = frozenset(entry_filtered.items())
 
                 if entry_frozenset not in tor_traffic_seen_ips:
@@ -788,13 +796,15 @@ class DetectionEngine:
             logging.info(
                 f"C2 IP addresses which received/initiated connections not detected")
 
-        c2_domains_detected, detected_domains = self.detect_c2_domains(c2hunter_db)
+        c2_domains_detected, detected_domains = self.detect_c2_domains(
+            c2hunter_db)
 
         if c2_domains_detected:
             self.c2_indicators_detected = True
             self.c2_indicators_count += 1
             self.detected_iocs['c2_domain'] = detected_domains
-            self.detected_iocs['aggregated_domain_names'].update(detected_domains)
+            self.detected_iocs['aggregated_domain_names'].update(
+                detected_domains)
             print(
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}C2 domain names which received/initiated connections detected{Fore.RESET}")
             logging.info(
@@ -824,7 +834,8 @@ class DetectionEngine:
                 f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}C2 related URLs not detected{Fore.RESET}")
             logging.info(f"C2 related URLs not detected")
 
-        potential_c2_ips_detected, detected_ips = self.detect_potential_c2_ip_addresses(c2hunter_db)
+        potential_c2_ips_detected, detected_ips = self.detect_potential_c2_ip_addresses(
+            c2hunter_db)
 
         if potential_c2_ips_detected:
             self.c2_indicators_detected = True
@@ -832,17 +843,21 @@ class DetectionEngine:
             self.detected_iocs['potential_c2_ip_address'] = detected_ips
             self.detected_iocs['aggregated_ip_addresses'].update(detected_ips)
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.RED}Potential C2 IP addresses which received/initiated connections detected{Fore.RESET}")
-            logging.info(f"Potential C2 IP addresses which received/initiated connections detected")
-            potential_c2_ip_connections = self.build_c2_ip_connections(detected_ips)
+            logging.info(
+                f"Potential C2 IP addresses which received/initiated connections detected")
+            potential_c2_ip_connections = self.build_c2_ip_connections(
+                detected_ips)
             self.detected_iocs['potential_c2_ip_address_connection'] = potential_c2_ip_connections
             print_c2_ip_addresses(detected_ips)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] [INFO] {Fore.GREEN}Potential C2 IP addresses which received/initiated connections not detected{Fore.RESET}")
-            logging.info(f"Potential C2 IP addresses which received/initiated connections not detected")
+            logging.info(
+                f"Potential C2 IP addresses which received/initiated connections not detected")
 
     def detect_potential_c2_ip_addresses(self, c2hunter_db):
         print(f"[{time.strftime('%H:%M:%S')}] [INFO] Detecting potential fingerprinted C2 IP addresses which received/initiated connections ...")
-        logging.info("Detecting potential fingerprinted C2 IP addresses which received/initiated connections")
+        logging.info(
+            "Detecting potential fingerprinted C2 IP addresses which received/initiated connections")
 
         connection = sqlite3.connect(c2hunter_db)
         cursor = connection.cursor()
@@ -980,7 +995,7 @@ class DetectionEngine:
 
                     keys_to_keep = ['src_ip', 'src_port', 'dst_ip', 'dst_port']
                     entry_filtered = {k: v for k,
-                    v in entry.items() if k in keys_to_keep}
+                                      v in entry.items() if k in keys_to_keep}
                     entry_frozenset = frozenset(entry_filtered.items())
 
                     if entry_frozenset not in seen_ips:
@@ -1060,7 +1075,6 @@ class DetectionEngine:
             cursor.execute(threatfox_query)
             threatfox_results += cursor.fetchall()
 
-
         connection.close()
 
         if urlhaus_results:
@@ -1098,10 +1112,14 @@ class DetectionEngine:
     # ----------------------------------------------------------------------------------------------------------------
 
     def get_detected_iocs(self):
-        self.logger.info(f"Preparing detected IoCs for writing to the output file")
-        self.detected_iocs['aggregated_ip_addresses'] = list(self.detected_iocs['aggregated_ip_addresses'])
-        self.detected_iocs['aggregated_domain_names'] = list(self.detected_iocs['aggregated_domain_names'])
-        self.detected_iocs['aggregated_urls'] = list(self.detected_iocs['aggregated_urls'])
+        self.logger.info(
+            f"Preparing detected IoCs for writing to the output file")
+        self.detected_iocs['aggregated_ip_addresses'] = list(
+            self.detected_iocs['aggregated_ip_addresses'])
+        self.detected_iocs['aggregated_domain_names'] = list(
+            self.detected_iocs['aggregated_domain_names'])
+        self.detected_iocs['aggregated_urls'] = list(
+            self.detected_iocs['aggregated_urls'])
 
         ip_list = self.detected_iocs['aggregated_ip_addresses']
         public_ips = [ip for ip in ip_list if not ip_address(ip).is_private]
